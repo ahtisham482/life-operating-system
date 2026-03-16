@@ -37,3 +37,7 @@ supabase/migrations
 *.njsproj
 *.sln
 *.sw?
+.vercel
+
+# MCP config (may contain API keys)
+.mcp.json
