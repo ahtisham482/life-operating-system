@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
   Target, Grid2X2, CheckSquare, RotateCcw,
-  DollarSign, BookOpen, BookMarked, LogOut,
+  DollarSign, BookOpen, BookMarked, Settings, LogOut,
 } from "lucide-react";
 
 const NAV = [
@@ -17,6 +17,7 @@ const NAV = [
   { href: "/expenses",  icon: DollarSign,  label: "Expenses",       phase: 1 },
   { href: "/journal",   icon: BookOpen,    label: "Journal",        phase: 1 },
   { href: "/books",     icon: BookMarked,  label: "Books",          phase: 1 },
+  { href: "/engines",   icon: Settings,    label: "Engines",        phase: 1 },
 ];
 
 export function Sidebar() {
