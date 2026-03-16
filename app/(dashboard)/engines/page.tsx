@@ -12,9 +12,16 @@ const STATUS_VARIANT: Record<string, "default" | "secondary" | "destructive"> = 
 };
 
 const STATUS_ICON: Record<string, string> = {
-  success: "✅",
-  warning: "⚠️",
-  error: "❌",
+  success: "\u2705",
+  warning: "\u26A0\uFE0F",
+  error: "\u274C",
+};
+
+const ENGINE_DESCRIPTIONS: Record<string, string> = {
+  "recurring-tasks": "Creates your daily recurring tasks automatically",
+  "Recurring Task Extractor": "Creates your daily recurring tasks automatically",
+  "watchdog": "Alerts you when tasks are stuck for 5+ days",
+  "Workspace Watchdog": "Alerts you when tasks are stuck for 5+ days",
 };
 
 export default async function EngineLogsPage() {
@@ -31,6 +38,9 @@ export default async function EngineLogsPage() {
   const engineNames = [...new Set(logs.map((l) => l.engineName))];
   const latestByEngine = engineNames.map((name) => logs.find((l) => l.engineName === name)!);
 
+  // Check if any engine has errors
+  const hasError = latestByEngine.some((log) => log.status === "error");
+
   return (
     <div className="p-8 max-w-5xl mx-auto space-y-8">
       {/* Header */}
@@ -39,11 +49,18 @@ export default async function EngineLogsPage() {
           Automation
         </p>
         <h1 className="text-3xl font-serif tracking-tight text-gradient-primary">
-          Engine Logs
+          Automations
         </h1>
         <p className="text-[11px] font-mono text-white/30 tracking-wider">
-          Automation engine run history &middot; {logs.length} recent logs
+          Your automated systems and their recent activity &middot; {logs.length} recent logs
         </p>
+        {/* Overall status indicator */}
+        <div className="flex items-center gap-2 mb-4">
+          <div className={`size-2 rounded-full ${hasError ? "bg-red-400" : "bg-green-400/60"}`} />
+          <span className="text-[10px] font-mono text-white/40 tracking-wider">
+            {hasError ? "Attention needed \u2014 an automation has errors" : "All automations running normally"}
+          </span>
+        </div>
         <div className="h-px bg-gradient-to-r from-transparent via-[#C49E45]/20 to-transparent mt-6" />
       </div>
 
@@ -63,6 +80,9 @@ export default async function EngineLogsPage() {
                   {STATUS_ICON[log.status]} {log.status}
                 </Badge>
               </div>
+              <p className="text-[10px] font-mono text-white/25 mt-1">
+                {ENGINE_DESCRIPTIONS[log.engineName] ?? "Automated system process"}
+              </p>
               <p className="text-xs text-white/40 mt-2 line-clamp-2">
                 {log.summary ?? "No summary"}
               </p>
@@ -115,7 +135,7 @@ export default async function EngineLogsPage() {
                     </Badge>
                   </td>
                   <td className="px-4 py-3 text-xs text-white/40 max-w-md">
-                    <span className="line-clamp-2">{log.summary ?? "—"}</span>
+                    <span className="line-clamp-2">{log.summary ?? "\u2014"}</span>
                   </td>
                   <td className="px-4 py-3 text-xs text-white/40 font-mono whitespace-nowrap">
                     {formatTimestamp(log.runAt)}

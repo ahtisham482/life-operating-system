@@ -13,7 +13,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Pencil } from "lucide-react";
+import { Plus, Pencil, ChevronRight, ChevronDown } from "lucide-react";
 import {
   createBookAction,
   updateBookAction,
@@ -89,6 +89,8 @@ export function BookForm({ bookAction }: { bookAction?: BookActionItem }) {
       : EMPTY
   );
   const [saving, setSaving] = useState(false);
+  // When editing, start expanded; when creating, start collapsed
+  const [showAdvanced, setShowAdvanced] = useState(isEdit);
 
   function set(field: keyof BookActionFormData, value: unknown) {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -145,6 +147,8 @@ export function BookForm({ bookAction }: { bookAction?: BookActionItem }) {
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 pt-2">
+          {/* ── Phase 1: Always visible ── */}
+
           {/* Action Item */}
           <div className="space-y-1.5">
             <Label htmlFor="actionItem">Action Item *</Label>
@@ -154,6 +158,7 @@ export function BookForm({ bookAction }: { bookAction?: BookActionItem }) {
               onChange={(e) => set("actionItem", e.target.value)}
               placeholder="What action to take from the book?"
               required
+              className="h-11 text-base"
             />
           </div>
 
@@ -169,123 +174,166 @@ export function BookForm({ bookAction }: { bookAction?: BookActionItem }) {
             />
           </div>
 
-          {/* Row: Status + Item Type */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="status">Status</Label>
-              <select
-                id="status"
-                value={form.status}
-                onChange={(e) => set("status", e.target.value)}
-                className={FIELD_CLASS}
-              >
-                {STATUSES.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="itemType">Item Type</Label>
-              <select
-                id="itemType"
-                value={form.itemType}
-                onChange={(e) => set("itemType", e.target.value)}
-                className={FIELD_CLASS}
-              >
-                {ITEM_TYPES.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {/* Row: Phase + Order */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="phase">Phase</Label>
-              <select
-                id="phase"
-                value={form.phaseName}
-                onChange={(e) => handlePhaseChange(e.target.value)}
-                className={FIELD_CLASS}
-              >
-                {PHASES.map((p) => (
-                  <option key={p.number} value={p.name}>
-                    {p.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="order">Order *</Label>
-              <Input
-                type="number"
-                id="order"
-                min={1}
-                value={form.order}
-                onChange={(e) =>
-                  set("order", e.target.value ? Number(e.target.value) : 1)
-                }
-                required
-              />
-            </div>
-          </div>
-
-          {/* Life Area */}
+          {/* Status */}
           <div className="space-y-1.5">
-            <Label htmlFor="lifeArea">Life Area</Label>
+            <Label htmlFor="status">Status</Label>
             <select
-              id="lifeArea"
-              value={form.lifeArea ?? ""}
-              onChange={(e) => set("lifeArea", e.target.value || null)}
+              id="status"
+              value={form.status}
+              onChange={(e) => set("status", e.target.value)}
               className={FIELD_CLASS}
             >
-              <option value="">— None —</option>
-              {LIFE_AREAS.map((a) => (
-                <option key={a} value={a}>
-                  {a}
+              {STATUSES.map((s) => (
+                <option key={s} value={s}>
+                  {s}
                 </option>
               ))}
             </select>
           </div>
 
-          {/* Input Needed */}
-          <div className="flex items-center gap-3">
-            <Checkbox
-              id="inputNeeded"
-              checked={form.inputNeeded}
-              onCheckedChange={(v) => set("inputNeeded", Boolean(v))}
-            />
-            <Label htmlFor="inputNeeded" className="cursor-pointer">
-              Input Needed
-            </Label>
-          </div>
+          {/* ── Phase 2: Advanced options toggle ── */}
+          <div>
+            <button
+              type="button"
+              onClick={() => setShowAdvanced((prev) => !prev)}
+              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors py-1"
+            >
+              {showAdvanced ? (
+                <ChevronDown className="h-3.5 w-3.5" />
+              ) : (
+                <ChevronRight className="h-3.5 w-3.5" />
+              )}
+              {showAdvanced ? "Hide advanced" : "Show advanced"}
+            </button>
 
-          {/* Depends On */}
-          <div className="space-y-1.5">
-            <Label htmlFor="dependsOn">Depends On</Label>
-            <Input
-              id="dependsOn"
-              value={form.dependsOn ?? ""}
-              onChange={(e) => set("dependsOn", e.target.value || null)}
-              placeholder="e.g. Complete Phase 1 items first"
-            />
-          </div>
+            <div
+              className="overflow-hidden transition-all duration-300 ease-in-out"
+              style={{
+                maxHeight: showAdvanced ? "600px" : "0px",
+                opacity: showAdvanced ? 1 : 0,
+              }}
+            >
+              <div className="space-y-4 pt-3">
+                {/* Row: Phase + Order */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="phase">Phase</Label>
+                    <select
+                      id="phase"
+                      value={form.phaseName}
+                      onChange={(e) => handlePhaseChange(e.target.value)}
+                      className={FIELD_CLASS}
+                    >
+                      {PHASES.map((p) => (
+                        <option key={p.number} value={p.name}>
+                          {p.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="order">Order</Label>
+                    <Input
+                      type="number"
+                      id="order"
+                      min={1}
+                      value={form.order}
+                      onChange={(e) =>
+                        set("order", e.target.value ? Number(e.target.value) : 1)
+                      }
+                    />
+                  </div>
+                </div>
 
-          {/* Page Content */}
-          <div className="space-y-1.5">
-            <Label htmlFor="pageContent">Page Content</Label>
-            <Textarea
-              id="pageContent"
-              value={form.pageContent ?? ""}
-              onChange={(e) => set("pageContent", e.target.value || null)}
-              placeholder="Notes, quotes, or page references..."
-              rows={3}
-            />
+                {/* Row: Item Type + Life Area */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="itemType">Item Type</Label>
+                    <select
+                      id="itemType"
+                      value={form.itemType}
+                      onChange={(e) => set("itemType", e.target.value)}
+                      className={FIELD_CLASS}
+                    >
+                      {ITEM_TYPES.map((t) => (
+                        <option key={t} value={t}>
+                          {t}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="lifeArea">Life Area</Label>
+                    <select
+                      id="lifeArea"
+                      value={form.lifeArea ?? ""}
+                      onChange={(e) => set("lifeArea", e.target.value || null)}
+                      className={FIELD_CLASS}
+                    >
+                      <option value="">-- None --</option>
+                      {LIFE_AREAS.map((a) => (
+                        <option key={a} value={a}>
+                          {a}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Phase Number (hidden utility — synced via phase select, but kept for manual override) */}
+                <div className="space-y-1.5">
+                  <Label htmlFor="phaseNumber">Phase Number</Label>
+                  <Input
+                    type="number"
+                    id="phaseNumber"
+                    min={1}
+                    max={5}
+                    value={form.phaseNumber}
+                    onChange={(e) =>
+                      set(
+                        "phaseNumber",
+                        e.target.value ? Number(e.target.value) : 1
+                      )
+                    }
+                  />
+                </div>
+
+                {/* Input Needed */}
+                <div className="flex items-center gap-3">
+                  <Checkbox
+                    id="inputNeeded"
+                    checked={form.inputNeeded}
+                    onCheckedChange={(v) => set("inputNeeded", Boolean(v))}
+                  />
+                  <Label htmlFor="inputNeeded" className="cursor-pointer">
+                    Input Needed
+                  </Label>
+                </div>
+
+                {/* Depends On */}
+                <div className="space-y-1.5">
+                  <Label htmlFor="dependsOn">Depends On</Label>
+                  <Input
+                    id="dependsOn"
+                    value={form.dependsOn ?? ""}
+                    onChange={(e) => set("dependsOn", e.target.value || null)}
+                    placeholder="e.g. Complete Phase 1 items first"
+                  />
+                </div>
+
+                {/* Page Content */}
+                <div className="space-y-1.5">
+                  <Label htmlFor="pageContent">Page Content</Label>
+                  <Textarea
+                    id="pageContent"
+                    value={form.pageContent ?? ""}
+                    onChange={(e) => set("pageContent", e.target.value || null)}
+                    placeholder="Notes, quotes, or page references..."
+                    rows={3}
+                  />
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Actions */}

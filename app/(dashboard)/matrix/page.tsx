@@ -3,29 +3,15 @@ export const dynamic = "force-dynamic";
 import { createClient } from "@/lib/supabase/server";
 import { fromDb, getTodayKarachi, getDateLabelKarachi, daysBetween } from "@/lib/utils";
 import type { Task } from "@/lib/db/schema";
+import { classifyTask } from "@/lib/classify";
+import { getLeadLifeAreas } from "@/lib/domains";
+import { TaskActions } from "./task-actions";
+import { ScheduleToggle } from "./schedule-toggle";
 
 // ── Schedule mode ─────────────────────────────────────────────────────────────
 const IS_RAMADAN = process.env.SCHEDULE_MODE === "ramadan";
 const OFFICE_HOURS = IS_RAMADAN ? "10:00 AM – 4:00 PM" : "9:00 AM – 5:00 PM";
 const HOME_HOURS = IS_RAMADAN ? "4:00 PM – 10:00 PM" : "5:00 PM – 10:00 PM";
-
-// ── Classification ────────────────────────────────────────────────────────────
-function classifyTask(task: Task, today: string): "Q1" | "Q2" | "Q3" | "Q4" | "PROJECT" {
-  if (task.type === "🏗️ Project") return "PROJECT";
-  const urgent =
-    (task.dueDate != null && task.dueDate <= today) ||
-    (task.type === "🔁 Habit" && task.recurring && task.frequency === "Daily");
-  const important =
-    task.priority === "🔴 High" ||
-    (task.lifeArea != null &&
-      ["💼 Job", "🚀 Business Building"].includes(task.lifeArea) &&
-      task.priority !== "🟢 Low") ||
-    task.type === "🔁 Habit";
-  if (urgent && important) return "Q1";
-  if (important) return "Q2";
-  if (urgent) return "Q3";
-  return "Q4";
-}
 
 // ── Task table sub-component ──────────────────────────────────────────────────
 function TaskTable({ tasks }: { tasks: Task[] }) {
@@ -42,13 +28,14 @@ function TaskTable({ tasks }: { tasks: Task[] }) {
           <th className="px-4 py-2 text-[9px] font-mono uppercase tracking-[0.25em] text-white/25">Priority</th>
           <th className="px-4 py-2 text-[9px] font-mono uppercase tracking-[0.25em] text-white/25">Status</th>
           <th className="px-4 py-2 text-[9px] font-mono uppercase tracking-[0.25em] text-white/25">Due</th>
+          <th className="px-4 py-2 text-[9px] font-mono uppercase tracking-[0.25em] text-white/25">Actions</th>
         </tr>
       </thead>
       <tbody>
         {tasks.map((task) => (
           <tr
             key={task.id}
-            className="border-t border-white/[0.04] hover:bg-white/[0.02] transition-colors"
+            className="group border-t border-white/[0.04] hover:bg-white/[0.02] transition-colors"
           >
             <td className="px-4 py-2.5 font-serif text-white/90">
               {task.type === "🔁 Habit" && <span className="mr-1 text-primary">🔁</span>}
@@ -61,6 +48,9 @@ function TaskTable({ tasks }: { tasks: Task[] }) {
               <span className="text-white/40">{task.status}</span>
             </td>
             <td className="px-4 py-2.5 text-xs text-white/40">{task.dueDate ?? "—"}</td>
+            <td className="px-4 py-2.5">
+              <TaskActions taskId={task.id} />
+            </td>
           </tr>
         ))}
       </tbody>
@@ -80,10 +70,17 @@ export default async function MatrixPage() {
   const dateLabel = getDateLabelKarachi();
 
   const supabase = await createClient();
-  const { data: rows } = await supabase
-    .from("tasks")
-    .select("*")
-    .neq("status", "Done");
+
+  const [{ data: rows }, { data: seasonRow }] = await Promise.all([
+    supabase.from("tasks").select("*").neq("status", "Done"),
+    supabase.from("seasons").select("*").eq("is_active", true).maybeSingle(),
+  ]);
+
+  // Season-aware classification
+  const season = seasonRow
+    ? fromDb<{ leadDomain: string }>(seasonRow)
+    : null;
+  const leadLifeAreas = season ? getLeadLifeAreas(season.leadDomain) : undefined;
 
   const allActive = (rows || []).map((r) => fromDb<Task>(r));
 
@@ -99,7 +96,7 @@ export default async function MatrixPage() {
   const HOME_AREAS = ["📖 Personal Dev", "🏠 Home & Life"];
 
   for (const task of allActive) {
-    const q = classifyTask(task, today);
+    const q = classifyTask(task, today, leadLifeAreas);
 
     if (q === "PROJECT") {
       q2Projects.push(task);
@@ -137,7 +134,10 @@ export default async function MatrixPage() {
         <h1 className="text-3xl font-serif tracking-tight text-gradient-primary">
           Eisenhower Matrix
         </h1>
-        <p className="text-[11px] font-mono text-white/30 tracking-wider">{dateLabel}</p>
+        <div className="flex items-center gap-4">
+          <p className="text-[11px] font-mono text-white/30 tracking-wider">{dateLabel}</p>
+          <ScheduleToggle />
+        </div>
         <p className="text-[10px] font-mono text-white/25 mt-0.5">
           Life Areas are NEVER mixed across blocks
         </p>
@@ -155,21 +155,25 @@ export default async function MatrixPage() {
               <tr className="text-left">
                 <th className="py-2 pr-4 text-[9px] font-mono uppercase tracking-[0.25em] text-white/25">Task</th>
                 <th className="py-2 pr-4 text-[9px] font-mono uppercase tracking-[0.25em] text-white/25">Days Overdue</th>
-                <th className="py-2 text-[9px] font-mono uppercase tracking-[0.25em] text-white/25">Status</th>
+                <th className="py-2 pr-4 text-[9px] font-mono uppercase tracking-[0.25em] text-white/25">Status</th>
+                <th className="py-2 text-[9px] font-mono uppercase tracking-[0.25em] text-white/25">Actions</th>
               </tr>
             </thead>
             <tbody>
               {stuck.map((task) => {
                 const days = daysBetween(task.dueDate!, today);
                 return (
-                  <tr key={task.id} className="border-t border-white/[0.04]">
+                  <tr key={task.id} className="group border-t border-white/[0.04]">
                     <td className="py-2 pr-4 font-serif text-white/90">{task.taskName}</td>
                     <td className="py-2 pr-4">
                       <span className={`font-mono text-xs font-bold ${days >= 6 ? "text-destructive" : "text-yellow-400"}`}>
                         {days >= 6 ? `🔴 CRITICAL — Day ${days}` : `Day ${days}`}
                       </span>
                     </td>
-                    <td className="py-2 text-xs font-mono text-white/40">{task.status}</td>
+                    <td className="py-2 pr-4 text-xs font-mono text-white/40">{task.status}</td>
+                    <td className="py-2">
+                      <TaskActions taskId={task.id} />
+                    </td>
                   </tr>
                 );
               })}

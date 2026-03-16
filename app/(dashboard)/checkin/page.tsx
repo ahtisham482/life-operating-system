@@ -16,7 +16,7 @@ const DOMAINS = [
 type Checkin = {
   id: string;
   date: string;
-  leadDone: boolean;
+  leadDone: boolean | number;
   mood: string | null;
   reflection: string | null;
   blockers: string | null;
@@ -33,6 +33,14 @@ function formatDate(iso: string) {
     month: "short",
     year: "numeric",
   });
+}
+
+/** Normalize leadDone (boolean or number) to a numeric score 0-5 */
+function toScore(leadDone: boolean | number | null | undefined): number {
+  if (leadDone === null || leadDone === undefined) return 0;
+  if (typeof leadDone === "boolean") return leadDone ? 5 : 0;
+  if (typeof leadDone === "number") return leadDone;
+  return 0;
 }
 
 export default async function CheckinPage() {
@@ -66,12 +74,14 @@ export default async function CheckinPage() {
     return { key: k, label, entry, isToday };
   });
 
+  // Streak: consecutive days where score >= 3
   let streak = 0;
   for (let i = 0; i <= 60; i++) {
     const d = new Date(today);
     d.setDate(d.getDate() - i);
     const k = d.toISOString().slice(0, 10);
-    if (checkinMap.get(k)?.leadDone === true) streak++;
+    const entry = checkinMap.get(k);
+    if (entry && toScore(entry.leadDone) >= 3) streak++;
     else break;
   }
 
@@ -80,6 +90,23 @@ export default async function CheckinPage() {
     : null;
 
   const pastEntries = checkins.filter((c) => c.date !== today).slice(0, 14);
+
+  // Pattern Insights computation
+  const scoredCheckins = checkins.filter((c) => c.leadDone !== null && c.leadDone !== undefined);
+  const scores = scoredCheckins.map((c) => toScore(c.leadDone));
+  const avgScore = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
+  const leadDoneRate = scores.length > 0
+    ? Math.round((scores.filter((s) => s >= 3).length / scores.length) * 100)
+    : 0;
+
+  // Most common mood
+  const moodCounts: Record<string, number> = {};
+  for (const c of checkins) {
+    if (c.mood) {
+      moodCounts[c.mood] = (moodCounts[c.mood] || 0) + 1;
+    }
+  }
+  const topMood = Object.entries(moodCounts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? "—";
 
   return (
     <div className="p-8 max-w-3xl mx-auto space-y-12">
@@ -107,40 +134,43 @@ export default async function CheckinPage() {
         </h2>
         <div className="glass-card rounded-2xl p-8 hover:border-white/[0.08] transition-all">
           <div className="flex gap-3 items-center">
-            {last7.map(({ key, label, entry, isToday }) => (
-              <div key={key} className="text-center">
-                <div
-                  className={`size-10 flex items-center justify-center border text-xs font-mono rounded-xl transition-all ${
-                    isToday
-                      ? "border-[#C49E45]/40 bg-[#C49E45]/[0.12] shadow-glow-sm"
-                      : entry?.leadDone === true
-                      ? "bg-[#C49E45]/20 border-[#C49E45]/30"
-                      : entry?.leadDone === false
-                      ? "bg-red-500/10 border-red-500/20"
-                      : "border-white/[0.05] bg-white/[0.02]"
-                  } ${
-                    entry?.leadDone === true
-                      ? "text-[#C49E45]"
-                      : entry?.leadDone === false
-                      ? "text-red-400/70"
-                      : "text-white/20"
-                  }`}
-                >
-                  {entry?.leadDone === true
-                    ? "✓"
-                    : entry?.leadDone === false
-                    ? "✗"
-                    : "·"}
+            {last7.map(({ key, label, entry, isToday }) => {
+              const score = entry ? toScore(entry.leadDone) : 0;
+              const hasEntry = !!entry;
+              const isGood = hasEntry && score >= 3;
+              const isBad = hasEntry && score >= 1 && score < 3;
+
+              return (
+                <div key={key} className="text-center">
+                  <div
+                    className={`size-10 flex items-center justify-center border text-xs font-mono rounded-xl transition-all ${
+                      isToday
+                        ? "border-[#C49E45]/40 bg-[#C49E45]/[0.12] shadow-glow-sm"
+                        : isGood
+                        ? "bg-[#C49E45]/20 border-[#C49E45]/30"
+                        : isBad
+                        ? "bg-red-500/10 border-red-500/20"
+                        : "border-white/[0.05] bg-white/[0.02]"
+                    } ${
+                      isGood
+                        ? "text-[#C49E45]"
+                        : isBad
+                        ? "text-red-400/70"
+                        : "text-white/20"
+                    }`}
+                  >
+                    {isGood ? "✓" : isBad ? "✗" : "·"}
+                  </div>
+                  <p
+                    className={`text-[8px] font-mono mt-2 tracking-[0.2em] ${
+                      isToday ? "text-[#C49E45]/60" : "text-white/20"
+                    }`}
+                  >
+                    {label}
+                  </p>
                 </div>
-                <p
-                  className={`text-[8px] font-mono mt-2 tracking-[0.2em] ${
-                    isToday ? "text-[#C49E45]/60" : "text-white/20"
-                  }`}
-                >
-                  {label}
-                </p>
-              </div>
-            ))}
+              );
+            })}
 
             {streak > 0 && (
               <div className="ml-auto px-5 py-2.5 border border-[#C49E45]/20 bg-[#C49E45]/[0.08] rounded-2xl">
@@ -192,43 +222,102 @@ export default async function CheckinPage() {
             Past Reflections
           </h2>
           <div className="space-y-4">
-            {pastEntries.map((entry, i) => (
-              <div
-                key={entry.id}
-                className="glass-card rounded-2xl p-6 hover:border-white/[0.08] transition-all animate-slide-up"
-                style={{ animationDelay: `${0.28 + i * 0.03}s`, animationFillMode: "both" }}
-              >
-                <div className="flex justify-between items-center mb-4">
-                  <span className="font-mono text-[9px] tracking-[0.35em] text-white/40 uppercase">
-                    {formatDate(entry.date)}
-                  </span>
-                  <span
-                    className={`text-[9px] font-mono tracking-[0.35em] uppercase px-3 py-1 rounded-lg border ${
-                      entry.leadDone
-                        ? "bg-[#C49E45]/[0.08] border-[#C49E45]/20 text-[#C49E45]"
-                        : "bg-red-500/[0.06] border-red-500/15 text-red-400/70"
-                    }`}
-                  >
-                    {entry.leadDone ? "LEAD ✓" : "LEAD ✗"}
-                  </span>
+            {pastEntries.map((entry, i) => {
+              const score = toScore(entry.leadDone);
+              const isGoodScore = score >= 3;
+
+              return (
+                <div
+                  key={entry.id}
+                  className="glass-card rounded-2xl p-6 hover:border-white/[0.08] transition-all animate-slide-up"
+                  style={{ animationDelay: `${0.28 + i * 0.03}s`, animationFillMode: "both" }}
+                >
+                  <div className="flex justify-between items-center mb-4">
+                    <span className="font-mono text-[9px] tracking-[0.35em] text-white/40 uppercase">
+                      {formatDate(entry.date)}
+                    </span>
+                    <span
+                      className={`text-[9px] font-mono tracking-[0.35em] uppercase px-3 py-1 rounded-lg border ${
+                        isGoodScore
+                          ? "bg-[#C49E45]/[0.08] border-[#C49E45]/20 text-[#C49E45]"
+                          : "bg-red-500/[0.06] border-red-500/15 text-red-400/70"
+                      }`}
+                    >
+                      Score: {score}
+                    </span>
+                  </div>
+                  {entry.mood && (
+                    <p className="text-[11px] text-white/40 mb-2 font-mono tracking-wider">
+                      {entry.mood}
+                    </p>
+                  )}
+                  {entry.reflection && (
+                    <p className="text-sm font-serif text-white/80 mb-2 leading-relaxed">
+                      &ldquo;{entry.reflection}&rdquo;
+                    </p>
+                  )}
+                  {entry.blockers && (
+                    <p className="text-[10px] text-white/20 italic font-mono tracking-wider">
+                      Blocked by: {entry.blockers}
+                    </p>
+                  )}
                 </div>
-                {entry.mood && (
-                  <p className="text-[11px] text-white/40 mb-2 font-mono tracking-wider">
-                    {entry.mood}
-                  </p>
-                )}
-                {entry.reflection && (
-                  <p className="text-sm font-serif text-white/80 mb-2 leading-relaxed">
-                    &ldquo;{entry.reflection}&rdquo;
-                  </p>
-                )}
-                {entry.blockers && (
-                  <p className="text-[10px] text-white/20 italic font-mono tracking-wider">
-                    Blocked by: {entry.blockers}
-                  </p>
-                )}
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {/* Pattern Insights */}
+      {scoredCheckins.length > 0 && (
+        <section className="animate-slide-up" style={{ animationDelay: "0.32s", animationFillMode: "both" }}>
+          <p className="font-mono text-[9px] tracking-[0.35em] text-white/40 uppercase mb-1.5">
+            Analytics
+          </p>
+          <h2 className="text-lg font-serif text-gradient-primary mb-6">
+            Pattern Insights
+          </h2>
+          <div className="glass-card rounded-2xl p-8 hover:border-white/[0.08] transition-all">
+            <div className="grid grid-cols-3 gap-6">
+              {/* Average Lead Score */}
+              <div className="text-center">
+                <p className="text-[9px] font-mono tracking-[0.35em] text-white/40 uppercase mb-2">
+                  Avg Score
+                </p>
+                <p className="text-2xl font-serif text-gradient-primary leading-none">
+                  {avgScore.toFixed(1)}
+                </p>
+                <p className="text-[10px] font-mono text-white/20 mt-1 tracking-wider">
+                  out of 5
+                </p>
               </div>
-            ))}
+
+              {/* Lead Done Rate */}
+              <div className="text-center">
+                <p className="text-[9px] font-mono tracking-[0.35em] text-white/40 uppercase mb-2">
+                  Lead-Done Rate
+                </p>
+                <p className="text-2xl font-serif text-gradient-primary leading-none">
+                  {leadDoneRate}%
+                </p>
+                <p className="text-[10px] font-mono text-white/20 mt-1 tracking-wider">
+                  days scored 3+
+                </p>
+              </div>
+
+              {/* Most Common Mood */}
+              <div className="text-center">
+                <p className="text-[9px] font-mono tracking-[0.35em] text-white/40 uppercase mb-2">
+                  Top Mood
+                </p>
+                <p className="text-lg font-serif text-gradient-primary leading-none">
+                  {topMood}
+                </p>
+                <p className="text-[10px] font-mono text-white/20 mt-1 tracking-wider">
+                  most frequent
+                </p>
+              </div>
+            </div>
           </div>
         </section>
       )}

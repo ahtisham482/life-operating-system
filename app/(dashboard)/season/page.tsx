@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { fromDb, getTodayKarachi } from "@/lib/utils";
 import { SeasonForm } from "./season-form";
 import { DomainList } from "./domain-list";
+import { getLeadLifeAreas, MAINTENANCE_GUIDANCE } from "@/lib/domains";
 
 const DOMAINS = [
   { id: "business", label: "Business & Agency", icon: "◈", desc: "Revenue, clients, PPC, growth" },
@@ -13,6 +14,16 @@ const DOMAINS = [
   { id: "deen", label: "Deen & Spirit", icon: "◆", desc: "Prayer, reflection, purpose" },
   { id: "personal", label: "Personal Life", icon: "○", desc: "Family, rest, relationships" },
 ];
+
+/** Map domain id to the label used in MAINTENANCE_GUIDANCE */
+const DOMAIN_ID_TO_LABEL: Record<string, string> = {
+  business: "Business & Agency",
+  content: "Content & Brand",
+  learning: "Learning & Books",
+  health: "Health & Body",
+  deen: "Deen & Spirit",
+  personal: "Personal Life",
+};
 
 function formatDate(iso: string) {
   if (!iso) return "";
@@ -43,9 +54,56 @@ export default async function SeasonPage() {
     ? Math.max(0, Math.ceil((new Date(season.endDate).getTime() - new Date(today).getTime()) / 86400000))
     : null;
 
+  const totalDays = season
+    ? Math.max(1, Math.ceil((new Date(season.endDate).getTime() - new Date(season.startDate).getTime()) / 86400000))
+    : 0;
+  const daysPassed = season
+    ? Math.max(0, Math.ceil((new Date(today).getTime() - new Date(season.startDate).getTime()) / 86400000))
+    : 0;
+  const daysProgress = Math.min(daysPassed, totalDays);
+  const daysProgressPercent = totalDays > 0 ? Math.round((daysProgress / totalDays) * 100) : 0;
+
   const leadDomainInfo = season
     ? DOMAINS.find((d) => d.id === season.leadDomain)
     : null;
+
+  // Season progress metrics (only fetched when season exists)
+  let leadDoneRate = 0;
+  let completedTaskCount = 0;
+  let checkinCount = 0;
+
+  if (season) {
+    const leadLabel = DOMAIN_ID_TO_LABEL[season.leadDomain] ?? "";
+    const leadAreas = getLeadLifeAreas(leadLabel);
+
+    const [{ data: seasonCheckins }, { data: completedTasks }] = await Promise.all([
+      supabase
+        .from("daily_checkins")
+        .select("lead_done, date")
+        .gte("date", season.startDate)
+        .lte("date", season.endDate),
+      leadAreas.length > 0
+        ? supabase
+            .from("tasks")
+            .select("id")
+            .eq("status", "Done")
+            .in("life_area", leadAreas)
+        : Promise.resolve({ data: [] as { id: string }[] }),
+    ]);
+
+    checkinCount = seasonCheckins?.length ?? 0;
+    if (checkinCount > 0) {
+      const leadDoneCount = (seasonCheckins || []).filter((c) => {
+        const val = c.lead_done;
+        if (typeof val === "boolean") return val;
+        if (typeof val === "number") return val >= 3;
+        return false;
+      }).length;
+      leadDoneRate = Math.round((leadDoneCount / checkinCount) * 100);
+    }
+
+    completedTaskCount = completedTasks?.length ?? 0;
+  }
 
   return (
     <div className="p-8 max-w-3xl mx-auto space-y-10">
@@ -73,6 +131,21 @@ export default async function SeasonPage() {
         </div>
       ) : (
         <>
+          {/* Season Transition Banner */}
+          {daysLeft !== null && daysLeft <= 7 && (
+            <div
+              className="border border-[#C49E45]/30 bg-[#C49E45]/[0.06] rounded-2xl p-6 animate-slide-up"
+              style={{ animationDelay: "0.04s", animationFillMode: "both" }}
+            >
+              <p className="text-sm font-serif text-[#C49E45]">
+                Season ending in {daysLeft} day{daysLeft !== 1 ? "s" : ""}
+              </p>
+              <p className="text-[10px] font-mono text-white/40 mt-1">
+                Review your progress and plan your next season.
+              </p>
+            </div>
+          )}
+
           {/* Season Goal Card */}
           <div className="glass-card rounded-2xl p-8 hover:border-white/[0.08] transition-all animate-slide-up" style={{ animationDelay: "0.08s", animationFillMode: "both" }}>
             <div className="flex justify-between items-start">
@@ -97,6 +170,54 @@ export default async function SeasonPage() {
             </div>
           </div>
 
+          {/* Season Progress Metrics */}
+          <div className="grid grid-cols-3 gap-4 animate-slide-up" style={{ animationDelay: "0.12s", animationFillMode: "both" }}>
+            {/* Lead-Done Rate */}
+            <div className="glass-card rounded-2xl p-5">
+              <p className="text-[9px] font-mono tracking-[0.35em] text-white/40 uppercase mb-3">
+                Lead-Done Rate
+              </p>
+              <p className="text-2xl font-serif text-gradient-primary">
+                {checkinCount > 0 ? `${leadDoneRate}%` : "—"}
+              </p>
+              <p className="text-[9px] font-mono text-white/20 mt-1">
+                {checkinCount > 0
+                  ? `${checkinCount} check-in${checkinCount !== 1 ? "s" : ""} tracked`
+                  : "No check-ins yet"}
+              </p>
+            </div>
+
+            {/* Tasks Completed */}
+            <div className="glass-card rounded-2xl p-5">
+              <p className="text-[9px] font-mono tracking-[0.35em] text-white/40 uppercase mb-3">
+                Tasks Completed
+              </p>
+              <p className="text-2xl font-serif text-gradient-primary">
+                {completedTaskCount}
+              </p>
+              <p className="text-[9px] font-mono text-white/20 mt-1">
+                in lead domain areas
+              </p>
+            </div>
+
+            {/* Days Progress */}
+            <div className="glass-card rounded-2xl p-5">
+              <p className="text-[9px] font-mono tracking-[0.35em] text-white/40 uppercase mb-3">
+                Days Progress
+              </p>
+              <p className="text-2xl font-serif text-gradient-primary">
+                Day {daysProgress}
+                <span className="text-sm text-white/30"> of {totalDays}</span>
+              </p>
+              <div className="w-full h-1.5 bg-white/[0.05] rounded-full overflow-hidden mt-2">
+                <div
+                  className="h-full bg-gradient-to-r from-[#C49E45]/60 to-[#C49E45] rounded-full transition-all duration-500"
+                  style={{ width: `${daysProgressPercent}%` }}
+                />
+              </div>
+            </div>
+          </div>
+
           {/* Domain Modes */}
           <div className="space-y-4 animate-slide-up" style={{ animationDelay: "0.16s", animationFillMode: "both" }}>
             <div>
@@ -111,6 +232,12 @@ export default async function SeasonPage() {
               seasonId={season.id}
               domains={season.domains}
               domainDefs={DOMAINS}
+              maintenanceGuidance={Object.fromEntries(
+                DOMAINS.map((d) => [
+                  d.id,
+                  MAINTENANCE_GUIDANCE[DOMAIN_ID_TO_LABEL[d.id] ?? ""] ?? "",
+                ])
+              )}
             />
           </div>
         </>

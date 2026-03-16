@@ -1,22 +1,22 @@
 export const dynamic = "force-dynamic";
 
 import { createClient } from "@/lib/supabase/server";
-import { fromDb } from "@/lib/utils";
+import { fromDb, getTodayKarachi } from "@/lib/utils";
 import { JournalForm } from "./journal-form";
 import { DeleteJournalButton } from "./delete-button";
 import { Badge } from "@/components/ui/badge";
 import type { JournalEntry } from "@/lib/db/schema";
 
 const MOOD_VARIANT: Record<string, "default" | "secondary" | "destructive"> = {
-  "😊 Good": "default",
-  "😐 Neutral": "secondary",
-  "😔 Low": "destructive",
-  "🔥 Fired Up": "default",
-  "😤 Frustrated": "destructive",
+  "\u{1F60A} Good": "default",
+  "\u{1F610} Neutral": "secondary",
+  "\u{1F614} Low": "destructive",
+  "\u{1F525} Fired Up": "default",
+  "\u{1F624} Frustrated": "destructive",
 };
 
-const MOODS = ["😊 Good", "😐 Neutral", "😔 Low", "🔥 Fired Up", "😤 Frustrated"];
-const CATEGORIES = ["General", "Dopamine Reset", "Financial", "Work", "Mindset"];
+const MOODS = ["\u{1F60A} Good", "\u{1F610} Neutral", "\u{1F614} Low", "\u{1F525} Fired Up", "\u{1F624} Frustrated"];
+const CATEGORIES = ["General", "Dopamine Reset", "Financial", "Work", "Mindset", "Deen / Spiritual", "Health"];
 
 export default async function JournalPage({
   searchParams,
@@ -38,6 +38,15 @@ export default async function JournalPage({
     return true;
   });
 
+  // Fetch today's check-in reflection
+  const today = getTodayKarachi();
+  const { data: checkinRow } = await supabase
+    .from("daily_checkins")
+    .select("reflection")
+    .eq("date", today)
+    .maybeSingle();
+  const checkinReflection = checkinRow?.reflection || null;
+
   return (
     <div className="p-8 max-w-5xl mx-auto space-y-8">
       {/* Header */}
@@ -53,7 +62,7 @@ export default async function JournalPage({
             {allEntries.length} total &middot; {filtered.length} shown
           </p>
         </div>
-        <JournalForm />
+        <JournalForm checkinReflection={checkinReflection} />
       </div>
 
       <div className="h-px bg-gradient-to-r from-transparent via-[#C49E45]/20 to-transparent" />
@@ -134,8 +143,8 @@ function JournalCard({ entry }: { entry: JournalEntry }) {
         <Badge variant="outline">{entry.category}</Badge>
       </div>
 
-      {/* Entry text */}
-      <p className="text-sm text-white/30 font-serif leading-relaxed line-clamp-3">
+      {/* Entry text — fully visible */}
+      <p className="text-sm text-white/30 font-serif leading-relaxed">
         {entry.entry}
       </p>
     </div>
