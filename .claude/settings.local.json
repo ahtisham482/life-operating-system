@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find /c/Users/DELLL/Downloads/life-operating-system -type f \\\\\\(-name *.svg -o -name *.png -o -name *.jpg \\\\\\))"
+    ]
+  }
+}
