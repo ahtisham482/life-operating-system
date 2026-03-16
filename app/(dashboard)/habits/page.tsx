@@ -24,7 +24,6 @@ export default async function HabitsPage() {
     day: "numeric",
   }).format(new Date());
 
-  // Fetch today's entry
   const { data: todayRows } = await supabase
     .from("habit_entries")
     .select("*")
@@ -36,7 +35,6 @@ export default async function HabitsPage() {
       ? fromDb<HabitEntry>(todayRows[0])
       : null;
 
-  // Fetch last 7 entries for weekly history
   const { data: historyRows } = await supabase
     .from("habit_entries")
     .select("*")
@@ -46,91 +44,97 @@ export default async function HabitsPage() {
   const history = (historyRows || []).map((r) => fromDb<HabitEntry>(r));
 
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-8">
+    <div className="p-8 max-w-5xl mx-auto space-y-10">
       {/* Header */}
-      <div className="space-y-1">
-        <h1 className="text-xl font-serif tracking-widest uppercase text-foreground">
-          {"🔁 Habit Tracker"}
+      <div className="space-y-2 animate-slide-up" style={{ animationDelay: "0s", animationFillMode: "both" }}>
+        <p className="text-[9px] font-mono tracking-[0.35em] text-white/20 uppercase">
+          Daily Discipline
+        </p>
+        <h1 className="text-3xl font-serif tracking-tight text-gradient-primary">
+          Habit Tracker
         </h1>
-        <p className="text-xs font-mono text-muted-foreground tracking-wider">
+        <p className="text-[11px] font-mono text-white/30 tracking-wider">
           {dateLabel}
         </p>
+        <div className="h-px bg-gradient-to-r from-transparent via-[#C49E45]/20 to-transparent mt-6" />
       </div>
 
       {/* Today's form */}
-      <div className="border border-border/50 rounded-lg p-6 space-y-4">
-        <div className="space-y-1">
-          <h2 className="text-sm font-serif tracking-widest uppercase text-foreground">
-            {"Today's Checklist"}
-          </h2>
-          <p className="text-[10px] font-mono text-muted-foreground tracking-wider uppercase">
-            {today} &middot; {dayName}
-          </p>
+      <section className="animate-slide-up" style={{ animationDelay: "0.08s", animationFillMode: "both" }}>
+        <div className="glass-card rounded-2xl p-6 space-y-4 hover:border-white/[0.08] transition-all">
+          <div className="space-y-1">
+            <h2 className="text-[11px] font-mono uppercase tracking-[0.25em] text-primary/80 font-serif">
+              {"Today's Checklist"}
+            </h2>
+            <p className="text-[10px] font-mono text-white/25 tracking-wider uppercase">
+              {today} &middot; {dayName}
+            </p>
+          </div>
+          <HabitForm entry={todayEntry} date={today} day={dayName} />
         </div>
-        <HabitForm entry={todayEntry} date={today} day={dayName} />
-      </div>
+      </section>
 
       {/* Weekly History */}
-      <div className="space-y-3">
-        <h2 className="text-sm font-serif tracking-widest uppercase text-foreground">
+      <section className="space-y-4 animate-slide-up" style={{ animationDelay: "0.16s", animationFillMode: "both" }}>
+        <h2 className="text-[11px] font-mono uppercase tracking-[0.25em] text-white/30 font-serif">
           Weekly History
         </h2>
 
         {history.length === 0 ? (
-          <div className="py-12 text-center text-muted-foreground font-mono text-sm border border-border/30 rounded-lg">
-            No entries yet. Complete your first daily checklist above.
+          <div className="py-12 text-center glass-card rounded-2xl">
+            <p className="text-[11px] font-mono text-white/25 tracking-widest uppercase">
+              No entries yet. Complete your first daily checklist above.
+            </p>
           </div>
         ) : (
-          <div className="border border-border/50 rounded-lg overflow-hidden">
+          <div className="glass-card rounded-2xl overflow-hidden">
             <table className="w-full text-sm">
               <thead>
-                <tr className="bg-card border-b border-border/50">
-                  <th className="px-4 py-3 text-left text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+                <tr className="bg-white/[0.02] border-b border-white/[0.04]">
+                  <th className="px-5 py-3 text-left text-[9px] font-mono uppercase tracking-[0.25em] text-white/25">
                     Date
                   </th>
-                  <th className="px-4 py-3 text-left text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+                  <th className="px-5 py-3 text-left text-[9px] font-mono uppercase tracking-[0.25em] text-white/25">
                     Day
                   </th>
-                  <th className="px-4 py-3 text-left text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+                  <th className="px-5 py-3 text-left text-[9px] font-mono uppercase tracking-[0.25em] text-white/25">
                     Completed
                   </th>
-                  <th className="px-4 py-3 text-left text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+                  <th className="px-5 py-3 text-left text-[9px] font-mono uppercase tracking-[0.25em] text-white/25">
                     Notes
                   </th>
                 </tr>
               </thead>
               <tbody>
-                {history.map((entry, i) => {
+                {history.map((entry) => {
                   const completed = countCompleted(entry.habits);
                   return (
                     <tr
                       key={entry.id}
-                      className={`border-t border-border/30 ${
-                        i % 2 !== 0 ? "bg-card/20" : ""
-                      }`}
+                      className="border-t border-white/[0.04] transition-colors hover:bg-white/[0.02]"
                     >
-                      <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
+                      <td className="px-5 py-3.5 font-mono text-[11px] text-white/40">
                         {entry.date}
                       </td>
-                      <td className="px-4 py-3 font-serif text-sm">
+                      <td className="px-5 py-3.5 font-serif text-sm text-white/90">
                         {entry.day}
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-5 py-3.5">
                         <div className="flex items-center gap-2">
                           <span
-                            className={`font-mono text-sm ${
+                            className={`font-mono text-sm stat-number ${
                               completed === 14
                                 ? "text-primary font-semibold"
                                 : completed >= 10
-                                ? "text-primary"
-                                : "text-muted-foreground"
+                                ? "text-primary/80"
+                                : "text-white/30"
                             }`}
                           >
                             {completed}/14
                           </span>
-                          <div className="w-16 h-1 bg-border/30 rounded-full overflow-hidden">
+                          <div className="w-16 h-1 bg-white/[0.05] rounded-full overflow-hidden">
                             <div
-                              className="h-full bg-primary rounded-full"
+                              className="h-full bg-primary/70 rounded-full transition-all"
                               style={{
                                 width: `${(completed / 14) * 100}%`,
                               }}
@@ -138,7 +142,7 @@ export default async function HabitsPage() {
                           </div>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-xs text-muted-foreground line-clamp-1 max-w-xs">
+                      <td className="px-5 py-3.5 text-[11px] text-white/25 line-clamp-1 max-w-xs">
                         {entry.notes ?? "—"}
                       </td>
                     </tr>
@@ -148,7 +152,7 @@ export default async function HabitsPage() {
             </table>
           </div>
         )}
-      </div>
+      </section>
     </div>
   );
 }

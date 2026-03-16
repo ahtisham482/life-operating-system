@@ -4,8 +4,13 @@ import { createClient } from "@/lib/supabase/server";
 import { fromDb } from "@/lib/utils";
 import { BookForm } from "./book-form";
 import { DeleteBookActionButton } from "./delete-button";
+import { PrescribedBooks } from "./prescribed-books";
+import { CustomLibrary } from "./custom-library";
 import { Badge } from "@/components/ui/badge";
 import type { BookActionItem } from "@/lib/db/schema";
+
+type PrescribedBook = { id: string; title: string; author: string; status: string; sortOrder: number };
+type CustomBook = { id: string; title: string; status: string; insight: string | null };
 
 const STATUS_VARIANT: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
   "To Do": "outline",
@@ -30,12 +35,27 @@ export default async function BooksPage({
 }) {
   const params = await searchParams;
   const supabase = await createClient();
-  const { data: rows } = await supabase
-    .from("book_action_items")
-    .select("*")
-    .order("book_name", { ascending: true })
-    .order("phase_number", { ascending: true })
-    .order("order", { ascending: true });
+
+  // Fetch all book data in parallel
+  const [{ data: rows }, { data: prescribedRows }, { data: customRows }] = await Promise.all([
+    supabase
+      .from("book_action_items")
+      .select("*")
+      .order("book_name", { ascending: true })
+      .order("phase_number", { ascending: true })
+      .order("order", { ascending: true }),
+    supabase
+      .from("prescribed_books")
+      .select("*")
+      .order("sort_order", { ascending: true }),
+    supabase
+      .from("custom_books")
+      .select("*")
+      .order("created_at", { ascending: false }),
+  ]);
+
+  const prescribedBooks = (prescribedRows || []).map((r) => fromDb<PrescribedBook>(r));
+  const customBooks = (customRows || []).map((r) => fromDb<CustomBook>(r));
 
   const allItems = (rows || []).map((r) => fromDb<BookActionItem>(r));
 
@@ -71,14 +91,41 @@ export default async function BooksPage({
   };
 
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+    <div className="p-8 max-w-5xl mx-auto space-y-8">
+      {/* Page Title */}
+      <div className="space-y-2 animate-slide-up" style={{ animationDelay: "0s", animationFillMode: "both" }}>
+        <p className="text-[9px] font-mono tracking-[0.35em] text-white/20 uppercase">
+          Knowledge Building
+        </p>
+        <h1 className="text-3xl font-serif tracking-tight text-gradient-primary">
+          Reading Tracker
+        </h1>
+        <p className="text-[11px] font-mono text-white/30 tracking-wider">
+          Prescribed reading, your library, and book action items.
+        </p>
+        <div className="h-px bg-gradient-to-r from-transparent via-[#C49E45]/20 to-transparent mt-6" />
+      </div>
+
+      {/* Prescribed Reading List */}
+      <div className="animate-slide-up" style={{ animationDelay: "0.05s", animationFillMode: "both" }}>
+        <PrescribedBooks books={prescribedBooks} />
+      </div>
+
+      {/* Custom Library */}
+      <div className="animate-slide-up" style={{ animationDelay: "0.1s", animationFillMode: "both" }}>
+        <CustomLibrary books={customBooks} />
+      </div>
+
+      {/* Separator */}
+      <div className="h-px bg-gradient-to-r from-transparent via-[#C49E45]/20 to-transparent" />
+
+      {/* Book Coach Header */}
+      <div className="flex items-center justify-between animate-slide-up" style={{ animationDelay: "0.15s", animationFillMode: "both" }}>
         <div className="space-y-1">
-          <h1 className="text-xl font-serif tracking-widest uppercase text-foreground">
-            {"\u{1F4DA}"} Book Coach
-          </h1>
-          <p className="text-xs font-mono text-muted-foreground tracking-wider">
+          <h2 className="text-lg font-serif tracking-widest uppercase text-white/90">
+            {"\u{1F4DA}"} Book Coach — Action Items
+          </h2>
+          <p className="text-xs font-mono text-white/40 tracking-wider">
             {allItems.length} total · {statusCounts.toDo} to do ·{" "}
             {statusCounts.inProgress} in progress · {statusCounts.done} done ·{" "}
             {statusCounts.blocked} blocked
@@ -88,7 +135,7 @@ export default async function BooksPage({
       </div>
 
       {/* Filter bar */}
-      <div className="flex gap-2 flex-wrap">
+      <div className="flex gap-2 flex-wrap animate-slide-up" style={{ animationDelay: "0.2s", animationFillMode: "both" }}>
         {["", "To Do", "Blocked", "In Progress", "Done", "Abandoned"].map(
           (s) => (
             <a
@@ -100,10 +147,10 @@ export default async function BooksPage({
                     ? `?book=${encodeURIComponent(params.book)}`
                     : "/books"
               }
-              className={`px-3 py-1 rounded text-[10px] font-mono uppercase tracking-widest border transition-colors ${
+              className={`px-3 py-1.5 rounded-lg text-[10px] font-mono uppercase tracking-widest border transition-all ${
                 (params.status ?? "") === s
-                  ? "border-primary bg-primary/10 text-primary"
-                  : "border-border text-muted-foreground hover:text-foreground hover:border-border/80"
+                  ? "border-[#C49E45]/20 bg-[#C49E45]/[0.08] text-[#C49E45]"
+                  : "border-white/[0.05] text-white/40 hover:text-white/90 hover:border-white/[0.08]"
               }`}
             >
               {s || "All Statuses"}
@@ -112,17 +159,17 @@ export default async function BooksPage({
         )}
         {bookNames.length > 0 && (
           <>
-            <span className="mx-1 text-border">|</span>
+            <span className="mx-1 text-white/[0.05] self-center">|</span>
             <a
               href={
                 params.status
                   ? `?status=${encodeURIComponent(params.status)}`
                   : "/books"
               }
-              className={`px-3 py-1 rounded text-[10px] font-mono uppercase tracking-widest border transition-colors ${
+              className={`px-3 py-1.5 rounded-lg text-[10px] font-mono uppercase tracking-widest border transition-all ${
                 !params.book
-                  ? "border-primary bg-primary/10 text-primary"
-                  : "border-border text-muted-foreground hover:text-foreground hover:border-border/80"
+                  ? "border-[#C49E45]/20 bg-[#C49E45]/[0.08] text-[#C49E45]"
+                  : "border-white/[0.05] text-white/40 hover:text-white/90 hover:border-white/[0.08]"
               }`}
             >
               All Books
@@ -131,10 +178,10 @@ export default async function BooksPage({
               <a
                 key={b}
                 href={`?book=${encodeURIComponent(b)}${params.status ? `&status=${encodeURIComponent(params.status)}` : ""}`}
-                className={`px-3 py-1 rounded text-[10px] font-mono uppercase tracking-widest border transition-colors ${
+                className={`px-3 py-1.5 rounded-lg text-[10px] font-mono uppercase tracking-widest border transition-all ${
                   params.book === b
-                    ? "border-primary bg-primary/10 text-primary"
-                    : "border-border text-muted-foreground hover:text-foreground hover:border-border/80"
+                    ? "border-[#C49E45]/20 bg-[#C49E45]/[0.08] text-[#C49E45]"
+                    : "border-white/[0.05] text-white/40 hover:text-white/90 hover:border-white/[0.08]"
                 }`}
               >
                 {b}
@@ -146,19 +193,21 @@ export default async function BooksPage({
 
       {/* Content */}
       {filtered.length === 0 ? (
-        <div className="py-16 text-center text-muted-foreground font-mono text-sm border border-border/30 rounded-lg">
-          No book action items yet. Add your first book.
+        <div className="py-16 text-center glass-card rounded-2xl">
+          <p className="text-[11px] font-mono text-white/25 tracking-widest uppercase">
+            No book action items yet. Add your first book.
+          </p>
         </div>
       ) : (
-        <div className="space-y-8">
+        <div className="space-y-8 animate-slide-up" style={{ animationDelay: "0.25s", animationFillMode: "both" }}>
           {Array.from(bookGroups.entries()).map(([bookName, phases]) => (
             <div key={bookName} className="space-y-4">
               {/* Book header */}
-              <div className="border-b border-border/50 pb-2">
-                <h2 className="text-lg font-serif tracking-wide text-foreground">
+              <div className="border-b border-white/[0.08] pb-2">
+                <h2 className="text-lg font-serif tracking-wide text-white/90">
                   {"\u{1F4D6}"} {bookName}
                 </h2>
-                <p className="text-[10px] font-mono text-muted-foreground tracking-wider uppercase">
+                <p className="text-[10px] font-mono text-white/40 tracking-wider uppercase">
                   {Array.from(phases.values()).reduce((sum, phaseItems) => sum + phaseItems.length, 0)} action items
                   · {phases.size} phases
                 </p>
@@ -167,12 +216,12 @@ export default async function BooksPage({
               {/* Phase groups */}
               {Array.from(phases.entries()).map(([phaseName, phaseItems]) => (
                 <div key={phaseName} className="space-y-2 pl-4">
-                  <h3 className="text-xs font-mono uppercase tracking-widest text-muted-foreground">
+                  <h3 className="text-xs font-mono uppercase tracking-widest text-white/40 font-serif">
                     {phaseName}
                   </h3>
-                  <div className="border border-border/50 rounded-lg overflow-hidden">
-                    {phaseItems.map((item: BookActionItem, i: number) => (
-                      <ActionItemRow key={item.id} item={item} even={i % 2 === 0} />
+                  <div className="glass-card rounded-2xl overflow-hidden">
+                    {phaseItems.map((item: BookActionItem) => (
+                      <ActionItemRow key={item.id} item={item} />
                     ))}
                   </div>
                 </div>
@@ -187,19 +236,15 @@ export default async function BooksPage({
 
 function ActionItemRow({
   item,
-  even,
 }: {
   item: BookActionItem;
-  even: boolean;
 }) {
   return (
     <div
-      className={`flex items-center gap-3 px-4 py-3 border-t border-border/30 first:border-t-0 ${
-        even ? "" : "bg-card/20"
-      }`}
+      className="flex items-center gap-3 px-4 py-3 border-t border-white/[0.04] first:border-t-0 hover:bg-white/[0.02] transition-colors"
     >
       {/* Order number */}
-      <span className="text-[10px] font-mono text-muted-foreground/60 w-6 text-right shrink-0">
+      <span className="text-[10px] font-mono text-white/30 w-6 text-right shrink-0">
         {item.order}.
       </span>
 
@@ -208,21 +253,21 @@ function ActionItemRow({
         <span
           className={`font-serif ${
             item.status === "Done"
-              ? "line-through text-muted-foreground"
+              ? "line-through text-white/40"
               : item.status === "Abandoned"
-                ? "line-through text-muted-foreground/60"
-                : ""
+                ? "line-through text-white/30"
+                : "text-white/90"
           }`}
         >
           {item.actionItem}
         </span>
         {item.dependsOn && (
-          <p className="text-[10px] text-muted-foreground/60 font-mono mt-0.5">
+          <p className="text-[10px] text-white/30 font-mono mt-0.5">
             depends on: {item.dependsOn}
           </p>
         )}
         {item.pageContent && (
-          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
+          <p className="text-xs text-white/40 mt-0.5 line-clamp-1">
             {item.pageContent}
           </p>
         )}
@@ -239,7 +284,7 @@ function ActionItemRow({
       </Badge>
 
       {/* Life area */}
-      <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0 w-28 text-right">
+      <span className="text-xs text-white/40 whitespace-nowrap shrink-0 w-28 text-right">
         {item.lifeArea ?? "\u2014"}
       </span>
 
