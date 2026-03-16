@@ -13,10 +13,10 @@ const NAV = [
   { href: "/dashboard", icon: Target,      label: "Command Center", phase: 1 },
   { href: "/matrix",    icon: Grid2X2,     label: "Matrix",         phase: 1 },
   { href: "/tasks",     icon: CheckSquare, label: "Tasks",          phase: 1 },
-  { href: "/habits",    icon: RotateCcw,   label: "Habits",         phase: 2 },
-  { href: "/expenses",  icon: DollarSign,  label: "Expenses",       phase: 2 },
-  { href: "/journal",   icon: BookOpen,    label: "Journal",        phase: 2 },
-  { href: "/books",     icon: BookMarked,  label: "Books",          phase: 2 },
+  { href: "/habits",    icon: RotateCcw,   label: "Habits",         phase: 1 },
+  { href: "/expenses",  icon: DollarSign,  label: "Expenses",       phase: 1 },
+  { href: "/journal",   icon: BookOpen,    label: "Journal",        phase: 1 },
+  { href: "/books",     icon: BookMarked,  label: "Books",          phase: 1 },
 ];
 
 export function Sidebar() {
