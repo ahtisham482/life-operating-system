@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { logMirrorSignal } from "@/lib/mirror/signals";
 
 export type JournalFormData = {
   title: string;
@@ -21,7 +22,19 @@ export async function createJournalEntry(data: JournalFormData) {
     category: data.category,
   });
   if (error) throw new Error(error.message);
+
+  // Fire-and-forget behavioral signal for Mirror AI
+  logMirrorSignal({
+    type: "journal",
+    context: {
+      mood: data.mood,
+      category: data.category,
+      word_count: data.entry.split(/\s+/).length,
+    },
+  });
+
   revalidatePath("/journal");
+  revalidatePath("/dashboard");
 }
 
 export async function updateJournalEntry(
@@ -42,6 +55,7 @@ export async function updateJournalEntry(
     .eq("id", id);
   if (error) throw new Error(error.message);
   revalidatePath("/journal");
+  revalidatePath("/dashboard");
 }
 
 export async function deleteJournalEntry(id: string) {

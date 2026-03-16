@@ -39,7 +39,7 @@ const NAV_SECTIONS = [
     label: "Intelligence",
     items: [
       { href: "/mirror",    icon: Brain,       label: "Mirror AI" },
-      { href: "/engines",   icon: Settings,    label: "Engines" },
+      { href: "/engines",   icon: Settings,    label: "Automations" },
     ],
   },
 ];

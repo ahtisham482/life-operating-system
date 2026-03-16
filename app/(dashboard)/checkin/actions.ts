@@ -2,10 +2,11 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { logMirrorSignal } from "@/lib/mirror/signals";
 
 export async function upsertCheckin(
   date: string,
-  leadDone: boolean,
+  leadScore: number,
   mood: string,
   reflection: string,
   blockers: string
@@ -14,7 +15,7 @@ export async function upsertCheckin(
   const { error } = await supabase.from("daily_checkins").upsert(
     {
       date,
-      lead_done: leadDone,
+      lead_done: leadScore,
       mood,
       reflection,
       blockers: blockers || null,
@@ -22,8 +23,21 @@ export async function upsertCheckin(
     { onConflict: "date" }
   );
   if (error) throw new Error(error.message);
+
+  // Fire-and-forget behavioral signal for Mirror AI
+  logMirrorSignal({
+    type: "checkin",
+    context: {
+      lead_score: leadScore,
+      mood,
+      has_reflection: !!reflection,
+      has_blockers: !!blockers,
+    },
+  });
+
   revalidatePath("/checkin");
   revalidatePath("/dashboard");
+  revalidatePath("/habits");
 }
 
 export async function deleteCheckin(id: string) {

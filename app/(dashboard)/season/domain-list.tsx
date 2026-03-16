@@ -14,9 +14,15 @@ type DomainListProps = {
   seasonId: string;
   domains: Record<string, string>;
   domainDefs: DomainDef[];
+  maintenanceGuidance?: Record<string, string>;
 };
 
-export function DomainList({ seasonId, domains, domainDefs }: DomainListProps) {
+export function DomainList({
+  seasonId,
+  domains,
+  domainDefs,
+  maintenanceGuidance = {},
+}: DomainListProps) {
   const [isPending, startTransition] = useTransition();
 
   const leadCount = Object.values(domains).filter((v) => v === "lead").length;
@@ -44,6 +50,7 @@ export function DomainList({ seasonId, domains, domainDefs }: DomainListProps) {
         {domainDefs.map((d) => {
           const mode = domains[d.id] || "maintenance";
           const isLead = mode === "lead";
+          const guidance = maintenanceGuidance[d.id];
 
           return (
             <div
@@ -74,6 +81,11 @@ export function DomainList({ seasonId, domains, domainDefs }: DomainListProps) {
                   <p className="text-[11px] font-mono text-muted-foreground/50">
                     {d.desc}
                   </p>
+                  {!isLead && guidance && (
+                    <p className="text-[9px] font-mono text-white/20 mt-1">
+                      Min: {guidance}
+                    </p>
+                  )}
                 </div>
               </div>
               <span

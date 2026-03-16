@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { logMirrorSignal } from "@/lib/mirror/signals";
 
 export type TaskFormData = {
   taskName: string;
@@ -73,5 +74,12 @@ export async function markTaskDone(id: string) {
     .update({ status: "Done", updated_at: new Date().toISOString() })
     .eq("id", id);
   if (error) throw new Error(error.message);
+
+  // Fire-and-forget behavioral signal for Mirror AI
+  logMirrorSignal({
+    type: "task_complete",
+    context: { task_id: id },
+  });
+
   revalidateTaskPaths();
 }

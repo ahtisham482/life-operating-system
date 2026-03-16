@@ -5,6 +5,7 @@ import { fromDb } from "@/lib/utils";
 import { TaskForm } from "./task-form";
 import { DeleteTaskButton } from "./delete-button";
 import { Badge } from "@/components/ui/badge";
+import { QuickAdd } from "./quick-add";
 import type { Task } from "@/lib/db/schema";
 
 const PRIORITY_VARIANT: Record<string, "default" | "secondary" | "destructive"> = {
@@ -61,6 +62,11 @@ export default async function TasksPage({
           </p>
         </div>
         <TaskForm />
+      </div>
+
+      {/* Quick Add */}
+      <div className="animate-slide-up" style={{ animationDelay: "0.03s", animationFillMode: "both" }}>
+        <QuickAdd />
       </div>
 
       <div className="h-px bg-gradient-to-r from-transparent via-[#C49E45]/20 to-transparent" />

@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { createClient } from "@/lib/supabase/server";
 import { fromDb, getTodayKarachi } from "@/lib/utils";
 import { ExpenseForm } from "./expense-form";
+import { QuickExpense } from "./quick-expense";
 import { Badge } from "@/components/ui/badge";
 import type { Expense } from "@/lib/db/schema";
 import { DeleteExpenseButton } from "./delete-expense-button";
@@ -15,6 +16,7 @@ const CATEGORIES = [
   "Health",
   "Business",
   "Entertainment",
+  "Sadqa / Charity",
   "Other",
 ];
 
@@ -85,6 +87,12 @@ export default async function ExpensesPage({
 
       <div className="h-px bg-gradient-to-r from-transparent via-[#C49E45]/20 to-transparent" />
 
+      {/* Quick Entry */}
+      <section className="glass-card rounded-2xl p-6 animate-slide-up" style={{ animationDelay: "0.03s", animationFillMode: "both" }}>
+        <p className="text-[9px] font-mono tracking-[0.35em] text-white/40 uppercase mb-4">Quick Entry</p>
+        <QuickExpense />
+      </section>
+
       {/* Summary Stats */}
       <div className="grid grid-cols-3 gap-4 animate-slide-up" style={{ animationDelay: "0.05s", animationFillMode: "both" }}>
         <div className="glass-card rounded-2xl p-6 hover:border-white/[0.08] transition-all">
@@ -120,6 +128,11 @@ export default async function ExpensesPage({
               </div>
               <span className="text-[10px] font-mono text-white/40 w-8 text-right">{desirePct}%</span>
             </div>
+            {desirePct > 30 && (
+              <p className="text-[9px] font-mono text-red-400/70 mt-2 tracking-wider">
+                Desires at {desirePct}% — above 30% target
+              </p>
+            )}
           </div>
         </div>
       </div>

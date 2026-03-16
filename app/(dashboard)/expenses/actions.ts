@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { logMirrorSignal } from "@/lib/mirror/signals";
 
 export type ExpenseFormData = {
   item: string;
@@ -28,6 +29,17 @@ export async function createExpense(data: ExpenseFormData) {
     notes: data.notes || null,
   });
   if (error) throw new Error(error.message);
+
+  // Fire-and-forget behavioral signal for Mirror AI
+  logMirrorSignal({
+    type: "expense",
+    context: {
+      amount: data.amountPkr,
+      category: data.category,
+      type: data.type,
+    },
+  });
+
   revalidateExpensePaths();
 }
 
