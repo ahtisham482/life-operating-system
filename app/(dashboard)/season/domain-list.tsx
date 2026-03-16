@@ -31,7 +31,7 @@ export function DomainList({
     const currentMode = domains[domainId] || "maintenance";
     const newDomainId = currentMode === "lead" ? "" : domainId;
 
-    if (!newDomainId) return; // Don't allow removing lead without setting another
+    if (!newDomainId) return;
 
     startTransition(async () => {
       await setLeadDomain(seasonId, newDomainId, domains);
@@ -42,11 +42,11 @@ export function DomainList({
     <div className={isPending ? "opacity-60 pointer-events-none" : ""}>
       {leadCount > 1 && (
         <div className="text-xs font-mono text-red-400 border border-red-500/30 px-3 py-1.5 inline-block mb-4 rounded">
-          ⚠ {leadCount} DOMAINS SET AS LEAD — SET ONE ONLY
+          {leadCount} DOMAINS SET AS LEAD — SET ONE ONLY
         </div>
       )}
 
-      <div className="space-y-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {domainDefs.map((d) => {
           const mode = domains[d.id] || "maintenance";
           const isLead = mode === "lead";
@@ -56,47 +56,42 @@ export function DomainList({
             <div
               key={d.id}
               onClick={() => handleToggle(d.id)}
-              className={`flex items-center justify-between p-4 rounded-lg cursor-pointer transition-all ${
+              className={`glass-card rounded-2xl p-5 cursor-pointer transition-all hover:border-white/[0.08] ${
                 isLead
-                  ? "bg-primary/5 border border-primary/30"
-                  : "bg-card border border-border hover:border-border/80"
+                  ? "border-[#C49E45]/30 bg-[#C49E45]/[0.04]"
+                  : ""
               }`}
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-center justify-between mb-2">
                 <span
                   className={`text-lg ${
-                    isLead ? "text-primary" : "text-muted-foreground/30"
+                    isLead ? "text-[#C49E45]" : "text-white/20"
                   }`}
                 >
                   {d.icon}
                 </span>
-                <div>
-                  <p
-                    className={`text-sm ${
-                      isLead ? "text-foreground" : "text-muted-foreground"
-                    }`}
-                  >
-                    {d.label}
-                  </p>
-                  <p className="text-[11px] font-mono text-muted-foreground/50">
-                    {d.desc}
-                  </p>
-                  {!isLead && guidance && (
-                    <p className="text-[9px] font-mono text-white/20 mt-1">
-                      Min: {guidance}
-                    </p>
-                  )}
-                </div>
+                <span
+                  className={`text-[8px] font-mono tracking-[0.3em] uppercase px-2 py-0.5 rounded-full border ${
+                    isLead
+                      ? "text-[#C49E45] border-[#C49E45]/30 bg-[#C49E45]/10"
+                      : "text-white/25 border-white/[0.06]"
+                  }`}
+                >
+                  {mode.toUpperCase()}
+                </span>
               </div>
-              <span
-                className={`text-[10px] font-mono tracking-widest px-3 py-1 border rounded ${
-                  isLead
-                    ? "text-primary border-primary/30"
-                    : "text-muted-foreground/30 border-border"
+              <p
+                className={`text-sm font-serif ${
+                  isLead ? "text-white/90" : "text-white/50"
                 }`}
               >
-                {mode.toUpperCase()}
-              </span>
+                {d.label}
+              </p>
+              {!isLead && guidance && (
+                <p className="text-[9px] font-mono text-white/20 mt-2 leading-relaxed">
+                  {guidance}
+                </p>
+              )}
             </div>
           );
         })}

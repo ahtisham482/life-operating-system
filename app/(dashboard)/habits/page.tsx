@@ -24,10 +24,6 @@ const HABIT_LABELS: Record<keyof HabitChecks, string> = {
 
 const ALL_HABIT_KEYS = Object.keys(HABIT_LABELS) as (keyof HabitChecks)[];
 
-function countCompleted(habits: HabitChecks): number {
-  return Object.values(habits).filter(Boolean).length;
-}
-
 export default async function HabitsPage() {
   const supabase = await createClient();
   const today = getTodayKarachi();
@@ -85,8 +81,19 @@ export default async function HabitsPage() {
     streaks[key] = count;
   }
 
-  // Weekly history for table (last 7 entries)
-  const weeklyHistory = history.slice(0, 7);
+  // Build last 7 days data for heatmap (always 7 days, even if no entry)
+  const weekDays: { date: string; dayAbbrev: string; entry: HabitEntry | null }[] = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const dateStr = d.toISOString().slice(0, 10);
+    const abbrev = new Intl.DateTimeFormat("en-US", {
+      timeZone: "Asia/Karachi",
+      weekday: "short",
+    }).format(d);
+    const matchingEntry = history.find((e) => e.date === dateStr) ?? null;
+    weekDays.push({ date: dateStr, dayAbbrev: abbrev.charAt(0), entry: matchingEntry });
+  }
 
   // Most Missed insight (from last 7 entries)
   const last7Entries = history.slice(0, 7);
@@ -107,119 +114,133 @@ export default async function HabitsPage() {
     }
   }
 
+  // Compute today's completion for the header badge
+  const todayHabits = todayEntry?.habits;
+  const todayCompleted = todayHabits
+    ? Object.values(todayHabits).filter(Boolean).length
+    : 0;
+  const totalHabits = ALL_HABIT_KEYS.length;
+
   return (
-    <div className="p-8 max-w-5xl mx-auto space-y-10">
+    <div className="p-8 max-w-7xl mx-auto space-y-10">
       {/* Header */}
       <div className="space-y-2 animate-slide-up" style={{ animationDelay: "0s", animationFillMode: "both" }}>
         <p className="text-[9px] font-mono tracking-[0.35em] text-white/20 uppercase">
           Daily Discipline
         </p>
-        <h1 className="text-3xl font-serif tracking-tight text-gradient-primary">
-          Habit Tracker
-        </h1>
+        <div className="flex items-center gap-4">
+          <h1 className="text-3xl font-serif tracking-tight text-gradient-primary">
+            {"Today's Habits"}
+          </h1>
+          <span className="text-[11px] font-mono bg-white/[0.06] text-white/50 px-3 py-1 rounded-full tracking-wider">
+            {todayCompleted} of {totalHabits} done
+          </span>
+        </div>
         <p className="text-[11px] font-mono text-white/30 tracking-wider">
           {dateLabel}
         </p>
+        {/* Progress bar */}
+        <div className="w-full max-w-md h-1.5 bg-white/[0.05] rounded-full overflow-hidden mt-3">
+          <div
+            className="h-full bg-gradient-to-r from-[#C49E45] to-[#C49E45]/60 rounded-full transition-all duration-500"
+            style={{ width: `${totalHabits > 0 ? (todayCompleted / totalHabits) * 100 : 0}%` }}
+          />
+        </div>
         <div className="h-px bg-gradient-to-r from-transparent via-[#C49E45]/20 to-transparent mt-6" />
       </div>
 
-      {/* Today's form */}
-      <section className="animate-slide-up" style={{ animationDelay: "0.08s", animationFillMode: "both" }}>
-        <div className="glass-card rounded-2xl p-6 space-y-4 hover:border-white/[0.08] transition-all">
-          <div className="space-y-1">
-            <h2 className="text-[11px] font-mono uppercase tracking-[0.25em] text-primary/80 font-serif">
-              {"Today's Checklist"}
-            </h2>
-            <p className="text-[10px] font-mono text-white/25 tracking-wider uppercase">
-              {today} &middot; {dayName}
-            </p>
+      {/* Two-column layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 animate-slide-up" style={{ animationDelay: "0.08s", animationFillMode: "both" }}>
+        {/* Left column: Today's habit toggles */}
+        <div className="lg:col-span-3">
+          <div className="glass-card rounded-2xl p-6 space-y-4 hover:border-white/[0.08] transition-all">
+            <div className="space-y-1">
+              <h2 className="text-[11px] font-mono uppercase tracking-[0.25em] text-primary/80 font-serif">
+                {"Today's Checklist"}
+              </h2>
+              <p className="text-[10px] font-mono text-white/25 tracking-wider uppercase">
+                {today} &middot; {dayName}
+              </p>
+            </div>
+            <HabitForm entry={todayEntry} date={today} day={dayName} streaks={streaks} />
           </div>
-          <HabitForm entry={todayEntry} date={today} day={dayName} streaks={streaks} />
         </div>
-      </section>
 
-      {/* Weekly History */}
-      <section className="space-y-4 animate-slide-up" style={{ animationDelay: "0.16s", animationFillMode: "both" }}>
-        <h2 className="text-[11px] font-mono uppercase tracking-[0.25em] text-white/30 font-serif">
-          Weekly History
-        </h2>
+        {/* Right column: Weekly Streaks Heatmap */}
+        <div className="lg:col-span-2">
+          <div className="glass-card rounded-2xl p-6 hover:border-white/[0.08] transition-all">
+            <h2 className="text-[11px] font-mono uppercase tracking-[0.25em] text-primary/80 font-serif mb-5">
+              Weekly Streaks
+            </h2>
 
-        {weeklyHistory.length === 0 ? (
-          <div className="py-12 text-center glass-card rounded-2xl">
-            <p className="text-[11px] font-mono text-white/25 tracking-widest uppercase">
-              No entries yet. Complete your first daily checklist above.
-            </p>
-          </div>
-        ) : (
-          <div className="glass-card rounded-2xl overflow-hidden">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-white/[0.02] border-b border-white/[0.04]">
-                  <th className="px-5 py-3 text-left text-[9px] font-mono uppercase tracking-[0.25em] text-white/25">
-                    Date
-                  </th>
-                  <th className="px-5 py-3 text-left text-[9px] font-mono uppercase tracking-[0.25em] text-white/25">
-                    Day
-                  </th>
-                  <th className="px-5 py-3 text-left text-[9px] font-mono uppercase tracking-[0.25em] text-white/25">
-                    Completed
-                  </th>
-                  <th className="px-5 py-3 text-left text-[9px] font-mono uppercase tracking-[0.25em] text-white/25">
-                    Notes
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {weeklyHistory.map((entry) => {
-                  const completed = countCompleted(entry.habits);
-                  const total = 14;
-                  return (
-                    <tr
-                      key={entry.id}
-                      className="border-t border-white/[0.04] transition-colors hover:bg-white/[0.02]"
-                    >
-                      <td className="px-5 py-3.5 font-mono text-[11px] text-white/40">
-                        {entry.date}
-                      </td>
-                      <td className="px-5 py-3.5 font-serif text-sm text-white/90">
-                        {entry.day}
-                      </td>
-                      <td className="px-5 py-3.5">
-                        <div className="flex items-center gap-2">
-                          <span
-                            className={`font-mono text-sm stat-number ${
-                              completed === total
-                                ? "text-primary font-semibold"
-                                : completed >= 10
-                                ? "text-primary/80"
-                                : "text-white/30"
+            {/* Day column headers */}
+            <div className="flex items-center mb-3">
+              <div className="w-24 flex-shrink-0" />
+              <div className="flex-1 grid grid-cols-7 gap-1">
+                {weekDays.map((wd, i) => (
+                  <div key={i} className="text-center">
+                    <span className="text-[9px] font-mono text-white/30 uppercase">
+                      {wd.dayAbbrev}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Habit rows with heatmap squares */}
+            <div className="space-y-1.5">
+              {ALL_HABIT_KEYS.map((key) => (
+                <div key={key} className="flex items-center">
+                  <div className="w-24 flex-shrink-0 pr-2">
+                    <span className="text-[9px] font-mono text-white/40 truncate block">
+                      {HABIT_LABELS[key]}
+                    </span>
+                  </div>
+                  <div className="flex-1 grid grid-cols-7 gap-1">
+                    {weekDays.map((wd, i) => {
+                      const done = wd.entry?.habits?.[key] ?? false;
+                      const hasEntry = wd.entry !== null;
+
+                      return (
+                        <div key={i} className="flex justify-center">
+                          <div
+                            className={`w-4 h-4 rounded-sm transition-colors ${
+                              done
+                                ? "bg-[#C49E45] shadow-[0_0_6px_rgba(196,158,69,0.3)]"
+                                : hasEntry
+                                ? "bg-white/[0.06]"
+                                : "border border-white/[0.06] bg-transparent"
                             }`}
-                          >
-                            {completed}/{total}
-                          </span>
-                          <div className="w-16 h-1 bg-white/[0.05] rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-primary/70 rounded-full transition-all"
-                              style={{
-                                width: `${(completed / total) * 100}%`,
-                              }}
-                            />
-                          </div>
+                            title={`${HABIT_LABELS[key]} - ${wd.date}${done ? " (done)" : hasEntry ? " (missed)" : " (no data)"}`}
+                          />
                         </div>
-                      </td>
-                      <td className="px-5 py-3.5 text-[11px] text-white/25 line-clamp-1 max-w-xs">
-                        {entry.notes ?? "—"}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
 
-      {/* Most Missed Insight */}
+            {/* Legend */}
+            <div className="flex items-center gap-4 mt-5 pt-4 border-t border-white/[0.04]">
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-3 rounded-sm bg-[#C49E45]" />
+                <span className="text-[9px] font-mono text-white/30">Done</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-3 rounded-sm bg-white/[0.06]" />
+                <span className="text-[9px] font-mono text-white/30">Missed</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-3 rounded-sm border border-white/[0.06]" />
+                <span className="text-[9px] font-mono text-white/30">No data</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Most Missed Insight — full width */}
       {last7Entries.length > 0 && (
         <section className="animate-slide-up" style={{ animationDelay: "0.24s", animationFillMode: "both" }}>
           <h2 className="text-[11px] font-mono uppercase tracking-[0.25em] text-white/30 font-serif mb-4">

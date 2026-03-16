@@ -3,22 +3,14 @@ export const dynamic = "force-dynamic";
 import { createClient } from "@/lib/supabase/server";
 import { fromDb, getTodayKarachi, getDateLabelKarachi } from "@/lib/utils";
 import Link from "next/link";
-import { Badge } from "@/components/ui/badge";
 import type { Task } from "@/lib/db/schema";
 import { classifyTask } from "@/lib/classify";
 import { getLeadLifeAreas } from "@/lib/domains";
-import { computePulseScore, getPulseLabel, getPulseColor } from "@/lib/pulse";
+import { computePulseScore, getPulseLabel } from "@/lib/pulse";
 import { TaskCompleteButton } from "./task-complete-button";
-
-function addDays(dateStr: string, days: number): string {
-  const d = new Date(dateStr);
-  d.setDate(d.getDate() + days);
-  return d.toISOString().slice(0, 10);
-}
 
 export default async function DashboardPage() {
   const today = getTodayKarachi();
-  const weekEnd = addDays(today, 7);
   const dateLabel = getDateLabelKarachi();
 
   const supabase = await createClient();
@@ -68,14 +60,7 @@ export default async function DashboardPage() {
   // Tasks classification with season awareness
   const allActive = (rows || []).map((r) => fromDb<Task>(r));
   const todayFocus = allActive.filter((t) => classifyTask(t, today, leadLifeAreas) === "Q1");
-  const thisWeek = allActive.filter(
-    (t) => t.dueDate != null && t.dueDate > today && t.dueDate <= weekEnd
-  );
-
   const q1Count = allActive.filter((t) => classifyTask(t, today, leadLifeAreas) === "Q1").length;
-  const q2Count = allActive.filter((t) => classifyTask(t, today, leadLifeAreas) === "Q2").length;
-  const q3Count = allActive.filter((t) => classifyTask(t, today, leadLifeAreas) === "Q3").length;
-  const q4Count = allActive.filter((t) => classifyTask(t, today, leadLifeAreas) === "Q4").length;
 
   // Tasks done today (for pulse)
   const { data: doneTodayRows } = await supabase
@@ -117,7 +102,6 @@ export default async function DashboardPage() {
     journalWritten,
   });
   const pulseLabel = getPulseLabel(pulseScore);
-  const pulseColor = getPulseColor(pulseScore);
 
   // Time-of-day greeting (Asia/Karachi)
   const hourStr = new Date().toLocaleString("en-US", {
@@ -128,11 +112,11 @@ export default async function DashboardPage() {
   const hour = parseInt(hourStr, 10);
   let greeting: string;
   if (hour < 12) {
-    greeting = "Good morning. Here's your focus today.";
+    greeting = "Good morning, Muhammad";
   } else if (hour < 18) {
-    greeting = "Afternoon. Stay on track.";
+    greeting = "Good afternoon, Muhammad";
   } else {
-    greeting = "Evening. Here's what you accomplished.";
+    greeting = "Good evening, Muhammad";
   }
 
   // Day of week for adaptive quick actions
@@ -169,16 +153,26 @@ export default async function DashboardPage() {
   const lastEngine = engineLogs.length > 0 ? engineLogs[0] : null;
   const hasEngineError = lastEngine?.status === "error";
 
+  // Checkin score for quick stats
+  const todayCheckin = checkins.find((c) => c.date === today);
+  let checkinScore: string;
+  if (!todayCheckin) {
+    checkinScore = "Not yet";
+  } else if (typeof todayCheckin.leadDone === "number") {
+    checkinScore = `${todayCheckin.leadDone}/5`;
+  } else if (todayCheckin.leadDone === true) {
+    checkinScore = "5/5";
+  } else {
+    checkinScore = "1/5";
+  }
+
   return (
-    <div className="p-8 max-w-5xl mx-auto space-y-12">
+    <div className="p-8 max-w-5xl mx-auto space-y-8">
       {/* ── Engine Error Banner ─────────────────── */}
       {hasEngineError && (
-        <div
-          className="border border-red-500/30 bg-red-500/[0.05] rounded-2xl p-4 flex items-center justify-between animate-slide-up"
-          style={{ animationDelay: "0s", animationFillMode: "both" }}
-        >
+        <div className="border border-red-500/30 bg-red-500/[0.05] rounded-2xl p-4 flex items-center justify-between">
           <p className="text-[11px] font-mono text-red-400/80 tracking-wider">
-            ⚠️ Automation issue: {lastEngine.engineName}
+            Warning: Automation issue with {lastEngine.engineName}
             {lastEngine.summary ? ` — ${lastEngine.summary}` : ""}
           </p>
           <Link
@@ -190,263 +184,138 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      {/* ── Pulse Score ────────────────────────── */}
-      <div
-        className="glass-card rounded-2xl p-8 text-center hover:border-white/[0.08] transition-all animate-slide-up"
-        style={{ animationDelay: "0.02s", animationFillMode: "both" }}
-      >
-        <p className="font-mono text-[9px] tracking-[0.35em] text-white/40 uppercase mb-4">
-          Today&apos;s Pulse
-        </p>
-        <p className={`text-5xl font-serif ${pulseColor}`}>{pulseScore}</p>
-        <p className="font-mono text-[10px] tracking-[0.25em] text-white/30 uppercase mt-2">
-          {pulseLabel}
+      {/* ── Greeting + Date ─────────────────────── */}
+      <div className="space-y-1">
+        <h1 className="text-2xl font-serif tracking-wide text-gradient-primary">
+          {greeting}
+        </h1>
+        <p className="font-mono text-[11px] tracking-widest text-white/30">
+          {dateLabel}
         </p>
       </div>
 
-      {/* ── Header ──────────────────────────────── */}
-      <div
-        className="space-y-6 animate-slide-up"
-        style={{ animationDelay: "0.05s", animationFillMode: "both" }}
-      >
-        <div className="flex items-start justify-between">
-          <div className="space-y-2">
-            <p className="font-mono text-[9px] tracking-[0.35em] text-white/40 uppercase">
-              Life Operating System
-            </p>
-            <h1 className="text-3xl font-serif tracking-widest uppercase text-gradient-primary">
-              Command Center
-            </h1>
-            <p className="text-[11px] font-mono tracking-wider text-white/40 mt-1">
-              {greeting}
-            </p>
-          </div>
-          <div className="text-right">
-            <p className="text-[11px] font-mono tracking-widest text-white/30">
-              {dateLabel}
-            </p>
-          </div>
-        </div>
-
-        {/* Status badges */}
-        <div className="flex gap-3 flex-wrap">
-          {season?.goal && (
-            <span className="text-[10px] font-mono tracking-widest px-3 py-1.5 rounded-lg border border-[#C49E45]/20 bg-[#C49E45]/[0.08] text-[#C49E45]">
-              {season.goal.length > 40 ? season.goal.slice(0, 40) + "..." : season.goal}
-            </span>
-          )}
-          {daysLeft !== null && (
-            <span className="text-[10px] font-mono tracking-widest px-3 py-1.5 rounded-lg border border-white/[0.05] text-white/40">
-              {daysLeft}d left
-            </span>
-          )}
-          {streak > 0 && (
-            <span className="text-[10px] font-mono tracking-widest px-3 py-1.5 rounded-lg border border-[#C49E45]/20 bg-[#C49E45]/[0.08] text-[#C49E45]">
-              {streak}-day streak
-            </span>
-          )}
-          {todayCheckedIn && (
-            <span className="text-[10px] font-mono tracking-widest px-3 py-1.5 rounded-lg border border-[#C49E45]/20 bg-[#C49E45]/[0.08] text-[#C49E45]">
-              checked in
-            </span>
-          )}
-          {/* Habits mini-stat badge */}
-          <span className="text-[10px] font-mono tracking-widest px-3 py-1.5 rounded-lg border border-white/[0.05] text-white/40">
-            {habitEntry ? `Habits: ${habitsCompleted}/${habitsTotal}` : "No habits yet"}
-          </span>
-        </div>
-
-        <div className="divider-gradient" />
-      </div>
-
-      {/* ── Today's Focus ───────────────────────── */}
-      <section
-        className="space-y-5 animate-slide-up"
-        style={{ animationDelay: "0.1s", animationFillMode: "both" }}
-      >
-        <div className="flex items-center justify-between">
-          <div className="space-y-1">
-            <p className="font-mono text-[9px] tracking-[0.35em] text-white/40 uppercase">
-              Priority
-            </p>
-            <h2 className="text-lg font-serif text-gradient-primary tracking-wide">
-              Today&apos;s Focus &mdash; Q1 ({todayFocus.length})
-            </h2>
-          </div>
-          <Link
-            href="/matrix"
-            className="text-[10px] font-mono uppercase tracking-wider text-white/30 hover:text-[#C49E45] transition-colors"
-          >
-            Full Matrix
-          </Link>
-        </div>
-
-        {todayFocus.length === 0 ? (
-          <div className="glass-card rounded-2xl p-8 text-center hover:border-white/[0.08] transition-all">
-            <p className="font-mono text-[9px] tracking-[0.35em] text-white/20 uppercase">
-              No urgent + important tasks today
-            </p>
-          </div>
-        ) : (
-          <div className="glass-card rounded-2xl overflow-hidden hover:border-white/[0.08] transition-all">
-            {todayFocus.map((task, i) => (
-              <div
-                key={task.id}
-                className={`flex items-center gap-4 px-8 py-4 transition-colors hover:bg-white/[0.02] ${
-                  i > 0 ? "border-t border-white/[0.05]" : ""
-                }`}
-              >
-                <TaskCompleteButton taskId={task.id} />
-                <span className="flex-1 text-sm font-serif text-white/80">
-                  {task.type === "🔁 Habit" && <span className="mr-1.5 text-xs">🔁</span>}
-                  {task.taskName}
-                </span>
-                <span className="font-mono text-[9px] tracking-[0.25em] text-white/30 shrink-0 uppercase">
-                  {task.lifeArea}
-                </span>
-                {task.priority && (
-                  <Badge variant={task.priority === "🔴 High" ? "default" : "secondary"}>
-                    {task.priority}
-                  </Badge>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* ── This Week ───────────────────────────── */}
-      <section
-        className="space-y-5 animate-slide-up"
-        style={{ animationDelay: "0.15s", animationFillMode: "both" }}
-      >
-        <div className="space-y-1">
-          <p className="font-mono text-[9px] tracking-[0.35em] text-white/40 uppercase">
-            Upcoming
+      {/* ── 2x2 Quadrant Grid ───────────────────── */}
+      <div className="grid grid-cols-2 gap-6">
+        {/* ── Top-Left: Pulse Score ─────────────── */}
+        <div className="glass-card rounded-2xl p-6 flex flex-col items-center justify-center">
+          <p className="font-mono text-[9px] tracking-[0.35em] text-white/40 uppercase mb-4">
+            Pulse Score
           </p>
-          <h2 className="text-lg font-serif text-gradient-primary tracking-wide">
-            This Week &mdash; Due in 7 days ({thisWeek.length})
-          </h2>
-        </div>
-
-        {thisWeek.length === 0 ? (
-          <div className="glass-card rounded-2xl p-8 text-center hover:border-white/[0.08] transition-all">
-            <p className="font-mono text-[9px] tracking-[0.35em] text-white/20 uppercase">
-              No tasks due this week
-            </p>
-          </div>
-        ) : (
-          <div className="glass-card rounded-2xl overflow-hidden hover:border-white/[0.08] transition-all">
-            {/* Table header */}
-            <div className="flex items-center gap-4 px-8 py-3 border-b border-white/[0.05]">
-              <span className="flex-1 text-[9px] font-mono uppercase tracking-[0.25em] text-white/30">
-                Task
-              </span>
-              <span className="text-[9px] font-mono uppercase tracking-[0.25em] text-white/30 w-24 text-right">
-                Due
-              </span>
-              <span className="text-[9px] font-mono uppercase tracking-[0.25em] text-white/30 w-32 text-right">
-                Area
-              </span>
-            </div>
-            {thisWeek.slice(0, 10).map((task, i) => (
-              <div
-                key={task.id}
-                className={`flex items-center gap-4 px-8 py-4 transition-colors hover:bg-white/[0.02] ${
-                  i > 0 ? "border-t border-white/[0.05]" : ""
-                }`}
-              >
-                <span className="flex-1 text-sm font-serif text-white/80">{task.taskName}</span>
-                <span className="font-mono text-[10px] text-white/30 tracking-wider w-24 text-right">
-                  {task.dueDate}
-                </span>
-                <span className="font-mono text-[9px] tracking-[0.25em] text-white/30 uppercase w-32 text-right">
-                  {task.lifeArea}
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* ── Matrix Summary ──────────────────────── */}
-      <section
-        className="space-y-5 animate-slide-up"
-        style={{ animationDelay: "0.2s", animationFillMode: "both" }}
-      >
-        <div className="flex items-center justify-between">
-          <div className="space-y-1">
-            <p className="font-mono text-[9px] tracking-[0.35em] text-white/40 uppercase">
-              Analysis
-            </p>
-            <h2 className="text-lg font-serif text-gradient-primary tracking-wide">
-              Eisenhower Matrix
-            </h2>
-          </div>
-          <Link
-            href="/matrix"
-            className="text-[10px] font-mono uppercase tracking-wider text-white/30 hover:text-[#C49E45] transition-colors"
+          <p
+            className="text-6xl font-serif"
+            style={{
+              background: "linear-gradient(135deg, #C49E45 0%, #E8C868 50%, #C49E45 100%)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+            }}
           >
-            Full View
-          </Link>
+            {pulseScore}
+          </p>
+          <p className="font-mono text-[10px] tracking-[0.25em] text-white/30 uppercase mt-3">
+            {pulseLabel}
+          </p>
         </div>
-        <div className="grid grid-cols-2 gap-4">
-          {[
-            { label: "Q1 — Do Now", count: q1Count, accent: "rgba(239, 68, 68, 0.7)" },
-            { label: "Q2 — Schedule", count: q2Count, accent: "rgba(234, 179, 8, 0.7)" },
-            { label: "Q3 — Delegate", count: q3Count, accent: "rgba(59, 130, 246, 0.7)" },
-            { label: "Q4 — Eliminate", count: q4Count, accent: "rgba(255, 255, 255, 0.25)" },
-          ].map(({ label, count, accent }) => (
-            <div
-              key={label}
-              className="glass-card rounded-2xl p-8 hover:border-white/[0.08] transition-all hover:scale-[1.01]"
+
+        {/* ── Top-Right: Today's Focus ──────────── */}
+        <div className="glass-card rounded-2xl p-6">
+          <div className="flex items-center justify-between mb-4">
+            <p className="font-mono text-[9px] tracking-[0.35em] text-white/40 uppercase">
+              Today&apos;s Focus
+            </p>
+            <Link
+              href="/matrix"
+              className="text-[10px] font-mono uppercase tracking-wider text-white/30 hover:text-[#C49E45] transition-colors"
             >
-              <p
-                className="font-mono text-[9px] tracking-[0.35em] uppercase"
-                style={{ color: accent }}
-              >
-                {label}
-              </p>
-              <p className="text-4xl font-serif text-gradient-primary mt-3 stat-number">
-                {count}
-              </p>
+              Matrix
+            </Link>
+          </div>
+          {todayFocus.length === 0 ? (
+            <p className="text-sm font-serif text-white/30 text-center py-8">
+              All clear today
+            </p>
+          ) : (
+            <div className="space-y-0">
+              {todayFocus.slice(0, 3).map((task, i) => (
+                <div
+                  key={task.id}
+                  className={`flex items-center gap-3 py-3 ${
+                    i > 0 ? "border-t border-white/[0.05]" : ""
+                  }`}
+                >
+                  <TaskCompleteButton taskId={task.id} />
+                  <span className="flex-1 text-sm font-serif text-white/80 truncate">
+                    {task.taskName}
+                  </span>
+                  <span className="font-mono text-[9px] tracking-[0.25em] text-white/30 shrink-0 uppercase">
+                    {task.lifeArea}
+                  </span>
+                </div>
+              ))}
             </div>
-          ))}
+          )}
         </div>
-      </section>
 
-      {/* ── Quick Actions ───────────────────────── */}
-      <section
-        className="space-y-5 animate-slide-up"
-        style={{ animationDelay: "0.25s", animationFillMode: "both" }}
-      >
-        <div className="space-y-1">
-          <p className="font-mono text-[9px] tracking-[0.35em] text-white/40 uppercase">
-            Navigate
+        {/* ── Bottom-Left: Quick Stats ──────────── */}
+        <div className="glass-card rounded-2xl p-6">
+          <p className="font-mono text-[9px] tracking-[0.35em] text-white/40 uppercase mb-4">
+            Quick Stats
           </p>
-          <h2 className="text-lg font-serif text-gradient-primary tracking-wide">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-serif text-white/60">Streak</span>
+              <span className="font-mono text-sm text-white/80">
+                {streak > 0 ? `🔥 ${streak} days` : "🔥 0 days"}
+              </span>
+            </div>
+            <div className="border-t border-white/[0.05]" />
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-serif text-white/60">Habits</span>
+              <span className="font-mono text-sm text-white/80">
+                {habitsCompleted}/{habitsTotal} done
+              </span>
+            </div>
+            <div className="border-t border-white/[0.05]" />
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-serif text-white/60">Check-in</span>
+              <span className="font-mono text-sm text-white/80">
+                Score: {checkinScore}
+              </span>
+            </div>
+            <div className="border-t border-white/[0.05]" />
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-serif text-white/60">Journal</span>
+              <span className="font-mono text-sm text-white/80">
+                {journalWritten ? "✓ Written" : "✗ Not yet"}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Bottom-Right: Quick Actions ───────── */}
+        <div className="glass-card rounded-2xl p-6">
+          <p className="font-mono text-[9px] tracking-[0.35em] text-white/40 uppercase mb-4">
             Quick Actions
-          </h2>
+          </p>
+          <div className="flex flex-col gap-3">
+            {quickActions.map(({ href, label, key }) => {
+              const primary = key === primaryAction;
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  className={`text-center py-3 rounded-xl text-[10px] font-mono uppercase tracking-[0.25em] transition-all ${
+                    primary
+                      ? "border border-[#C49E45]/20 bg-[#C49E45]/[0.06] text-[#C49E45] hover:bg-[#C49E45]/[0.12] hover:border-[#C49E45]/30"
+                      : "border border-white/[0.05] bg-white/[0.02] text-white/40 hover:text-white/70 hover:border-white/[0.08]"
+                  }`}
+                >
+                  {label}
+                </Link>
+              );
+            })}
+          </div>
         </div>
-        <div className="grid grid-cols-4 gap-4">
-          {quickActions.map(({ href, label, key }) => {
-            const primary = key === primaryAction;
-            return (
-              <Link
-                key={href}
-                href={href}
-                className={`text-center py-4 rounded-2xl text-[10px] font-mono uppercase tracking-[0.25em] transition-all ${
-                  primary
-                    ? "glass-card border-[#C49E45]/20 bg-[#C49E45]/[0.06] text-[#C49E45] hover:bg-[#C49E45]/[0.12] hover:border-[#C49E45]/30"
-                    : "glass-card text-white/40 hover:text-white/70 hover:border-white/[0.08]"
-                }`}
-              >
-                {label}
-              </Link>
-            );
-          })}
-        </div>
-      </section>
+      </div>
     </div>
   );
 }

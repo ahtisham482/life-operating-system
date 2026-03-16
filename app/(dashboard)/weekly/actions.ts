@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { logMirrorSignal } from "@/lib/mirror/signals";
 
 export async function upsertWeeklyPlan(
   weekKey: string,
@@ -21,6 +22,15 @@ export async function upsertWeeklyPlan(
   );
   if (error) throw new Error(error.message);
   revalidatePath("/weekly");
+  logMirrorSignal({
+    type: "weekly_plan",
+    context: {
+      week_key: weekKey,
+      has_lead_priority: !!leadPriority,
+      has_maintenance: !!maintenanceActions,
+      has_removing: !!removingPausing,
+    },
+  });
 }
 
 export async function addWeeklyTask(weekKey: string, taskText: string) {

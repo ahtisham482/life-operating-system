@@ -16,8 +16,8 @@ export async function upsertCheckin(
     {
       date,
       lead_done: leadScore,
-      mood,
-      reflection,
+      mood: mood || null,
+      reflection: reflection || null,
       blockers: blockers || null,
     },
     { onConflict: "date" }

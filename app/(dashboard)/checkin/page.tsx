@@ -109,9 +109,9 @@ export default async function CheckinPage() {
   const topMood = Object.entries(moodCounts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? "—";
 
   return (
-    <div className="p-8 max-w-3xl mx-auto space-y-12">
+    <div className="p-8 max-w-2xl mx-auto space-y-16">
       {/* Header */}
-      <div className="space-y-3 animate-slide-up" style={{ animationDelay: "0s", animationFillMode: "both" }}>
+      <div className="text-center space-y-3 animate-slide-up" style={{ animationDelay: "0s", animationFillMode: "both" }}>
         <p className="font-mono text-[9px] tracking-[0.35em] text-white/40 uppercase">
           Daily Execution
         </p>
@@ -124,76 +124,8 @@ export default async function CheckinPage() {
         <div className="divider-gradient mt-5" />
       </div>
 
-      {/* 7-Day Execution Track */}
+      {/* Today's Check-In — Centered Score Circles */}
       <section className="animate-slide-up" style={{ animationDelay: "0.08s", animationFillMode: "both" }}>
-        <p className="font-mono text-[9px] tracking-[0.35em] text-white/40 uppercase mb-1.5">
-          Consistency
-        </p>
-        <h2 className="text-lg font-serif text-gradient-primary mb-6">
-          7-Day Execution Track
-        </h2>
-        <div className="glass-card rounded-2xl p-8 hover:border-white/[0.08] transition-all">
-          <div className="flex gap-3 items-center">
-            {last7.map(({ key, label, entry, isToday }) => {
-              const score = entry ? toScore(entry.leadDone) : 0;
-              const hasEntry = !!entry;
-              const isGood = hasEntry && score >= 3;
-              const isBad = hasEntry && score >= 1 && score < 3;
-
-              return (
-                <div key={key} className="text-center">
-                  <div
-                    className={`size-10 flex items-center justify-center border text-xs font-mono rounded-xl transition-all ${
-                      isToday
-                        ? "border-[#C49E45]/40 bg-[#C49E45]/[0.12] shadow-glow-sm"
-                        : isGood
-                        ? "bg-[#C49E45]/20 border-[#C49E45]/30"
-                        : isBad
-                        ? "bg-red-500/10 border-red-500/20"
-                        : "border-white/[0.05] bg-white/[0.02]"
-                    } ${
-                      isGood
-                        ? "text-[#C49E45]"
-                        : isBad
-                        ? "text-red-400/70"
-                        : "text-white/20"
-                    }`}
-                  >
-                    {isGood ? "✓" : isBad ? "✗" : "·"}
-                  </div>
-                  <p
-                    className={`text-[8px] font-mono mt-2 tracking-[0.2em] ${
-                      isToday ? "text-[#C49E45]/60" : "text-white/20"
-                    }`}
-                  >
-                    {label}
-                  </p>
-                </div>
-              );
-            })}
-
-            {streak > 0 && (
-              <div className="ml-auto px-5 py-2.5 border border-[#C49E45]/20 bg-[#C49E45]/[0.08] rounded-2xl">
-                <p className="text-[9px] font-mono tracking-[0.35em] text-white/40 uppercase mb-0.5">
-                  Streak
-                </p>
-                <p className="text-lg font-serif text-gradient-primary leading-none">
-                  {streak} <span className="text-[10px] font-mono text-[#C49E45]/60 tracking-widest">days</span>
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
-
-      {/* Today's Check-In */}
-      <section className="animate-slide-up" style={{ animationDelay: "0.16s", animationFillMode: "both" }}>
-        <p className="font-mono text-[9px] tracking-[0.35em] text-white/40 uppercase mb-1.5">
-          Today
-        </p>
-        <h2 className="text-lg font-serif text-gradient-primary mb-6">
-          Today&apos;s Check-In
-        </h2>
         <CheckinForm
           today={today}
           todayEntry={
@@ -212,113 +144,158 @@ export default async function CheckinPage() {
         />
       </section>
 
-      {/* Past Reflections */}
-      {pastEntries.length > 0 && (
-        <section className="animate-slide-up" style={{ animationDelay: "0.24s", animationFillMode: "both" }}>
-          <p className="font-mono text-[9px] tracking-[0.35em] text-white/40 uppercase mb-1.5">
-            History
-          </p>
-          <h2 className="text-lg font-serif text-gradient-primary mb-6">
-            Past Reflections
-          </h2>
-          <div className="space-y-4">
-            {pastEntries.map((entry, i) => {
-              const score = toScore(entry.leadDone);
-              const isGoodScore = score >= 3;
+      {/* 7-Day Track + Streak */}
+      <section className="animate-slide-up" style={{ animationDelay: "0.16s", animationFillMode: "both" }}>
+        <div className="flex flex-col items-center gap-6">
+          {/* 7-Day Circles */}
+          <div className="flex items-center gap-4 justify-center">
+            {last7.map(({ key, label, entry, isToday }) => {
+              const score = entry ? toScore(entry.leadDone) : 0;
+              const hasEntry = !!entry;
+
+              // Color logic: gold = 4-5, yellow = 3, gray = 1-2, outline = no data
+              let circleClasses = "";
+              let dotColor = "";
+              if (!hasEntry || score === 0) {
+                circleClasses = "border-white/20 bg-transparent";
+                dotColor = "bg-white/10";
+              } else if (score >= 4) {
+                circleClasses = "border-[#C49E45] bg-[#C49E45]/15";
+                dotColor = "bg-[#C49E45]";
+              } else if (score === 3) {
+                circleClasses = "border-yellow-500 bg-yellow-500/10";
+                dotColor = "bg-yellow-500";
+              } else {
+                circleClasses = "border-white/20 bg-white/[0.04]";
+                dotColor = "bg-white/30";
+              }
 
               return (
-                <div
-                  key={entry.id}
-                  className="glass-card rounded-2xl p-6 hover:border-white/[0.08] transition-all animate-slide-up"
-                  style={{ animationDelay: `${0.28 + i * 0.03}s`, animationFillMode: "both" }}
-                >
-                  <div className="flex justify-between items-center mb-4">
-                    <span className="font-mono text-[9px] tracking-[0.35em] text-white/40 uppercase">
-                      {formatDate(entry.date)}
-                    </span>
-                    <span
-                      className={`text-[9px] font-mono tracking-[0.35em] uppercase px-3 py-1 rounded-lg border ${
-                        isGoodScore
-                          ? "bg-[#C49E45]/[0.08] border-[#C49E45]/20 text-[#C49E45]"
-                          : "bg-red-500/[0.06] border-red-500/15 text-red-400/70"
-                      }`}
-                    >
-                      Score: {score}
-                    </span>
+                <div key={key} className="flex flex-col items-center gap-2">
+                  <div
+                    className={`size-8 rounded-full border-2 flex items-center justify-center transition-all ${circleClasses} ${
+                      isToday ? "ring-2 ring-[#C49E45]/40 ring-offset-2 ring-offset-black" : ""
+                    }`}
+                  >
+                    {hasEntry && score > 0 && (
+                      <div className={`size-2.5 rounded-full ${dotColor}`} />
+                    )}
                   </div>
-                  {entry.mood && (
-                    <p className="text-[11px] text-white/40 mb-2 font-mono tracking-wider">
-                      {entry.mood}
-                    </p>
-                  )}
-                  {entry.reflection && (
-                    <p className="text-sm font-serif text-white/80 mb-2 leading-relaxed">
-                      &ldquo;{entry.reflection}&rdquo;
-                    </p>
-                  )}
-                  {entry.blockers && (
-                    <p className="text-[10px] text-white/20 italic font-mono tracking-wider">
-                      Blocked by: {entry.blockers}
-                    </p>
-                  )}
+                  <p
+                    className={`text-[7px] font-mono tracking-[0.2em] ${
+                      isToday ? "text-[#C49E45]/70" : "text-white/25"
+                    }`}
+                  >
+                    {label}
+                  </p>
                 </div>
               );
             })}
           </div>
-        </section>
-      )}
+
+          {/* Streak Badge */}
+          {streak > 0 && (
+            <div className="glass-card rounded-full px-4 py-1.5">
+              <p className="text-[11px] font-mono text-[#C49E45]/80 tracking-wider">
+                {"\uD83D\uDD25"} {streak} day streak
+              </p>
+            </div>
+          )}
+        </div>
+      </section>
 
       {/* Pattern Insights */}
       {scoredCheckins.length > 0 && (
-        <section className="animate-slide-up" style={{ animationDelay: "0.32s", animationFillMode: "both" }}>
-          <p className="font-mono text-[9px] tracking-[0.35em] text-white/40 uppercase mb-1.5">
-            Analytics
-          </p>
-          <h2 className="text-lg font-serif text-gradient-primary mb-6">
+        <section className="animate-slide-up" style={{ animationDelay: "0.24s", animationFillMode: "both" }}>
+          <p className="font-mono text-[9px] tracking-[0.35em] text-white/40 uppercase mb-6 text-center">
             Pattern Insights
-          </h2>
-          <div className="glass-card rounded-2xl p-8 hover:border-white/[0.08] transition-all">
-            <div className="grid grid-cols-3 gap-6">
-              {/* Average Lead Score */}
-              <div className="text-center">
-                <p className="text-[9px] font-mono tracking-[0.35em] text-white/40 uppercase mb-2">
-                  Avg Score
-                </p>
-                <p className="text-2xl font-serif text-gradient-primary leading-none">
-                  {avgScore.toFixed(1)}
-                </p>
-                <p className="text-[10px] font-mono text-white/20 mt-1 tracking-wider">
-                  out of 5
-                </p>
-              </div>
+          </p>
+          <div className="grid grid-cols-3 gap-4">
+            {/* Average Score */}
+            <div className="glass-card rounded-2xl p-6 text-center">
+              <p className="text-3xl font-serif text-gradient-primary leading-none">
+                {avgScore.toFixed(1)}
+              </p>
+              <p className="text-[8px] font-mono text-white/30 mt-2 tracking-[0.3em] uppercase">
+                Avg Score
+              </p>
+            </div>
 
-              {/* Lead Done Rate */}
-              <div className="text-center">
-                <p className="text-[9px] font-mono tracking-[0.35em] text-white/40 uppercase mb-2">
-                  Lead-Done Rate
-                </p>
-                <p className="text-2xl font-serif text-gradient-primary leading-none">
-                  {leadDoneRate}%
-                </p>
-                <p className="text-[10px] font-mono text-white/20 mt-1 tracking-wider">
-                  days scored 3+
-                </p>
-              </div>
+            {/* Lead-Done Rate */}
+            <div className="glass-card rounded-2xl p-6 text-center">
+              <p className="text-3xl font-serif text-gradient-primary leading-none">
+                {leadDoneRate}%
+              </p>
+              <p className="text-[8px] font-mono text-white/30 mt-2 tracking-[0.3em] uppercase">
+                Lead-Done
+              </p>
+            </div>
 
-              {/* Most Common Mood */}
-              <div className="text-center">
-                <p className="text-[9px] font-mono tracking-[0.35em] text-white/40 uppercase mb-2">
-                  Top Mood
-                </p>
-                <p className="text-lg font-serif text-gradient-primary leading-none">
-                  {topMood}
-                </p>
-                <p className="text-[10px] font-mono text-white/20 mt-1 tracking-wider">
-                  most frequent
-                </p>
-              </div>
+            {/* Top Mood */}
+            <div className="glass-card rounded-2xl p-6 text-center">
+              <p className="text-xl font-serif text-gradient-primary leading-none">
+                {topMood}
+              </p>
+              <p className="text-[8px] font-mono text-white/30 mt-2 tracking-[0.3em] uppercase">
+                Top Mood
+              </p>
             </div>
           </div>
+        </section>
+      )}
+
+      {/* Past Reflections — collapsed, muted */}
+      {pastEntries.length > 0 && (
+        <section className="animate-slide-up" style={{ animationDelay: "0.32s", animationFillMode: "both" }}>
+          <details>
+            <summary className="cursor-pointer font-mono text-[9px] tracking-[0.35em] text-white/30 uppercase hover:text-white/50 transition-colors mb-4">
+              Past Reflections ({pastEntries.length})
+            </summary>
+            <div className="space-y-3 mt-4">
+              {pastEntries.map((entry, i) => {
+                const score = toScore(entry.leadDone);
+                const isGoodScore = score >= 3;
+
+                return (
+                  <div
+                    key={entry.id}
+                    className="glass-card rounded-xl p-4 animate-slide-up"
+                    style={{ animationDelay: `${i * 0.03}s`, animationFillMode: "both" }}
+                  >
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="font-mono text-[8px] tracking-[0.3em] text-white/30 uppercase">
+                        {formatDate(entry.date)}
+                      </span>
+                      <span
+                        className={`text-[8px] font-mono tracking-[0.3em] uppercase px-2 py-0.5 rounded-full border ${
+                          isGoodScore
+                            ? "bg-[#C49E45]/[0.08] border-[#C49E45]/20 text-[#C49E45]/70"
+                            : "bg-white/[0.03] border-white/10 text-white/30"
+                        }`}
+                      >
+                        {score}/5
+                      </span>
+                    </div>
+                    {entry.mood && (
+                      <p className="text-[10px] text-white/30 mb-1 font-mono tracking-wider">
+                        {entry.mood}
+                      </p>
+                    )}
+                    {entry.reflection && (
+                      <p className="text-sm font-serif text-white/50 leading-relaxed italic">
+                        {entry.reflection}
+                      </p>
+                    )}
+                    {entry.blockers && (
+                      <p className="text-[9px] text-white/15 font-mono tracking-wider mt-1">
+                        Blocked by: {entry.blockers}
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </details>
         </section>
       )}
     </div>

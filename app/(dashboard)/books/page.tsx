@@ -6,6 +6,7 @@ import { BookForm } from "./book-form";
 import { DeleteBookActionButton } from "./delete-button";
 import { PrescribedBooks } from "./prescribed-books";
 import { CustomLibrary } from "./custom-library";
+import { BookTabs } from "./book-tabs";
 import { Badge } from "@/components/ui/badge";
 import type { BookActionItem } from "@/lib/db/schema";
 
@@ -31,9 +32,10 @@ const STATUS_ICON: Record<string, string> = {
 export default async function BooksPage({
   searchParams,
 }: {
-  searchParams: Promise<{ book?: string; status?: string }>;
+  searchParams: Promise<{ book?: string; status?: string; tab?: string }>;
 }) {
   const params = await searchParams;
+  const activeTab = params.tab || "prescribed";
   const supabase = await createClient();
 
   // Fetch all book data in parallel
@@ -59,8 +61,7 @@ export default async function BooksPage({
 
   const allItems = (rows || []).map((r) => fromDb<BookActionItem>(r));
 
-  // Get unique book names for filter
-  const bookNames = Array.from(new Set(allItems.map((item) => item.bookName))).sort();
+  const totalBooks = prescribedBooks.length + customBooks.length;
 
   // Filter
   const filtered = allItems.filter((item) => {
@@ -91,149 +92,191 @@ export default async function BooksPage({
   };
 
   return (
-    <div className="p-8 max-w-5xl mx-auto space-y-8">
-      {/* Page Title */}
-      <div className="space-y-2 animate-slide-up" style={{ animationDelay: "0s", animationFillMode: "both" }}>
-        <p className="text-[9px] font-mono tracking-[0.35em] text-white/20 uppercase">
-          Knowledge Building
-        </p>
-        <h1 className="text-3xl font-serif tracking-tight text-gradient-primary">
-          Reading Tracker
-        </h1>
-        <p className="text-[11px] font-mono text-white/30 tracking-wider">
-          Prescribed reading, your library, and book action items.
-        </p>
-        <div className="h-px bg-gradient-to-r from-transparent via-[#C49E45]/20 to-transparent mt-6" />
-      </div>
-
-      {/* Prescribed Reading List */}
-      <div className="animate-slide-up" style={{ animationDelay: "0.05s", animationFillMode: "both" }}>
-        <PrescribedBooks books={prescribedBooks} />
-      </div>
-
-      {/* Custom Library */}
-      <div className="animate-slide-up" style={{ animationDelay: "0.1s", animationFillMode: "both" }}>
-        <CustomLibrary books={customBooks} />
-      </div>
-
-      {/* Separator */}
-      <div className="h-px bg-gradient-to-r from-transparent via-[#C49E45]/20 to-transparent" />
-
-      {/* Book Coach Header */}
-      <div className="flex items-center justify-between animate-slide-up" style={{ animationDelay: "0.15s", animationFillMode: "both" }}>
-        <div className="space-y-1">
-          <h2 className="text-lg font-serif tracking-widest uppercase text-white/90">
-            {"\u{1F4DA}"} Book Coach — Action Items
-          </h2>
-          <p className="text-xs font-mono text-white/40 tracking-wider">
-            {allItems.length} total · {statusCounts.toDo} to do ·{" "}
-            {statusCounts.inProgress} in progress · {statusCounts.done} done ·{" "}
-            {statusCounts.blocked} blocked
+    <div className="p-8 max-w-6xl mx-auto space-y-8">
+      {/* Header */}
+      <div className="flex items-start justify-between animate-slide-up" style={{ animationDelay: "0s", animationFillMode: "both" }}>
+        <div className="space-y-2">
+          <h1 className="text-3xl font-serif tracking-tight text-gradient-primary">
+            Reading Library
+          </h1>
+          <p className="text-[11px] font-mono text-white/30 tracking-wider">
+            {totalBooks} books
           </p>
         </div>
         <BookForm />
       </div>
 
-      {/* Filter bar */}
-      <div className="flex gap-2 flex-wrap animate-slide-up" style={{ animationDelay: "0.2s", animationFillMode: "both" }}>
-        {["", "To Do", "Blocked", "In Progress", "Done", "Abandoned"].map(
-          (s) => (
-            <a
-              key={s}
-              href={
-                s
-                  ? `?status=${encodeURIComponent(s)}${params.book ? `&book=${encodeURIComponent(params.book)}` : ""}`
-                  : params.book
-                    ? `?book=${encodeURIComponent(params.book)}`
-                    : "/books"
-              }
-              className={`px-3 py-1.5 rounded-lg text-[10px] font-mono uppercase tracking-widest border transition-all ${
-                (params.status ?? "") === s
-                  ? "border-[#C49E45]/20 bg-[#C49E45]/[0.08] text-[#C49E45]"
-                  : "border-white/[0.05] text-white/40 hover:text-white/90 hover:border-white/[0.08]"
-              }`}
-            >
-              {s || "All Statuses"}
-            </a>
-          )
-        )}
-        {bookNames.length > 0 && (
-          <>
-            <span className="mx-1 text-white/[0.05] self-center">|</span>
-            <a
-              href={
-                params.status
-                  ? `?status=${encodeURIComponent(params.status)}`
-                  : "/books"
-              }
-              className={`px-3 py-1.5 rounded-lg text-[10px] font-mono uppercase tracking-widest border transition-all ${
-                !params.book
-                  ? "border-[#C49E45]/20 bg-[#C49E45]/[0.08] text-[#C49E45]"
-                  : "border-white/[0.05] text-white/40 hover:text-white/90 hover:border-white/[0.08]"
-              }`}
-            >
-              All Books
-            </a>
-            {bookNames.map((b) => (
-              <a
-                key={b}
-                href={`?book=${encodeURIComponent(b)}${params.status ? `&status=${encodeURIComponent(params.status)}` : ""}`}
-                className={`px-3 py-1.5 rounded-lg text-[10px] font-mono uppercase tracking-widest border transition-all ${
-                  params.book === b
-                    ? "border-[#C49E45]/20 bg-[#C49E45]/[0.08] text-[#C49E45]"
-                    : "border-white/[0.05] text-white/40 hover:text-white/90 hover:border-white/[0.08]"
-                }`}
-              >
-                {b}
-              </a>
-            ))}
-          </>
-        )}
+      <div className="h-px bg-gradient-to-r from-transparent via-[#C49E45]/20 to-transparent" />
+
+      {/* Tab Buttons */}
+      <div className="animate-slide-up" style={{ animationDelay: "0.03s", animationFillMode: "both" }}>
+        <BookTabs activeTab={activeTab} />
       </div>
 
-      {/* Content */}
-      {filtered.length === 0 ? (
-        <div className="py-16 text-center glass-card rounded-2xl">
-          <p className="text-[11px] font-mono text-white/25 tracking-widest uppercase">
-            No book action items yet. Add your first book.
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-8 animate-slide-up" style={{ animationDelay: "0.25s", animationFillMode: "both" }}>
-          {Array.from(bookGroups.entries()).map(([bookName, phases]) => (
-            <div key={bookName} className="space-y-4">
-              {/* Book header */}
-              <div className="border-b border-white/[0.08] pb-2">
-                <h2 className="text-lg font-serif tracking-wide text-white/90">
-                  {"\u{1F4D6}"} {bookName}
-                </h2>
-                <p className="text-[10px] font-mono text-white/40 tracking-wider uppercase">
-                  {Array.from(phases.values()).reduce((sum, phaseItems) => sum + phaseItems.length, 0)} action items
-                  · {phases.size} phases
-                </p>
-              </div>
+      {/* Prescribed Tab */}
+      {activeTab === "prescribed" && (
+        <div className="space-y-8 animate-slide-up" style={{ animationDelay: "0.06s", animationFillMode: "both" }}>
+          {/* Book Grid */}
+          {prescribedBooks.length > 0 ? (
+            <div className="grid grid-cols-3 gap-6">
+              {prescribedBooks.map((book) => {
+                const actionCount = allItems.filter(
+                  (item) => item.bookName.toLowerCase().includes(book.title.toLowerCase().split(" ").slice(0, 2).join(" "))
+                ).length;
 
-              {/* Phase groups */}
-              {Array.from(phases.entries()).map(([phaseName, phaseItems]) => (
-                <div key={phaseName} className="space-y-2 pl-4">
-                  <h3 className="text-xs font-mono uppercase tracking-widest text-white/40 font-serif">
-                    {phaseName}
-                  </h3>
-                  <div className="glass-card rounded-2xl overflow-hidden">
-                    {phaseItems.map((item: BookActionItem) => (
-                      <ActionItemRow key={item.id} item={item} />
-                    ))}
-                  </div>
-                </div>
-              ))}
+                return (
+                  <BookCard
+                    key={book.id}
+                    title={book.title}
+                    author={book.author}
+                    status={book.status === "done" ? "Completed" : book.status === "reading" ? "Reading" : "To Read"}
+                    actionCount={actionCount}
+                  />
+                );
+              })}
             </div>
-          ))}
+          ) : (
+            <div className="py-16 text-center glass-card rounded-2xl">
+              <p className="text-[11px] font-mono text-white/25 tracking-widest uppercase">
+                No prescribed books yet.
+              </p>
+            </div>
+          )}
+
+          {/* Interactive prescribed list */}
+          <PrescribedBooks books={prescribedBooks} />
         </div>
       )}
+
+      {/* Custom Tab */}
+      {activeTab === "custom" && (
+        <div className="space-y-8 animate-slide-up" style={{ animationDelay: "0.06s", animationFillMode: "both" }}>
+          {/* Book Grid */}
+          {customBooks.length > 0 && (
+            <div className="grid grid-cols-3 gap-6">
+              {customBooks.map((book) => (
+                <BookCard
+                  key={book.id}
+                  title={book.title}
+                  author={book.insight || ""}
+                  status={book.status === "Finished" ? "Completed" : book.status === "Currently Reading" ? "Reading" : "To Read"}
+                  actionCount={0}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Add book form + list */}
+          <CustomLibrary books={customBooks} />
+        </div>
+      )}
+
+      {/* Separator */}
+      <div className="h-px bg-gradient-to-r from-transparent via-[#C49E45]/20 to-transparent" />
+
+      {/* Book Coach — Action Items */}
+      <div className="space-y-6">
+        <div className="flex items-center justify-between animate-slide-up" style={{ animationDelay: "0.15s", animationFillMode: "both" }}>
+          <div className="space-y-1">
+            <h2 className="text-lg font-serif tracking-wide text-white/90">
+              Action Items
+            </h2>
+            <p className="text-[10px] font-mono text-white/30 tracking-wider">
+              {allItems.length} total &middot; {statusCounts.toDo} to do &middot;{" "}
+              {statusCounts.inProgress} in progress &middot; {statusCounts.done} done
+            </p>
+          </div>
+        </div>
+
+        {/* Content */}
+        {filtered.length === 0 ? (
+          <div className="py-16 text-center glass-card rounded-2xl">
+            <p className="text-[11px] font-mono text-white/25 tracking-widest uppercase">
+              No book action items yet. Add your first book.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-8 animate-slide-up" style={{ animationDelay: "0.2s", animationFillMode: "both" }}>
+            {Array.from(bookGroups.entries()).map(([bookName, phases]) => (
+              <div key={bookName} className="space-y-4">
+                {/* Book header */}
+                <div className="border-b border-white/[0.08] pb-2">
+                  <h2 className="text-lg font-serif tracking-wide text-white/90">
+                    {bookName}
+                  </h2>
+                  <p className="text-[10px] font-mono text-white/40 tracking-wider uppercase">
+                    {Array.from(phases.values()).reduce((sum, phaseItems) => sum + phaseItems.length, 0)} action items
+                    &middot; {phases.size} phases
+                  </p>
+                </div>
+
+                {/* Phase groups */}
+                {Array.from(phases.entries()).map(([phaseName, phaseItems]) => (
+                  <div key={phaseName} className="space-y-2 pl-4">
+                    <h3 className="text-xs font-mono uppercase tracking-widest text-white/40">
+                      {phaseName}
+                    </h3>
+                    <div className="glass-card rounded-2xl overflow-hidden">
+                      {phaseItems.map((item: BookActionItem) => (
+                        <ActionItemRow key={item.id} item={item} />
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
 
+/* ── Book Card Component ── */
+function BookCard({
+  title,
+  author,
+  status,
+  actionCount,
+}: {
+  title: string;
+  author: string;
+  status: "Reading" | "Completed" | "To Read";
+  actionCount: number;
+}) {
+  const statusColors = {
+    Reading: "bg-[#C49E45]/20 text-[#C49E45]",
+    Completed: "bg-green-500/20 text-green-400",
+    "To Read": "bg-white/[0.06] text-white/40",
+  };
+
+  return (
+    <div className="glass-card rounded-2xl p-6 flex flex-col justify-between hover:border-white/[0.08] transition-all min-h-[200px]">
+      <div className="space-y-2">
+        <h3 className="text-lg font-serif text-white/90 leading-snug">
+          {title}
+        </h3>
+        {author && (
+          <p className="text-[11px] font-mono text-white/30 tracking-wider">
+            {author}
+          </p>
+        )}
+      </div>
+      <div className="space-y-3 mt-4">
+        <span className={`inline-block px-3 py-1 rounded-full text-[10px] font-mono uppercase tracking-wider ${statusColors[status]}`}>
+          {status}
+        </span>
+        {actionCount > 0 && (
+          <p className="text-[10px] font-mono text-white/20">
+            {actionCount} action items
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ── Action Item Row ── */
 function ActionItemRow({
   item,
 }: {
@@ -303,3 +346,4 @@ function ActionItemRow({
     </div>
   );
 }
+

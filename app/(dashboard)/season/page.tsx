@@ -15,7 +15,6 @@ const DOMAINS = [
   { id: "personal", label: "Personal Life", icon: "○", desc: "Family, rest, relationships" },
 ];
 
-/** Map domain id to the label used in MAINTENANCE_GUIDANCE */
 const DOMAIN_ID_TO_LABEL: Record<string, string> = {
   business: "Business & Agency",
   content: "Content & Brand",
@@ -67,7 +66,6 @@ export default async function SeasonPage() {
     ? DOMAINS.find((d) => d.id === season.leadDomain)
     : null;
 
-  // Season progress metrics (only fetched when season exists)
   let leadDoneRate = 0;
   let completedTaskCount = 0;
   let checkinCount = 0;
@@ -106,18 +104,40 @@ export default async function SeasonPage() {
   }
 
   return (
-    <div className="p-8 max-w-3xl mx-auto space-y-10">
-      <div className="space-y-2 animate-slide-up" style={{ animationDelay: "0s", animationFillMode: "both" }}>
-        <p className="text-[9px] font-mono tracking-[0.35em] text-white/20 uppercase">
+    <div className="p-8 max-w-4xl mx-auto space-y-12">
+      {/* Header with progress */}
+      <div className="space-y-3 animate-slide-up" style={{ animationDelay: "0s", animationFillMode: "both" }}>
+        <p className="text-[9px] font-mono tracking-[0.35em] text-white/40 uppercase">
           90-Day Focus
         </p>
-        <h1 className="text-3xl font-serif tracking-tight text-gradient-primary">
-          Season
+        <h1 className="text-3xl font-serif tracking-widest uppercase text-gradient-primary">
+          90-Day Season
         </h1>
-        <p className="text-[11px] font-mono text-white/30 tracking-wider">
-          Pick ONE lead domain. Go all-in for 90 days.
-        </p>
-        <div className="h-px bg-gradient-to-r from-transparent via-[#C49E45]/20 to-transparent mt-6" />
+        {season && (
+          <>
+            <p className="text-sm font-serif text-white/50 italic">
+              {season.goal || "No goal set"}
+            </p>
+            <div className="pt-2">
+              <div className="flex items-center gap-4">
+                <div className="flex-1 h-2.5 bg-white/[0.05] rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-[#C49E45]/60 to-[#C49E45] rounded-full transition-all duration-500"
+                    style={{ width: `${daysProgressPercent}%` }}
+                  />
+                </div>
+                <p className="text-[11px] font-mono text-white/50 shrink-0">
+                  Day {daysProgress} of {totalDays}
+                </p>
+              </div>
+              <p className="text-[9px] font-mono text-white/20 mt-1.5 tracking-wider">
+                {formatDate(season.startDate)} — {formatDate(season.endDate)}
+                {daysLeft !== null && ` · ${daysLeft} days remaining`}
+              </p>
+            </div>
+          </>
+        )}
+        <div className="h-px bg-gradient-to-r from-transparent via-[#C49E45]/20 to-transparent mt-4" />
       </div>
 
       {!season ? (
@@ -131,7 +151,7 @@ export default async function SeasonPage() {
         </div>
       ) : (
         <>
-          {/* Season Transition Banner */}
+          {/* Transition Banner */}
           {daysLeft !== null && daysLeft <= 7 && (
             <div
               className="border border-[#C49E45]/30 bg-[#C49E45]/[0.06] rounded-2xl p-6 animate-slide-up"
@@ -146,88 +166,72 @@ export default async function SeasonPage() {
             </div>
           )}
 
-          {/* Season Goal Card */}
-          <div className="glass-card rounded-2xl p-8 hover:border-white/[0.08] transition-all animate-slide-up" style={{ animationDelay: "0.08s", animationFillMode: "both" }}>
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="text-[10px] font-mono uppercase tracking-[0.25em] text-white/25 mb-2">
-                  Season Goal
-                </p>
-                <p className="text-lg font-serif text-primary">
-                  {season.goal || "Not set yet"}
-                </p>
-                <p className="text-xs font-mono text-white/40 mt-2">
-                  {formatDate(season.startDate)} → {formatDate(season.endDate)}
-                  {daysLeft !== null && ` · ${daysLeft} days remaining`}
-                </p>
-                {leadDomainInfo && (
-                  <p className="text-xs font-mono text-white/30 mt-1">
-                    Lead: {leadDomainInfo.label} — {leadDomainInfo.desc}
+          {/* Hero Card — Lead Domain */}
+          {leadDomainInfo && (
+            <div
+              className="glass-card rounded-2xl p-8 border-[#C49E45]/30 animate-slide-up"
+              style={{ animationDelay: "0.08s", animationFillMode: "both" }}
+            >
+              <div className="flex items-start justify-between">
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <h2 className="text-2xl font-serif text-white/90">
+                      {leadDomainInfo.label}
+                    </h2>
+                    <span className="text-[9px] font-mono tracking-[0.3em] uppercase px-3 py-1 rounded-full border border-[#C49E45]/30 bg-[#C49E45]/10 text-[#C49E45]">
+                      Lead
+                    </span>
+                  </div>
+                  <p className="text-[10px] font-mono text-white/30 tracking-wider">
+                    {leadDomainInfo.desc}
                   </p>
-                )}
-              </div>
-              <SeasonForm season={season} />
-            </div>
-          </div>
 
-          {/* Season Progress Metrics */}
-          <div className="grid grid-cols-3 gap-4 animate-slide-up" style={{ animationDelay: "0.12s", animationFillMode: "both" }}>
-            {/* Lead-Done Rate */}
-            <div className="glass-card rounded-2xl p-5">
-              <p className="text-[9px] font-mono tracking-[0.35em] text-white/40 uppercase mb-3">
-                Lead-Done Rate
-              </p>
-              <p className="text-2xl font-serif text-gradient-primary">
-                {checkinCount > 0 ? `${leadDoneRate}%` : "—"}
-              </p>
-              <p className="text-[9px] font-mono text-white/20 mt-1">
-                {checkinCount > 0
-                  ? `${checkinCount} check-in${checkinCount !== 1 ? "s" : ""} tracked`
-                  : "No check-ins yet"}
-              </p>
-            </div>
+                  {/* Stats */}
+                  <div className="flex gap-8 pt-2">
+                    <div>
+                      <p className="text-2xl font-serif text-gradient-primary leading-none">
+                        {checkinCount > 0 ? `${leadDoneRate}%` : "—"}
+                      </p>
+                      <p className="text-[8px] font-mono text-white/25 mt-1 tracking-[0.3em] uppercase">
+                        Lead-Done Rate
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-2xl font-serif text-gradient-primary leading-none">
+                        {completedTaskCount}
+                      </p>
+                      <p className="text-[8px] font-mono text-white/25 mt-1 tracking-[0.3em] uppercase">
+                        Tasks Done
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-2xl font-serif text-gradient-primary leading-none">
+                        {checkinCount}
+                      </p>
+                      <p className="text-[8px] font-mono text-white/25 mt-1 tracking-[0.3em] uppercase">
+                        Check-ins
+                      </p>
+                    </div>
+                  </div>
 
-            {/* Tasks Completed */}
-            <div className="glass-card rounded-2xl p-5">
-              <p className="text-[9px] font-mono tracking-[0.35em] text-white/40 uppercase mb-3">
-                Tasks Completed
-              </p>
-              <p className="text-2xl font-serif text-gradient-primary">
-                {completedTaskCount}
-              </p>
-              <p className="text-[9px] font-mono text-white/20 mt-1">
-                in lead domain areas
-              </p>
-            </div>
+                  {/* Goal Quote */}
+                  {season.goal && (
+                    <p className="text-sm font-serif text-white/40 italic pt-2">
+                      &ldquo;{season.goal}&rdquo;
+                    </p>
+                  )}
+                </div>
 
-            {/* Days Progress */}
-            <div className="glass-card rounded-2xl p-5">
-              <p className="text-[9px] font-mono tracking-[0.35em] text-white/40 uppercase mb-3">
-                Days Progress
-              </p>
-              <p className="text-2xl font-serif text-gradient-primary">
-                Day {daysProgress}
-                <span className="text-sm text-white/30"> of {totalDays}</span>
-              </p>
-              <div className="w-full h-1.5 bg-white/[0.05] rounded-full overflow-hidden mt-2">
-                <div
-                  className="h-full bg-gradient-to-r from-[#C49E45]/60 to-[#C49E45] rounded-full transition-all duration-500"
-                  style={{ width: `${daysProgressPercent}%` }}
-                />
+                <SeasonForm season={season} />
               </div>
             </div>
-          </div>
+          )}
 
-          {/* Domain Modes */}
-          <div className="space-y-4 animate-slide-up" style={{ animationDelay: "0.16s", animationFillMode: "both" }}>
-            <div>
-              <h2 className="text-[10px] font-mono uppercase tracking-[0.25em] text-primary mb-2">
-                Domain Modes — Lead vs Maintenance
-              </h2>
-              <p className="text-xs font-mono text-white/40">
-                Only ONE domain should be LEAD at a time. Click to toggle.
-              </p>
-            </div>
+          {/* Domain Grid */}
+          <div className="animate-slide-up" style={{ animationDelay: "0.16s", animationFillMode: "both" }}>
+            <p className="font-mono text-[9px] tracking-[0.35em] text-white/40 uppercase mb-4">
+              All Domains
+            </p>
             <DomainList
               seasonId={season.id}
               domains={season.domains}
