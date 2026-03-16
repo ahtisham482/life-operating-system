@@ -48,43 +48,47 @@ export default async function SeasonPage() {
     : null;
 
   return (
-    <div className="p-6 max-w-3xl mx-auto space-y-8">
-      <div className="space-y-1">
-        <h1 className="text-xl font-serif tracking-widest uppercase text-foreground">
-          Current 90-Day Season
+    <div className="p-8 max-w-3xl mx-auto space-y-10">
+      <div className="space-y-2 animate-slide-up" style={{ animationDelay: "0s", animationFillMode: "both" }}>
+        <p className="text-[9px] font-mono tracking-[0.35em] text-white/20 uppercase">
+          90-Day Focus
+        </p>
+        <h1 className="text-3xl font-serif tracking-tight text-gradient-primary">
+          Season
         </h1>
-        <p className="text-xs font-mono text-muted-foreground tracking-wider">
+        <p className="text-[11px] font-mono text-white/30 tracking-wider">
           Pick ONE lead domain. Go all-in for 90 days.
         </p>
+        <div className="h-px bg-gradient-to-r from-transparent via-[#C49E45]/20 to-transparent mt-6" />
       </div>
 
       {!season ? (
-        <div className="space-y-4">
-          <p className="text-sm text-muted-foreground font-mono">
+        <div className="space-y-4 animate-slide-up" style={{ animationDelay: "0.08s", animationFillMode: "both" }}>
+          <p className="text-sm text-white/40 font-mono">
             No active season. Start a new one below.
           </p>
-          <div className="bg-card border border-border p-6 rounded-lg">
+          <div className="glass-card rounded-2xl p-6 hover:border-white/[0.08] transition-all">
             <SeasonForm />
           </div>
         </div>
       ) : (
         <>
           {/* Season Goal Card */}
-          <div className="bg-card border border-primary/30 p-6 rounded-lg">
+          <div className="glass-card rounded-2xl p-8 hover:border-white/[0.08] transition-all animate-slide-up" style={{ animationDelay: "0.08s", animationFillMode: "both" }}>
             <div className="flex justify-between items-start">
               <div>
-                <p className="text-[10px] font-mono uppercase tracking-[0.25em] text-muted-foreground mb-2">
+                <p className="text-[10px] font-mono uppercase tracking-[0.25em] text-white/25 mb-2">
                   Season Goal
                 </p>
                 <p className="text-lg font-serif text-primary">
                   {season.goal || "Not set yet"}
                 </p>
-                <p className="text-xs font-mono text-muted-foreground mt-2">
+                <p className="text-xs font-mono text-white/40 mt-2">
                   {formatDate(season.startDate)} → {formatDate(season.endDate)}
                   {daysLeft !== null && ` · ${daysLeft} days remaining`}
                 </p>
                 {leadDomainInfo && (
-                  <p className="text-xs font-mono text-muted-foreground/60 mt-1">
+                  <p className="text-xs font-mono text-white/30 mt-1">
                     Lead: {leadDomainInfo.label} — {leadDomainInfo.desc}
                   </p>
                 )}
@@ -94,12 +98,12 @@ export default async function SeasonPage() {
           </div>
 
           {/* Domain Modes */}
-          <div className="space-y-4">
+          <div className="space-y-4 animate-slide-up" style={{ animationDelay: "0.16s", animationFillMode: "both" }}>
             <div>
               <h2 className="text-[10px] font-mono uppercase tracking-[0.25em] text-primary mb-2">
                 Domain Modes — Lead vs Maintenance
               </h2>
-              <p className="text-xs font-mono text-muted-foreground">
+              <p className="text-xs font-mono text-white/40">
                 Only ONE domain should be LEAD at a time. Click to toggle.
               </p>
             </div>

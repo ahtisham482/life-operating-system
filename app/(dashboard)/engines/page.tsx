@@ -32,37 +32,41 @@ export default async function EngineLogsPage() {
   const latestByEngine = engineNames.map((name) => logs.find((l) => l.engineName === name)!);
 
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-6">
+    <div className="p-8 max-w-5xl mx-auto space-y-8">
       {/* Header */}
-      <div className="space-y-1">
-        <h1 className="text-xl font-serif tracking-widest uppercase text-foreground">
-          ⚙️ Engine Logs
-        </h1>
-        <p className="text-xs font-mono text-muted-foreground tracking-wider">
-          Automation engine run history · {logs.length} recent logs
+      <div className="space-y-2 animate-slide-up" style={{ animationDelay: "0s", animationFillMode: "both" }}>
+        <p className="text-[9px] font-mono tracking-[0.35em] text-white/20 uppercase">
+          Automation
         </p>
+        <h1 className="text-3xl font-serif tracking-tight text-gradient-primary">
+          Engine Logs
+        </h1>
+        <p className="text-[11px] font-mono text-white/30 tracking-wider">
+          Automation engine run history &middot; {logs.length} recent logs
+        </p>
+        <div className="h-px bg-gradient-to-r from-transparent via-[#C49E45]/20 to-transparent mt-6" />
       </div>
 
       {/* Engine Status Summary */}
       {latestByEngine.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 animate-slide-up" style={{ animationDelay: "0.08s", animationFillMode: "both" }}>
           {latestByEngine.map((log) => (
             <div
               key={log.engineName}
-              className="border border-border/50 rounded-lg p-4 bg-card/50"
+              className="glass-card rounded-2xl p-6 hover:border-white/[0.08] transition-all"
             >
               <div className="flex items-center justify-between">
-                <span className="font-mono text-xs uppercase tracking-wider text-foreground">
+                <span className="font-mono text-xs uppercase tracking-wider text-white/90">
                   {log.engineName}
                 </span>
                 <Badge variant={STATUS_VARIANT[log.status] ?? "secondary"}>
                   {STATUS_ICON[log.status]} {log.status}
                 </Badge>
               </div>
-              <p className="text-xs text-muted-foreground mt-2 line-clamp-2">
+              <p className="text-xs text-white/40 mt-2 line-clamp-2">
                 {log.summary ?? "No summary"}
               </p>
-              <p className="text-[10px] font-mono text-muted-foreground/60 mt-1">
+              <p className="text-[10px] font-mono text-white/30 mt-1">
                 Last run: {formatTimestamp(log.runAt)}
               </p>
             </div>
@@ -72,35 +76,37 @@ export default async function EngineLogsPage() {
 
       {/* Full Log Table */}
       {logs.length === 0 ? (
-        <div className="py-16 text-center text-muted-foreground font-mono text-sm border border-border/30 rounded-lg">
-          No engine logs yet. Engines will run on their configured schedules.
+        <div className="py-16 text-center glass-card rounded-2xl">
+          <p className="text-[11px] font-mono text-white/25 tracking-widest uppercase">
+            No engine logs yet. Engines will run on their configured schedules.
+          </p>
         </div>
       ) : (
-        <div className="border border-border/50 rounded-lg overflow-hidden">
+        <div className="glass-card rounded-2xl overflow-hidden animate-slide-up" style={{ animationDelay: "0.16s", animationFillMode: "both" }}>
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-card border-b border-border/50">
-                <th className="px-4 py-3 text-left text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+              <tr className="bg-white/[0.02] border-b border-white/[0.04]">
+                <th className="px-4 py-3 text-left text-[9px] font-mono uppercase tracking-[0.25em] text-white/25">
                   Engine
                 </th>
-                <th className="px-4 py-3 text-left text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+                <th className="px-4 py-3 text-left text-[9px] font-mono uppercase tracking-[0.25em] text-white/25">
                   Status
                 </th>
-                <th className="px-4 py-3 text-left text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+                <th className="px-4 py-3 text-left text-[9px] font-mono uppercase tracking-[0.25em] text-white/25">
                   Summary
                 </th>
-                <th className="px-4 py-3 text-left text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+                <th className="px-4 py-3 text-left text-[9px] font-mono uppercase tracking-[0.25em] text-white/25">
                   Run At
                 </th>
               </tr>
             </thead>
             <tbody>
-              {logs.map((log, i) => (
+              {logs.map((log) => (
                 <tr
                   key={log.id}
-                  className={`border-t border-border/30 ${i % 2 !== 0 ? "bg-card/20" : ""}`}
+                  className="border-t border-white/[0.04] hover:bg-white/[0.02] transition-colors"
                 >
-                  <td className="px-4 py-3 font-mono text-xs whitespace-nowrap">
+                  <td className="px-4 py-3 font-mono text-xs whitespace-nowrap text-white/90">
                     {log.engineName}
                   </td>
                   <td className="px-4 py-3">
@@ -108,10 +114,10 @@ export default async function EngineLogsPage() {
                       {STATUS_ICON[log.status]} {log.status}
                     </Badge>
                   </td>
-                  <td className="px-4 py-3 text-xs text-muted-foreground max-w-md">
+                  <td className="px-4 py-3 text-xs text-white/40 max-w-md">
                     <span className="line-clamp-2">{log.summary ?? "—"}</span>
                   </td>
-                  <td className="px-4 py-3 text-xs text-muted-foreground font-mono whitespace-nowrap">
+                  <td className="px-4 py-3 text-xs text-white/40 font-mono whitespace-nowrap">
                     {formatTimestamp(log.runAt)}
                   </td>
                 </tr>

@@ -4,27 +4,52 @@
 
 @layer base {
   :root {
-    /* LOS Dark Theme — always dark */
-    --background: 0 0% 4%;
-    --foreground: 30 20% 88%;
-    --card: 0 0% 6.7%;
-    --card-foreground: 30 20% 88%;
-    --popover: 0 0% 8%;
-    --popover-foreground: 30 20% 88%;
-    --primary: 42 56% 54%;
-    --primary-foreground: 0 0% 4%;
-    --secondary: 0 0% 10%;
-    --secondary-foreground: 30 20% 88%;
-    --muted: 0 0% 10%;
-    --muted-foreground: 0 0% 53%;
-    --accent: 42 56% 54%;
-    --accent-foreground: 0 0% 4%;
+    /* ═══════════════════════════════════════════════════
+       LOS PREMIUM DARK THEME
+       Refined, warm, cinematic dark palette
+       ═══════════════════════════════════════════════════ */
+
+    /* Backgrounds — layered depth system */
+    --background: 0 0% 3.5%;
+    --foreground: 36 14% 86%;
+
+    /* Cards — subtle elevation from background */
+    --card: 0 0% 5.5%;
+    --card-foreground: 36 14% 86%;
+
+    /* Elevated cards — popover/modal layer */
+    --popover: 0 0% 7%;
+    --popover-foreground: 36 14% 86%;
+
+    /* Primary — warm gold, slightly desaturated for elegance */
+    --primary: 42 52% 52%;
+    --primary-foreground: 0 0% 3.5%;
+
+    /* Secondary — cool neutral surface */
+    --secondary: 0 0% 9%;
+    --secondary-foreground: 36 14% 86%;
+
+    /* Muted — for subdued text/backgrounds */
+    --muted: 0 0% 9%;
+    --muted-foreground: 0 0% 48%;
+
+    /* Accent — same gold family as primary */
+    --accent: 42 52% 52%;
+    --accent-foreground: 0 0% 3.5%;
+
+    /* Destructive */
     --destructive: 0 62% 47%;
-    --destructive-foreground: 30 20% 88%;
-    --border: 0 0% 17%;
-    --input: 0 0% 17%;
-    --ring: 42 56% 54%;
-    --radius: 0.375rem;
+    --destructive-foreground: 36 14% 86%;
+
+    /* Borders — very subtle */
+    --border: 0 0% 13%;
+    --input: 0 0% 13%;
+    --ring: 42 52% 52%;
+
+    /* Radius */
+    --radius: 0.5rem;
+
+    /* Fonts */
     --font-mono: "Geist Mono", ui-monospace, monospace;
   }
 }
@@ -34,17 +59,262 @@
     @apply border-border;
   }
 
-  body {
-    @apply bg-background text-foreground;
-    font-family: Georgia, serif;
-    -webkit-font-smoothing: antialiased;
+  html {
+    scroll-behavior: smooth;
   }
 
-  ::-webkit-scrollbar { width: 5px; height: 5px; }
-  ::-webkit-scrollbar-track { background: hsl(var(--background)); }
+  body {
+    @apply bg-background text-foreground;
+    font-family: Georgia, "Times New Roman", serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Selection */
+  ::selection {
+    background: hsl(42 52% 52% / 0.25);
+    color: hsl(36 14% 92%);
+  }
+
+  ::-moz-selection {
+    background: hsl(42 52% 52% / 0.25);
+    color: hsl(36 14% 92%);
+  }
+
+  /* Scrollbar — minimal, refined */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
   ::-webkit-scrollbar-thumb {
-    background: hsl(var(--border));
+    background: hsl(0 0% 18%);
     border-radius: 3px;
   }
-  ::-webkit-scrollbar-thumb:hover { background: hsl(var(--muted-foreground)); }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(42 52% 52% / 0.4);
+  }
+
+  /* Firefox scrollbar */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(0 0% 18%) transparent;
+  }
+
+  /* Focus — golden ring */
+  :focus-visible {
+    outline: 1px solid hsl(42 52% 52% / 0.5);
+    outline-offset: 2px;
+  }
+
+  /* Placeholder */
+  ::placeholder {
+    color: hsl(0 0% 30%);
+    opacity: 1;
+  }
+}
+
+@layer utilities {
+
+  /* Glow Effects — Stitch-inspired */
+  .glow-primary {
+    box-shadow: 0 0 40px -10px rgba(196, 158, 69, 0.15);
+  }
+
+  .glow-primary-sm {
+    box-shadow: 0 0 20px -8px rgba(196, 158, 69, 0.12);
+  }
+
+  .glow-primary-lg {
+    box-shadow: 0 0 60px -15px rgba(196, 158, 69, 0.12);
+  }
+
+  /* Card Elevation System */
+  .card-elevated {
+    background: hsl(0 0% 5.5%);
+    border: 1px solid hsl(0 0% 13%);
+    box-shadow:
+      0 1px 3px hsl(0 0% 0% / 0.3),
+      0 4px 12px hsl(0 0% 0% / 0.15),
+      inset 0 1px 0 hsl(0 0% 100% / 0.02);
+  }
+
+  .card-elevated-hover {
+    background: hsl(0 0% 5.5%);
+    border: 1px solid hsl(0 0% 13%);
+    box-shadow:
+      0 1px 3px hsl(0 0% 0% / 0.3),
+      0 4px 12px hsl(0 0% 0% / 0.15),
+      inset 0 1px 0 hsl(0 0% 100% / 0.02);
+    transition: all 0.2s ease;
+  }
+
+  .card-elevated-hover:hover {
+    border-color: hsl(0 0% 17%);
+    box-shadow:
+      0 2px 6px hsl(0 0% 0% / 0.35),
+      0 8px 24px hsl(0 0% 0% / 0.2),
+      inset 0 1px 0 hsl(0 0% 100% / 0.03);
+    transform: translateY(-1px);
+  }
+
+  /* Gradient Text — Stitch gold gradient (two-tone) */
+  .text-gradient-primary {
+    background: linear-gradient(180deg, #F3D493 0%, #C49E45 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Gradient Borders */
+  .border-gradient-primary {
+    border: 1px solid transparent;
+    background-image:
+      linear-gradient(hsl(0 0% 5.5%), hsl(0 0% 5.5%)),
+      linear-gradient(135deg, hsl(42 52% 52% / 0.4), hsl(42 52% 52% / 0.1));
+    background-origin: border-box;
+    background-clip: padding-box, border-box;
+  }
+
+  /* Noise Texture Overlay */
+  .texture-noise::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    opacity: 0.015;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+    background-size: 128px 128px;
+    pointer-events: none;
+    z-index: 0;
+    mix-blend-mode: overlay;
+  }
+
+  /* Divider Lines */
+  .divider-gradient {
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      hsl(0 0% 18%) 20%,
+      hsl(42 52% 52% / 0.15) 50%,
+      hsl(0 0% 18%) 80%,
+      transparent 100%
+    );
+  }
+
+  .divider-gradient-primary {
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      hsl(42 52% 52% / 0.3) 20%,
+      hsl(42 52% 52% / 0.5) 50%,
+      hsl(42 52% 52% / 0.3) 80%,
+      transparent 100%
+    );
+  }
+
+  /* Shimmer / Loading Effect */
+  .shimmer {
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      hsl(0 0% 100% / 0.03) 50%,
+      transparent 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite;
+  }
+
+  /* Stat Number — tabular figures */
+  .stat-number {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+  }
+
+  /* Inner top highlight */
+  .inner-highlight {
+    box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.03);
+  }
+
+  /* Glassmorphism card — Stitch-inspired */
+  .glass-card {
+    background: rgba(15, 15, 15, 0.6);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
+  /* Ambient glow blobs — background decoration */
+  .ambient-glow::before,
+  .ambient-glow::after {
+    content: "";
+    position: fixed;
+    width: 40%;
+    height: 40%;
+    border-radius: 9999px;
+    background: rgba(196, 158, 69, 0.04);
+    filter: blur(120px);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .ambient-glow::before {
+    top: -10%;
+    left: -10%;
+  }
+  .ambient-glow::after {
+    bottom: -10%;
+    right: -10%;
+  }
+
+  /* Gold border subtle */
+  .border-gold-subtle {
+    border-color: rgba(196, 158, 69, 0.15);
+  }
+}
+
+/* Animations */
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-down {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 12px hsl(42 52% 52% / 0.06); }
+  50% { box-shadow: 0 0 20px hsl(42 52% 52% / 0.12); }
+}
+
+/* Global Transitions — smooth, consistent */
+a, button, input, select, textarea {
+  transition-property: color, background-color, border-color, box-shadow, opacity, transform;
+  transition-duration: 0.15s;
+  transition-timing-function: ease;
 }

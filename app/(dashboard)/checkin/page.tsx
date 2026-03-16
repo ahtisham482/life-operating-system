@@ -51,11 +51,9 @@ export default async function CheckinPage() {
   const checkins = (checkinRows || []).map((r) => fromDb<Checkin>(r));
   const season = seasonRow ? fromDb<Season>(seasonRow) : null;
 
-  // Build lookup
   const checkinMap = new Map(checkins.map((c) => [c.date, c]));
   const todayEntry = checkinMap.get(today);
 
-  // 7-day track
   const last7 = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(today);
     d.setDate(d.getDate() - (6 - i));
@@ -68,7 +66,6 @@ export default async function CheckinPage() {
     return { key: k, label, entry, isToday };
   });
 
-  // Streak
   let streak = 0;
   for (let i = 0; i <= 60; i++) {
     const d = new Date(today);
@@ -82,75 +79,89 @@ export default async function CheckinPage() {
     ? DOMAINS.find((d) => d.id === season.leadDomain)
     : null;
 
-  // Past entries (exclude today)
   const pastEntries = checkins.filter((c) => c.date !== today).slice(0, 14);
 
   return (
-    <div className="p-6 max-w-3xl mx-auto space-y-8">
+    <div className="p-8 max-w-3xl mx-auto space-y-12">
       {/* Header */}
-      <div className="space-y-1">
-        <h1 className="text-xl font-serif tracking-widest uppercase text-foreground">
-          Daily Check-In
+      <div className="space-y-3 animate-slide-up" style={{ animationDelay: "0s", animationFillMode: "both" }}>
+        <p className="font-mono text-[9px] tracking-[0.35em] text-white/40 uppercase">
+          Daily Execution
+        </p>
+        <h1 className="text-3xl font-serif tracking-widest uppercase text-gradient-primary">
+          Check-In
         </h1>
-        <p className="text-xs font-mono text-muted-foreground tracking-wider">
+        <p className="text-[11px] font-mono text-white/20 tracking-wider">
           Track your lead priority execution every day.
         </p>
+        <div className="divider-gradient mt-5" />
       </div>
 
       {/* 7-Day Execution Track */}
-      <div>
-        <h2 className="text-[10px] font-mono uppercase tracking-[0.25em] text-primary mb-4">
+      <section className="animate-slide-up" style={{ animationDelay: "0.08s", animationFillMode: "both" }}>
+        <p className="font-mono text-[9px] tracking-[0.35em] text-white/40 uppercase mb-1.5">
+          Consistency
+        </p>
+        <h2 className="text-lg font-serif text-gradient-primary mb-6">
           7-Day Execution Track
         </h2>
-        <div className="flex gap-2 items-center mb-2">
-          {last7.map(({ key, label, entry, isToday }) => (
-            <div key={key} className="text-center">
-              <div
-                className={`w-9 h-9 flex items-center justify-center border text-xs font-mono rounded ${
-                  isToday
-                    ? "border-primary/50 shadow-[0_0_0_1px_rgba(201,168,76,0.2)]"
-                    : entry?.leadDone === true
-                    ? "border-primary bg-primary/10"
+        <div className="glass-card rounded-2xl p-8 hover:border-white/[0.08] transition-all">
+          <div className="flex gap-3 items-center">
+            {last7.map(({ key, label, entry, isToday }) => (
+              <div key={key} className="text-center">
+                <div
+                  className={`size-10 flex items-center justify-center border text-xs font-mono rounded-xl transition-all ${
+                    isToday
+                      ? "border-[#C49E45]/40 bg-[#C49E45]/[0.12] shadow-glow-sm"
+                      : entry?.leadDone === true
+                      ? "bg-[#C49E45]/20 border-[#C49E45]/30"
+                      : entry?.leadDone === false
+                      ? "bg-red-500/10 border-red-500/20"
+                      : "border-white/[0.05] bg-white/[0.02]"
+                  } ${
+                    entry?.leadDone === true
+                      ? "text-[#C49E45]"
+                      : entry?.leadDone === false
+                      ? "text-red-400/70"
+                      : "text-white/20"
+                  }`}
+                >
+                  {entry?.leadDone === true
+                    ? "✓"
                     : entry?.leadDone === false
-                    ? "border-red-500/40"
-                    : "border-border"
-                } ${
-                  entry?.leadDone === true
-                    ? "text-primary"
-                    : entry?.leadDone === false
-                    ? "text-red-400"
-                    : "text-muted-foreground/30"
-                }`}
-              >
-                {entry?.leadDone === true
-                  ? "✓"
-                  : entry?.leadDone === false
-                  ? "✗"
-                  : "·"}
+                    ? "✗"
+                    : "·"}
+                </div>
+                <p
+                  className={`text-[8px] font-mono mt-2 tracking-[0.2em] ${
+                    isToday ? "text-[#C49E45]/60" : "text-white/20"
+                  }`}
+                >
+                  {label}
+                </p>
               </div>
-              <p
-                className={`text-[9px] font-mono mt-1 ${
-                  isToday ? "text-primary/60" : "text-muted-foreground/40"
-                }`}
-              >
-                {label}
-              </p>
-            </div>
-          ))}
+            ))}
 
-          {streak > 0 && (
-            <div className="ml-4 px-3 py-1 border border-primary/30 bg-primary/5 rounded">
-              <p className="text-xs font-mono text-primary tracking-widest">
-                🔥 {streak}-DAY STREAK
-              </p>
-            </div>
-          )}
+            {streak > 0 && (
+              <div className="ml-auto px-5 py-2.5 border border-[#C49E45]/20 bg-[#C49E45]/[0.08] rounded-2xl">
+                <p className="text-[9px] font-mono tracking-[0.35em] text-white/40 uppercase mb-0.5">
+                  Streak
+                </p>
+                <p className="text-lg font-serif text-gradient-primary leading-none">
+                  {streak} <span className="text-[10px] font-mono text-[#C49E45]/60 tracking-widest">days</span>
+                </p>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      </section>
 
       {/* Today's Check-In */}
-      <div>
-        <h2 className="text-[10px] font-mono uppercase tracking-[0.25em] text-primary mb-4">
+      <section className="animate-slide-up" style={{ animationDelay: "0.16s", animationFillMode: "both" }}>
+        <p className="font-mono text-[9px] tracking-[0.35em] text-white/40 uppercase mb-1.5">
+          Today
+        </p>
+        <h2 className="text-lg font-serif text-gradient-primary mb-6">
           Today&apos;s Check-In
         </h2>
         <CheckinForm
@@ -169,51 +180,57 @@ export default async function CheckinPage() {
           leadDomainLabel={leadDomain?.label}
           leadDomainDesc={leadDomain?.desc}
         />
-      </div>
+      </section>
 
       {/* Past Reflections */}
       {pastEntries.length > 0 && (
-        <div>
-          <h2 className="text-[10px] font-mono uppercase tracking-[0.25em] text-primary mb-4">
+        <section className="animate-slide-up" style={{ animationDelay: "0.24s", animationFillMode: "both" }}>
+          <p className="font-mono text-[9px] tracking-[0.35em] text-white/40 uppercase mb-1.5">
+            History
+          </p>
+          <h2 className="text-lg font-serif text-gradient-primary mb-6">
             Past Reflections
           </h2>
-          <div className="space-y-3">
-            {pastEntries.map((entry) => (
+          <div className="space-y-4">
+            {pastEntries.map((entry, i) => (
               <div
                 key={entry.id}
-                className="bg-card border border-border p-4 rounded-lg"
+                className="glass-card rounded-2xl p-6 hover:border-white/[0.08] transition-all animate-slide-up"
+                style={{ animationDelay: `${0.28 + i * 0.03}s`, animationFillMode: "both" }}
               >
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-xs font-mono text-muted-foreground">
+                <div className="flex justify-between items-center mb-4">
+                  <span className="font-mono text-[9px] tracking-[0.35em] text-white/40 uppercase">
                     {formatDate(entry.date)}
                   </span>
                   <span
-                    className={`text-[10px] font-mono ${
-                      entry.leadDone ? "text-primary" : "text-red-400"
+                    className={`text-[9px] font-mono tracking-[0.35em] uppercase px-3 py-1 rounded-lg border ${
+                      entry.leadDone
+                        ? "bg-[#C49E45]/[0.08] border-[#C49E45]/20 text-[#C49E45]"
+                        : "bg-red-500/[0.06] border-red-500/15 text-red-400/70"
                     }`}
                   >
                     {entry.leadDone ? "LEAD ✓" : "LEAD ✗"}
                   </span>
                 </div>
                 {entry.mood && (
-                  <p className="text-xs text-muted-foreground mb-1">
+                  <p className="text-[11px] text-white/40 mb-2 font-mono tracking-wider">
                     {entry.mood}
                   </p>
                 )}
                 {entry.reflection && (
-                  <p className="text-sm font-serif text-foreground mb-1">
+                  <p className="text-sm font-serif text-white/80 mb-2 leading-relaxed">
                     &ldquo;{entry.reflection}&rdquo;
                   </p>
                 )}
                 {entry.blockers && (
-                  <p className="text-xs text-muted-foreground/60 italic">
+                  <p className="text-[10px] text-white/20 italic font-mono tracking-wider">
                     Blocked by: {entry.blockers}
                   </p>
                 )}
               </div>
             ))}
           </div>
-        </div>
+        </section>
       )}
     </div>
   );

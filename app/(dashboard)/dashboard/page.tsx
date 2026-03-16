@@ -41,7 +41,6 @@ export default async function DashboardPage() {
 
   const supabase = await createClient();
 
-  // Fetch tasks, active season, and recent check-ins in parallel
   const [{ data: rows }, { data: seasonRow }, { data: checkinRows }] = await Promise.all([
     supabase.from("tasks").select("*").neq("status", "Done"),
     supabase.from("seasons").select("*").eq("is_active", true).maybeSingle(),
@@ -50,11 +49,9 @@ export default async function DashboardPage() {
 
   const allActive = (rows || []).map((r) => fromDb<Task>(r));
 
-  // Season info
   const season = seasonRow ? fromDb<{ goal: string; startDate: string; endDate: string; leadDomain: string }>(seasonRow) : null;
   const daysLeft = season?.endDate ? Math.max(0, Math.ceil((new Date(season.endDate).getTime() - new Date().getTime()) / 86400000)) : null;
 
-  // Streak calculation
   const checkins = (checkinRows || []).map((r) => fromDb<{ date: string; leadDone: boolean }>(r));
   const checkinMap = new Map(checkins.map((c) => [c.date, c.leadDone]));
   let streak = 0;
@@ -78,73 +75,102 @@ export default async function DashboardPage() {
   const q4Count = allActive.filter((t) => classifyTask(t, today) === "Q4").length;
 
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-8">
-      {/* Header */}
-      <div className="space-y-1">
-        <p className="text-[10px] font-mono tracking-[0.25em] text-primary uppercase">Life Operating System</p>
-        <h1 className="text-xl font-serif tracking-widest uppercase text-foreground">
-          Muhammad&apos;s Command Center
-        </h1>
-        <div className="flex gap-3 mt-3 flex-wrap">
+    <div className="p-8 max-w-5xl mx-auto space-y-12">
+      {/* ── Header ──────────────────────────────────── */}
+      <div
+        className="space-y-6 animate-slide-up"
+        style={{ animationDelay: "0.05s", animationFillMode: "both" }}
+      >
+        <div className="flex items-start justify-between">
+          <div className="space-y-2">
+            <p className="font-mono text-[9px] tracking-[0.35em] text-white/40 uppercase">
+              Life Operating System
+            </p>
+            <h1 className="text-3xl font-serif tracking-widest uppercase text-gradient-primary">
+              Command Center
+            </h1>
+          </div>
+          <div className="text-right">
+            <p className="text-[11px] font-mono tracking-widest text-white/30">
+              {dateLabel}
+            </p>
+          </div>
+        </div>
+
+        {/* Status badges */}
+        <div className="flex gap-3 flex-wrap">
           {season?.goal && (
-            <span className="text-[11px] font-mono tracking-widest px-3 py-1 border border-primary/30 bg-primary/5 text-primary">
-              ◈ {season.goal.length > 40 ? season.goal.slice(0, 40) + "..." : season.goal}
+            <span className="text-[10px] font-mono tracking-widest px-3 py-1.5 rounded-lg border border-[#C49E45]/20 bg-[#C49E45]/[0.08] text-[#C49E45]">
+              {season.goal.length > 40 ? season.goal.slice(0, 40) + "..." : season.goal}
             </span>
           )}
           {daysLeft !== null && (
-            <span className="text-[11px] font-mono tracking-widest px-3 py-1 border border-border text-muted-foreground">
-              {daysLeft} DAYS LEFT IN SEASON
+            <span className="text-[10px] font-mono tracking-widest px-3 py-1.5 rounded-lg border border-white/[0.05] text-white/40">
+              {daysLeft}d left
             </span>
           )}
           {streak > 0 && (
-            <span className="text-[11px] font-mono tracking-widest px-3 py-1 border border-primary/30 bg-primary/5 text-primary">
-              🔥 {streak}-DAY STREAK
+            <span className="text-[10px] font-mono tracking-widest px-3 py-1.5 rounded-lg border border-[#C49E45]/20 bg-[#C49E45]/[0.08] text-[#C49E45]">
+              {streak}-day streak
             </span>
           )}
-          <span className="text-[11px] font-mono tracking-widest px-3 py-1 border border-border text-muted-foreground">
-            {dateLabel}
-          </span>
           {todayCheckedIn && (
-            <span className="text-[11px] font-mono tracking-widest px-3 py-1 border border-primary/30 bg-primary/5 text-primary">
-              ✓ CHECKED IN
+            <span className="text-[10px] font-mono tracking-widest px-3 py-1.5 rounded-lg border border-[#C49E45]/20 bg-[#C49E45]/[0.08] text-[#C49E45]">
+              checked in
             </span>
           )}
         </div>
+
+        <div className="divider-gradient" />
       </div>
 
-      {/* Today's Focus */}
-      <section className="space-y-3">
+      {/* ── Today's Focus ───────────────────────────── */}
+      <section
+        className="space-y-5 animate-slide-up"
+        style={{ animationDelay: "0.1s", animationFillMode: "both" }}
+      >
         <div className="flex items-center justify-between">
-          <h2 className="text-xs font-mono uppercase tracking-widest text-primary">
-            🔴 Today&apos;s Focus — Q1 ({todayFocus.length})
-          </h2>
+          <div className="space-y-1">
+            <p className="font-mono text-[9px] tracking-[0.35em] text-white/40 uppercase">
+              Priority
+            </p>
+            <h2 className="text-lg font-serif text-gradient-primary tracking-wide">
+              Today&apos;s Focus &mdash; Q1 ({todayFocus.length})
+            </h2>
+          </div>
           <Link
             href="/matrix"
-            className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground hover:text-primary transition-colors"
+            className="text-[10px] font-mono uppercase tracking-wider text-white/30 hover:text-[#C49E45] transition-colors"
           >
-            Full Matrix →
+            Full Matrix
           </Link>
         </div>
 
         {todayFocus.length === 0 ? (
-          <p className="text-sm text-muted-foreground font-mono py-6 text-center border border-border/30 rounded-lg">
-            No urgent + important tasks today
-          </p>
+          <div className="glass-card rounded-2xl p-8 text-center hover:border-white/[0.08] transition-all">
+            <p className="font-mono text-[9px] tracking-[0.35em] text-white/20 uppercase">
+              No urgent + important tasks today
+            </p>
+          </div>
         ) : (
-          <div className="border border-border/50 rounded-lg overflow-hidden">
+          <div className="glass-card rounded-2xl overflow-hidden hover:border-white/[0.08] transition-all">
             {todayFocus.map((task, i) => (
               <div
                 key={task.id}
-                className={`flex items-center gap-4 px-4 py-3 ${i > 0 ? "border-t border-border/30" : ""}`}
+                className={`flex items-center gap-4 px-8 py-4 transition-colors hover:bg-white/[0.02] ${
+                  i > 0 ? "border-t border-white/[0.05]" : ""
+                }`}
               >
-                <span className="text-sm font-mono text-muted-foreground w-5 shrink-0">
+                <span className="text-sm font-mono text-white/20 w-5 shrink-0">
                   {STATUS_EMOJI[task.status] ?? "☐"}
                 </span>
-                <span className="flex-1 text-sm font-serif">
-                  {task.type === "🔁 Habit" && <span className="mr-1">🔁</span>}
+                <span className="flex-1 text-sm font-serif text-white/80">
+                  {task.type === "🔁 Habit" && <span className="mr-1.5 text-xs">🔁</span>}
                   {task.taskName}
                 </span>
-                <span className="text-xs text-muted-foreground shrink-0">{task.lifeArea}</span>
+                <span className="font-mono text-[9px] tracking-[0.25em] text-white/30 shrink-0 uppercase">
+                  {task.lifeArea}
+                </span>
                 {task.priority && (
                   <Badge variant={task.priority === "🔴 High" ? "default" : "secondary"}>
                     {task.priority}
@@ -156,86 +182,134 @@ export default async function DashboardPage() {
         )}
       </section>
 
-      {/* This Week */}
-      <section className="space-y-3">
-        <h2 className="text-xs font-mono uppercase tracking-widest text-yellow-400/80">
-          📅 This Week — Due in 7 days ({thisWeek.length})
-        </h2>
-        {thisWeek.length === 0 ? (
-          <p className="text-sm text-muted-foreground font-mono py-6 text-center border border-border/30 rounded-lg">
-            No tasks due this week
+      {/* ── This Week ───────────────────────────────── */}
+      <section
+        className="space-y-5 animate-slide-up"
+        style={{ animationDelay: "0.15s", animationFillMode: "both" }}
+      >
+        <div className="space-y-1">
+          <p className="font-mono text-[9px] tracking-[0.35em] text-white/40 uppercase">
+            Upcoming
           </p>
+          <h2 className="text-lg font-serif text-gradient-primary tracking-wide">
+            This Week &mdash; Due in 7 days ({thisWeek.length})
+          </h2>
+        </div>
+
+        {thisWeek.length === 0 ? (
+          <div className="glass-card rounded-2xl p-8 text-center hover:border-white/[0.08] transition-all">
+            <p className="font-mono text-[9px] tracking-[0.35em] text-white/20 uppercase">
+              No tasks due this week
+            </p>
+          </div>
         ) : (
-          <div className="border border-border/50 rounded-lg overflow-hidden">
+          <div className="glass-card rounded-2xl overflow-hidden hover:border-white/[0.08] transition-all">
+            {/* Table header */}
+            <div className="flex items-center gap-4 px-8 py-3 border-b border-white/[0.05]">
+              <span className="flex-1 text-[9px] font-mono uppercase tracking-[0.25em] text-white/30">
+                Task
+              </span>
+              <span className="text-[9px] font-mono uppercase tracking-[0.25em] text-white/30 w-24 text-right">
+                Due
+              </span>
+              <span className="text-[9px] font-mono uppercase tracking-[0.25em] text-white/30 w-32 text-right">
+                Area
+              </span>
+            </div>
             {thisWeek.slice(0, 10).map((task, i) => (
               <div
                 key={task.id}
-                className={`flex items-center gap-4 px-4 py-3 ${i > 0 ? "border-t border-border/30" : ""}`}
+                className={`flex items-center gap-4 px-8 py-4 transition-colors hover:bg-white/[0.02] ${
+                  i > 0 ? "border-t border-white/[0.05]" : ""
+                }`}
               >
-                <span className="flex-1 text-sm font-serif">{task.taskName}</span>
-                <span className="text-xs font-mono text-muted-foreground">{task.dueDate}</span>
-                <span className="text-xs text-muted-foreground">{task.lifeArea}</span>
+                <span className="flex-1 text-sm font-serif text-white/80">{task.taskName}</span>
+                <span className="font-mono text-[10px] text-white/30 tracking-wider w-24 text-right">{task.dueDate}</span>
+                <span className="font-mono text-[9px] tracking-[0.25em] text-white/30 uppercase w-32 text-right">{task.lifeArea}</span>
               </div>
             ))}
           </div>
         )}
       </section>
 
-      {/* Matrix Summary */}
-      <section className="space-y-3">
+      {/* ── Matrix Summary ──────────────────────────── */}
+      <section
+        className="space-y-5 animate-slide-up"
+        style={{ animationDelay: "0.2s", animationFillMode: "both" }}
+      >
         <div className="flex items-center justify-between">
-          <h2 className="text-xs font-mono uppercase tracking-widest text-muted-foreground">
-            🟦 Eisenhower Matrix — Overview
-          </h2>
+          <div className="space-y-1">
+            <p className="font-mono text-[9px] tracking-[0.35em] text-white/40 uppercase">
+              Analysis
+            </p>
+            <h2 className="text-lg font-serif text-gradient-primary tracking-wide">
+              Eisenhower Matrix
+            </h2>
+          </div>
           <Link
             href="/matrix"
-            className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground hover:text-primary transition-colors"
+            className="text-[10px] font-mono uppercase tracking-wider text-white/30 hover:text-[#C49E45] transition-colors"
           >
-            Open Full View →
+            Full View
           </Link>
         </div>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-4">
           {[
-            { label: "Q1 — Do Now", count: q1Count, color: "border-red-500/30 bg-red-500/5" },
-            { label: "Q2 — Schedule", count: q2Count, color: "border-yellow-500/30 bg-yellow-500/5" },
-            { label: "Q3 — Delegate", count: q3Count, color: "border-blue-500/30 bg-blue-500/5" },
-            { label: "Q4 — Eliminate", count: q4Count, color: "border-border/50 bg-secondary/30" },
-          ].map(({ label, count, color }) => (
-            <div key={label} className={`border rounded-lg p-4 ${color}`}>
-              <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">{label}</p>
-              <p className="text-2xl font-serif text-foreground mt-1">{count}</p>
+            { label: "Q1 — Do Now", count: q1Count, accent: "rgba(239, 68, 68, 0.7)" },
+            { label: "Q2 — Schedule", count: q2Count, accent: "rgba(234, 179, 8, 0.7)" },
+            { label: "Q3 — Delegate", count: q3Count, accent: "rgba(59, 130, 246, 0.7)" },
+            { label: "Q4 — Eliminate", count: q4Count, accent: "rgba(255, 255, 255, 0.25)" },
+          ].map(({ label, count, accent }) => (
+            <div
+              key={label}
+              className="glass-card rounded-2xl p-8 hover:border-white/[0.08] transition-all hover:scale-[1.01]"
+            >
+              <p
+                className="font-mono text-[9px] tracking-[0.35em] uppercase"
+                style={{ color: accent }}
+              >
+                {label}
+              </p>
+              <p className="text-4xl font-serif text-gradient-primary mt-3 stat-number">
+                {count}
+              </p>
             </div>
           ))}
         </div>
       </section>
 
-      {/* Quick Actions */}
-      <section>
-        <div className="flex gap-3 flex-wrap">
-          <Link
-            href="/checkin"
-            className="flex-1 text-center py-2.5 border border-primary/30 bg-primary/5 rounded-md text-[10px] font-mono uppercase tracking-widest text-primary hover:bg-primary/10 transition-colors"
-          >
-            Daily Check-In
-          </Link>
-          <Link
-            href="/weekly"
-            className="flex-1 text-center py-2.5 border border-border rounded-md text-[10px] font-mono uppercase tracking-widest text-muted-foreground hover:text-foreground hover:border-primary/30 hover:bg-primary/5 transition-colors"
-          >
-            Weekly Plan
-          </Link>
-          <Link
-            href="/tasks"
-            className="flex-1 text-center py-2.5 border border-border rounded-md text-[10px] font-mono uppercase tracking-widest text-muted-foreground hover:text-foreground hover:border-primary/30 hover:bg-primary/5 transition-colors"
-          >
-            + Add Task
-          </Link>
-          <Link
-            href="/matrix"
-            className="flex-1 text-center py-2.5 border border-border rounded-md text-[10px] font-mono uppercase tracking-widest text-muted-foreground hover:text-foreground hover:border-primary/30 hover:bg-primary/5 transition-colors"
-          >
-            View Matrix
-          </Link>
+      {/* ── Quick Actions ───────────────────────────── */}
+      <section
+        className="space-y-5 animate-slide-up"
+        style={{ animationDelay: "0.25s", animationFillMode: "both" }}
+      >
+        <div className="space-y-1">
+          <p className="font-mono text-[9px] tracking-[0.35em] text-white/40 uppercase">
+            Navigate
+          </p>
+          <h2 className="text-lg font-serif text-gradient-primary tracking-wide">
+            Quick Actions
+          </h2>
+        </div>
+        <div className="grid grid-cols-4 gap-4">
+          {[
+            { href: "/checkin", label: "Check-In", primary: true },
+            { href: "/weekly", label: "Weekly Plan", primary: false },
+            { href: "/tasks", label: "Add Task", primary: false },
+            { href: "/matrix", label: "Matrix", primary: false },
+          ].map(({ href, label, primary }) => (
+            <Link
+              key={href}
+              href={href}
+              className={`text-center py-4 rounded-2xl text-[10px] font-mono uppercase tracking-[0.25em] transition-all ${
+                primary
+                  ? "glass-card border-[#C49E45]/20 bg-[#C49E45]/[0.06] text-[#C49E45] hover:bg-[#C49E45]/[0.12] hover:border-[#C49E45]/30"
+                  : "glass-card text-white/40 hover:text-white/70 hover:border-white/[0.08]"
+              }`}
+            >
+              {label}
+            </Link>
+          ))}
         </div>
       </section>
     </div>

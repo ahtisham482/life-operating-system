@@ -36,31 +36,31 @@ function TaskTable({ tasks }: { tasks: Task[] }) {
   return (
     <table className="w-full text-sm">
       <thead>
-        <tr className="text-left bg-card/50">
-          <th className="px-4 py-2 text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Task</th>
-          <th className="px-4 py-2 text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Area</th>
-          <th className="px-4 py-2 text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Priority</th>
-          <th className="px-4 py-2 text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Status</th>
-          <th className="px-4 py-2 text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Due</th>
+        <tr className="text-left bg-white/[0.02]">
+          <th className="px-4 py-2 text-[9px] font-mono uppercase tracking-[0.25em] text-white/25">Task</th>
+          <th className="px-4 py-2 text-[9px] font-mono uppercase tracking-[0.25em] text-white/25">Area</th>
+          <th className="px-4 py-2 text-[9px] font-mono uppercase tracking-[0.25em] text-white/25">Priority</th>
+          <th className="px-4 py-2 text-[9px] font-mono uppercase tracking-[0.25em] text-white/25">Status</th>
+          <th className="px-4 py-2 text-[9px] font-mono uppercase tracking-[0.25em] text-white/25">Due</th>
         </tr>
       </thead>
       <tbody>
-        {tasks.map((task, i) => (
+        {tasks.map((task) => (
           <tr
             key={task.id}
-            className={`border-t border-border/30 ${i % 2 === 1 ? "bg-card/20" : ""}`}
+            className="border-t border-white/[0.04] hover:bg-white/[0.02] transition-colors"
           >
-            <td className="px-4 py-2.5 font-serif">
+            <td className="px-4 py-2.5 font-serif text-white/90">
               {task.type === "🔁 Habit" && <span className="mr-1 text-primary">🔁</span>}
               {task.taskName}
             </td>
-            <td className="px-4 py-2.5 text-xs text-muted-foreground">{task.lifeArea ?? "—"}</td>
+            <td className="px-4 py-2.5 text-xs text-white/40">{task.lifeArea ?? "—"}</td>
             <td className="px-4 py-2.5 text-xs">{task.priority ?? "—"}</td>
             <td className="px-4 py-2.5 font-mono text-xs">
               {statusMap[task.status] ?? "☐"}{" "}
-              <span className="text-muted-foreground">{task.status}</span>
+              <span className="text-white/40">{task.status}</span>
             </td>
-            <td className="px-4 py-2.5 text-xs text-muted-foreground">{task.dueDate ?? "—"}</td>
+            <td className="px-4 py-2.5 text-xs text-white/40">{task.dueDate ?? "—"}</td>
           </tr>
         ))}
       </tbody>
@@ -70,7 +70,7 @@ function TaskTable({ tasks }: { tasks: Task[] }) {
 
 function EmptyBlock({ msg }: { msg: string }) {
   return (
-    <p className="px-4 py-6 text-center text-muted-foreground text-xs font-mono">{msg}</p>
+    <p className="px-4 py-6 text-center text-white/40 text-xs font-mono">{msg}</p>
   );
 }
 
@@ -128,44 +128,48 @@ export default async function MatrixPage() {
   }
 
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-8">
+    <div className="p-8 max-w-6xl mx-auto space-y-10">
       {/* Header */}
-      <div className="space-y-1">
-        <h1 className="text-xl font-serif tracking-widest uppercase text-foreground">
-          🎯 Eisenhower Matrix
-        </h1>
-        <p className="text-xs font-mono text-muted-foreground tracking-wider">{dateLabel}</p>
-        <p className="text-[10px] font-mono text-muted-foreground/50 mt-0.5">
-          Life Areas are NEVER mixed across blocks • Office: Job + Business • Home: Personal Dev + Home
+      <div className="space-y-2 animate-slide-up" style={{ animationDelay: "0s", animationFillMode: "both" }}>
+        <p className="text-[9px] font-mono tracking-[0.35em] text-white/20 uppercase">
+          Priority Framework
         </p>
+        <h1 className="text-3xl font-serif tracking-tight text-gradient-primary">
+          Eisenhower Matrix
+        </h1>
+        <p className="text-[11px] font-mono text-white/30 tracking-wider">{dateLabel}</p>
+        <p className="text-[10px] font-mono text-white/25 mt-0.5">
+          Life Areas are NEVER mixed across blocks
+        </p>
+        <div className="h-px bg-gradient-to-r from-transparent via-[#C49E45]/20 to-transparent mt-6" />
       </div>
 
       {/* ── Stuck Items ───────────────────────────────────────────────────── */}
       {stuck.length > 0 && (
-        <section className="border border-destructive/50 bg-destructive/5 rounded-lg p-4 space-y-3">
+        <section className="border border-destructive/50 bg-destructive/5 rounded-2xl p-6 space-y-3 animate-slide-up" style={{ animationDelay: "0.05s", animationFillMode: "both" }}>
           <h2 className="text-xs font-mono uppercase tracking-widest text-destructive">
             🚨 Stuck Items — Action Required (5+ Days Overdue)
           </h2>
           <table className="w-full text-sm">
             <thead>
               <tr className="text-left">
-                <th className="py-2 pr-4 text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Task</th>
-                <th className="py-2 pr-4 text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Days Overdue</th>
-                <th className="py-2 text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Status</th>
+                <th className="py-2 pr-4 text-[9px] font-mono uppercase tracking-[0.25em] text-white/25">Task</th>
+                <th className="py-2 pr-4 text-[9px] font-mono uppercase tracking-[0.25em] text-white/25">Days Overdue</th>
+                <th className="py-2 text-[9px] font-mono uppercase tracking-[0.25em] text-white/25">Status</th>
               </tr>
             </thead>
             <tbody>
               {stuck.map((task) => {
                 const days = daysBetween(task.dueDate!, today);
                 return (
-                  <tr key={task.id} className="border-t border-border/20">
-                    <td className="py-2 pr-4 font-serif">{task.taskName}</td>
+                  <tr key={task.id} className="border-t border-white/[0.04]">
+                    <td className="py-2 pr-4 font-serif text-white/90">{task.taskName}</td>
                     <td className="py-2 pr-4">
                       <span className={`font-mono text-xs font-bold ${days >= 6 ? "text-destructive" : "text-yellow-400"}`}>
                         {days >= 6 ? `🔴 CRITICAL — Day ${days}` : `Day ${days}`}
                       </span>
                     </td>
-                    <td className="py-2 text-xs font-mono text-muted-foreground">{task.status}</td>
+                    <td className="py-2 text-xs font-mono text-white/40">{task.status}</td>
                   </tr>
                 );
               })}
@@ -175,15 +179,15 @@ export default async function MatrixPage() {
       )}
 
       {/* ── Q1 — Do Now ───────────────────────────────────────────────────── */}
-      <section className="space-y-3">
+      <section className="space-y-3 animate-slide-up" style={{ animationDelay: "0.1s", animationFillMode: "both" }}>
         <h2 className="text-xs font-mono uppercase tracking-widest text-red-400">
           🔴 Q1 — Do Now
         </h2>
 
         {/* Office Block */}
-        <div className="border border-border/50 rounded-lg overflow-hidden">
-          <div className="bg-card px-4 py-2.5 border-b border-border/30">
-            <p className="text-[10px] font-mono uppercase tracking-widest text-foreground/60">
+        <div className="glass-card rounded-2xl overflow-hidden hover:border-white/[0.08] transition-all">
+          <div className="bg-white/[0.02] px-4 py-2.5 border-b border-white/[0.05]">
+            <p className="text-[10px] font-mono uppercase tracking-widest text-white/30">
               🏢 Office Block — 💼 Job + 🚀 Business · {OFFICE_HOURS}
             </p>
           </div>
@@ -195,9 +199,9 @@ export default async function MatrixPage() {
         </div>
 
         {/* Home Block */}
-        <div className="border border-border/50 rounded-lg overflow-hidden">
-          <div className="bg-card px-4 py-2.5 border-b border-border/30">
-            <p className="text-[10px] font-mono uppercase tracking-widest text-foreground/60">
+        <div className="glass-card rounded-2xl overflow-hidden hover:border-white/[0.08] transition-all">
+          <div className="bg-white/[0.02] px-4 py-2.5 border-b border-white/[0.05]">
+            <p className="text-[10px] font-mono uppercase tracking-widest text-white/30">
               🏠 Home Block — 📖 Personal Dev + 🏠 Home & Life · {HOME_HOURS}
             </p>
           </div>
@@ -210,18 +214,18 @@ export default async function MatrixPage() {
       </section>
 
       {/* ── Q2 — Schedule ─────────────────────────────────────────────────── */}
-      <section className="space-y-3">
+      <section className="space-y-3 animate-slide-up" style={{ animationDelay: "0.15s", animationFillMode: "both" }}>
         <h2 className="text-xs font-mono uppercase tracking-widest text-yellow-400">
           🟡 Q2 — Schedule (Important, Not Urgent)
         </h2>
-        <div className="border border-border/50 rounded-lg overflow-hidden">
+        <div className="glass-card rounded-2xl overflow-hidden hover:border-white/[0.08] transition-all">
           {q2Projects.length > 0 && (
-            <div className="px-4 py-3 border-b border-border/20">
-              <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-2">
+            <div className="px-4 py-3 border-b border-white/[0.04]">
+              <p className="text-[10px] font-mono uppercase tracking-widest text-white/25 mb-2">
                 Projects — Progress Containers
               </p>
               {q2Projects.map((p) => (
-                <div key={p.id} className="py-1 text-sm font-serif text-foreground/80">
+                <div key={p.id} className="py-1 text-sm font-serif text-white/90">
                   🏗️ {p.taskName}
                 </div>
               ))}
@@ -236,21 +240,21 @@ export default async function MatrixPage() {
       </section>
 
       {/* ── Q3 — Delegate ─────────────────────────────────────────────────── */}
-      <section className="space-y-3">
+      <section className="space-y-3 animate-slide-up" style={{ animationDelay: "0.2s", animationFillMode: "both" }}>
         <h2 className="text-xs font-mono uppercase tracking-widest text-blue-400">
           🔵 Q3 — Delegate / Minimize (Urgent, Not Important)
         </h2>
-        <div className="border border-border/50 rounded-lg overflow-hidden">
+        <div className="glass-card rounded-2xl overflow-hidden hover:border-white/[0.08] transition-all">
           {q3.length === 0 ? <EmptyBlock msg="No Q3 items" /> : <TaskTable tasks={q3} />}
         </div>
       </section>
 
       {/* ── Q4 — Eliminate ────────────────────────────────────────────────── */}
-      <section className="space-y-3">
-        <h2 className="text-xs font-mono uppercase tracking-widest text-muted-foreground">
+      <section className="space-y-3 animate-slide-up" style={{ animationDelay: "0.25s", animationFillMode: "both" }}>
+        <h2 className="text-xs font-mono uppercase tracking-widest text-white/40">
           ⚪ Q4 — Eliminate (Not Urgent, Not Important)
         </h2>
-        <div className="border border-border/50 rounded-lg overflow-hidden">
+        <div className="glass-card rounded-2xl overflow-hidden hover:border-white/[0.08] transition-all">
           {q4.length === 0 ? <EmptyBlock msg="No Q4 items" /> : <TaskTable tasks={q4} />}
         </div>
       </section>

@@ -56,29 +56,37 @@ export default async function WeeklyPage() {
   const tasks = (taskRows || []).map((r) => fromDb<WeeklyTask>(r));
 
   return (
-    <div className="p-6 max-w-3xl mx-auto space-y-8">
+    <div className="p-8 max-w-3xl mx-auto space-y-10">
       {/* Header */}
-      <div className="space-y-1">
-        <h1 className="text-xl font-serif tracking-widest uppercase text-foreground">
-          Weekly Planning — {weekKey}
+      <div className="space-y-2 animate-slide-up" style={{ animationDelay: "0s", animationFillMode: "both" }}>
+        <p className="text-[9px] font-mono tracking-[0.35em] text-white/20 uppercase">
+          {weekKey}
+        </p>
+        <h1 className="text-3xl font-serif tracking-tight text-gradient-primary">
+          Weekly Planning
         </h1>
-        <p className="text-xs font-mono text-muted-foreground tracking-wider">
+        <p className="text-[11px] font-mono text-white/30 tracking-wider">
           Plan once. Execute all week.
         </p>
+        <div className="h-px bg-gradient-to-r from-transparent via-[#C49E45]/20 to-transparent mt-6" />
       </div>
 
       {/* 3 Strategic Questions */}
-      <WeeklyForm
-        weekKey={weekKey}
-        initialAnswers={{
-          leadPriority: plan?.leadPriority ?? "",
-          maintenanceActions: plan?.maintenanceActions ?? "",
-          removingPausing: plan?.removingPausing ?? "",
-        }}
-      />
+      <div className="animate-slide-up" style={{ animationDelay: "0.08s", animationFillMode: "both" }}>
+        <WeeklyForm
+          weekKey={weekKey}
+          initialAnswers={{
+            leadPriority: plan?.leadPriority ?? "",
+            maintenanceActions: plan?.maintenanceActions ?? "",
+            removingPausing: plan?.removingPausing ?? "",
+          }}
+        />
+      </div>
 
       {/* Weekly Task Checklist */}
-      <TaskList weekKey={weekKey} initialTasks={tasks} />
+      <div className="animate-slide-up" style={{ animationDelay: "0.16s", animationFillMode: "both" }}>
+        <TaskList weekKey={weekKey} initialTasks={tasks} />
+      </div>
     </div>
   );
 }

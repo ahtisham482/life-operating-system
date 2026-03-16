@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -7,74 +6,114 @@ import { cn } from "@/lib/utils";
 import {
   Target, Grid2X2, CheckSquare, RotateCcw,
   DollarSign, BookOpen, BookMarked, Settings, LogOut,
-  Zap, Calendar, Flag,
+  Zap, Calendar, Flag, Brain,
 } from "lucide-react";
 
-const NAV = [
-  { href: "/dashboard", icon: Target,      label: "Command Center", phase: 1 },
-  { href: "/checkin",   icon: Zap,         label: "Check-In",       phase: 1 },
-  { href: "/weekly",    icon: Calendar,    label: "Weekly",         phase: 1 },
-  { href: "/season",    icon: Flag,        label: "Season",         phase: 1 },
-  { href: "/matrix",    icon: Grid2X2,     label: "Matrix",         phase: 1 },
-  { href: "/tasks",     icon: CheckSquare, label: "Tasks",          phase: 1 },
-  { href: "/habits",    icon: RotateCcw,   label: "Habits",         phase: 1 },
-  { href: "/expenses",  icon: DollarSign,  label: "Expenses",       phase: 1 },
-  { href: "/journal",   icon: BookOpen,    label: "Journal",        phase: 1 },
-  { href: "/books",     icon: BookMarked,  label: "Books",          phase: 1 },
-  { href: "/engines",   icon: Settings,    label: "Engines",        phase: 1 },
+const NAV_SECTIONS = [
+  {
+    label: "Core",
+    items: [
+      { href: "/dashboard", icon: Target,      label: "Command Center" },
+      { href: "/checkin",   icon: Zap,         label: "Check-In" },
+      { href: "/weekly",    icon: Calendar,    label: "Weekly" },
+      { href: "/season",    icon: Flag,        label: "Season" },
+    ],
+  },
+  {
+    label: "Execute",
+    items: [
+      { href: "/matrix",    icon: Grid2X2,     label: "Matrix" },
+      { href: "/tasks",     icon: CheckSquare, label: "Tasks" },
+      { href: "/habits",    icon: RotateCcw,   label: "Habits" },
+    ],
+  },
+  {
+    label: "Track",
+    items: [
+      { href: "/expenses",  icon: DollarSign,  label: "Expenses" },
+      { href: "/journal",   icon: BookOpen,    label: "Journal" },
+      { href: "/books",     icon: BookMarked,  label: "Books" },
+    ],
+  },
+  {
+    label: "Intelligence",
+    items: [
+      { href: "/mirror",    icon: Brain,       label: "Mirror AI" },
+      { href: "/engines",   icon: Settings,    label: "Engines" },
+    ],
+  },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="flex flex-col w-52 shrink-0 border-r border-border bg-card h-screen sticky top-0">
+    <aside className="flex flex-col w-60 shrink-0 border-r border-white/[0.05] bg-[rgba(10,10,10,0.8)] backdrop-blur-xl h-screen sticky top-0 relative">
+      {/* Subtle right edge glow */}
+      <div className="absolute right-0 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-[#C49E45]/10 to-transparent" />
+
       {/* Logo */}
-      <div className="px-5 py-6 border-b border-border">
-        <p className="text-primary font-serif text-lg tracking-[0.2em] uppercase">LOS</p>
-        <p className="text-muted-foreground font-mono text-[9px] tracking-[0.25em] uppercase mt-0.5">
-          Life Operating System
-        </p>
+      <div className="px-6 py-6 border-b border-white/[0.05]">
+        <div className="flex items-center gap-3.5">
+          <div className="size-10 rounded-xl bg-gradient-to-b from-[#C49E45]/20 to-transparent border border-[#C49E45]/25 flex items-center justify-center">
+            <span className="text-lg font-serif text-[#C49E45] font-medium">L</span>
+          </div>
+          <div>
+            <p className="text-[#C49E45] font-serif text-sm tracking-[0.25em] uppercase font-medium">
+              LOS
+            </p>
+            <p className="text-white/25 font-mono text-[8px] tracking-[0.35em] uppercase">
+              Operating System
+            </p>
+          </div>
+        </div>
       </div>
 
-      {/* Nav */}
-      <nav className="flex-1 py-4 px-2 space-y-0.5 overflow-y-auto">
-        {NAV.map(({ href, icon: Icon, label, phase }) => {
-          const active = pathname === href || pathname.startsWith(href + "/");
-          const soon = phase > 1;
-          return (
-            <Link
-              key={href}
-              href={soon ? "#" : href}
-              aria-disabled={soon}
-              className={cn(
-                "flex items-center gap-3 px-3 py-2 rounded-md text-[11px] font-mono uppercase tracking-wider transition-colors",
-                active
-                  ? "bg-primary/10 text-primary"
-                  : soon
-                  ? "text-muted-foreground/40 cursor-not-allowed"
-                  : "text-muted-foreground hover:text-foreground hover:bg-secondary"
-              )}
-              onClick={e => soon && e.preventDefault()}
-            >
-              <Icon className="h-3.5 w-3.5 shrink-0" />
-              <span>{label}</span>
-              {soon && (
-                <span className="ml-auto text-[9px] tracking-widest opacity-50">
-                  soon
-                </span>
-              )}
-            </Link>
-          );
-        })}
+      {/* Nav Sections */}
+      <nav className="flex-1 py-4 px-3 overflow-y-auto space-y-5">
+        {NAV_SECTIONS.map((section) => (
+          <div key={section.label}>
+            <p className="text-[9px] font-mono uppercase tracking-[0.35em] text-white/20 px-3 mb-2">
+              {section.label}
+            </p>
+            <div className="space-y-0.5">
+              {section.items.map(({ href, icon: Icon, label }) => {
+                const active = pathname === href || pathname.startsWith(href + "/");
+                return (
+                  <Link
+                    key={href}
+                    href={href}
+                    className={cn(
+                      "group flex items-center gap-3 px-3 py-2.5 rounded-xl text-[11px] font-mono uppercase tracking-wider transition-all duration-200",
+                      active
+                        ? "bg-[#C49E45]/[0.08] text-[#C49E45] border border-[#C49E45]/[0.15] glow-primary-sm"
+                        : "text-white/35 hover:text-white/80 hover:bg-white/[0.03] border border-transparent"
+                    )}
+                  >
+                    <Icon
+                      className={cn(
+                        "h-3.5 w-3.5 shrink-0 transition-colors",
+                        active ? "text-[#C49E45]" : "text-white/25 group-hover:text-white/60"
+                      )}
+                    />
+                    <span className="truncate">{label}</span>
+                    {active && (
+                      <div className="ml-auto size-1.5 rounded-full bg-[#C49E45] animate-pulse" />
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </nav>
 
       {/* Bottom */}
-      <div className="px-2 py-4 border-t border-border">
+      <div className="px-3 py-4 border-t border-white/[0.05]">
         <form action="/auth/signout" method="post">
           <button
             type="submit"
-            className="flex items-center gap-3 px-3 py-2 rounded-md text-[11px] font-mono uppercase tracking-wider text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors w-full"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-[11px] font-mono uppercase tracking-wider text-white/25 hover:text-white/60 hover:bg-red-500/[0.05] transition-all w-full border border-transparent"
           >
             <LogOut className="h-3.5 w-3.5" />
             <span>Sign Out</span>

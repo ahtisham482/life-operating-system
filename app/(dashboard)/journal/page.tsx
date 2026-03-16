@@ -39,44 +39,49 @@ export default async function JournalPage({
   });
 
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-6">
+    <div className="p-8 max-w-5xl mx-auto space-y-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="space-y-1">
-          <h1 className="text-xl font-serif tracking-widest uppercase text-foreground">
-            📔 Journal
+      <div className="flex items-start justify-between animate-slide-up" style={{ animationDelay: "0s", animationFillMode: "both" }}>
+        <div className="space-y-2">
+          <p className="text-[9px] font-mono tracking-[0.35em] text-white/20 uppercase">
+            Self-Reflection
+          </p>
+          <h1 className="text-3xl font-serif tracking-tight text-gradient-primary">
+            Journal
           </h1>
-          <p className="text-xs font-mono text-muted-foreground tracking-wider">
-            {allEntries.length} total · {filtered.length} shown
+          <p className="text-[11px] font-mono text-white/30 tracking-wider">
+            {allEntries.length} total &middot; {filtered.length} shown
           </p>
         </div>
         <JournalForm />
       </div>
 
+      <div className="h-px bg-gradient-to-r from-transparent via-[#C49E45]/20 to-transparent" />
+
       {/* Filter bar */}
-      <div className="flex gap-2 flex-wrap">
+      <div className="flex gap-1.5 flex-wrap animate-slide-up" style={{ animationDelay: "0.05s", animationFillMode: "both" }}>
         {["", ...MOODS].map((m) => (
           <a
             key={m}
             href={m ? `?mood=${encodeURIComponent(m)}` : "/journal"}
-            className={`px-3 py-1 rounded text-[10px] font-mono uppercase tracking-widest border transition-colors ${
+            className={`px-3 py-1.5 rounded-lg text-[10px] font-mono uppercase tracking-widest border transition-all ${
               (params.mood ?? "") === m
-                ? "border-primary bg-primary/10 text-primary"
-                : "border-border text-muted-foreground hover:text-foreground hover:border-border/80"
+                ? "border-[#C49E45]/20 bg-[#C49E45]/[0.08] text-[#C49E45]"
+                : "border-white/[0.05] text-white/40 hover:text-white/90 hover:border-white/[0.08]"
             }`}
           >
             {m || "All Moods"}
           </a>
         ))}
-        <span className="mx-1 text-border">|</span>
+        <span className="mx-1 text-white/[0.05] self-center">|</span>
         {["", ...CATEGORIES].map((c) => (
           <a
             key={c}
             href={c ? `?category=${encodeURIComponent(c)}` : "/journal"}
-            className={`px-3 py-1 rounded text-[10px] font-mono uppercase tracking-widest border transition-colors ${
+            className={`px-3 py-1.5 rounded-lg text-[10px] font-mono uppercase tracking-widest border transition-all ${
               (params.category ?? "") === c
-                ? "border-primary bg-primary/10 text-primary"
-                : "border-border text-muted-foreground hover:text-foreground hover:border-border/80"
+                ? "border-[#C49E45]/20 bg-[#C49E45]/[0.08] text-[#C49E45]"
+                : "border-white/[0.05] text-white/40 hover:text-white/90 hover:border-white/[0.08]"
             }`}
           >
             {c || "All Categories"}
@@ -86,11 +91,13 @@ export default async function JournalPage({
 
       {/* Journal Entries */}
       {filtered.length === 0 ? (
-        <div className="py-16 text-center text-muted-foreground font-mono text-sm border border-border/30 rounded-lg">
-          No journal entries yet. Start writing.
+        <div className="py-16 text-center glass-card rounded-2xl">
+          <p className="text-[11px] font-mono text-white/25 tracking-widest uppercase">
+            No journal entries yet. Start writing.
+          </p>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-4 animate-slide-up" style={{ animationDelay: "0.1s", animationFillMode: "both" }}>
           {filtered.map((entry) => (
             <JournalCard key={entry.id} entry={entry} />
           ))}
@@ -102,14 +109,14 @@ export default async function JournalPage({
 
 function JournalCard({ entry }: { entry: JournalEntry }) {
   return (
-    <div className="border border-border/50 rounded-lg p-5 bg-card/20 space-y-3">
+    <div className="glass-card rounded-2xl p-6 space-y-3 hover:border-white/[0.08] transition-all">
       {/* Card header */}
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-1 min-w-0">
-          <h2 className="font-serif text-foreground text-base leading-snug">
+          <h2 className="font-serif text-white/90 text-base leading-snug">
             {entry.title}
           </h2>
-          <p className="text-xs font-mono text-muted-foreground tracking-wider">
+          <p className="text-[10px] font-mono text-white/25 tracking-wider">
             {entry.date}
           </p>
         </div>
@@ -128,7 +135,7 @@ function JournalCard({ entry }: { entry: JournalEntry }) {
       </div>
 
       {/* Entry text */}
-      <p className="text-sm text-muted-foreground font-serif leading-relaxed line-clamp-3">
+      <p className="text-sm text-white/30 font-serif leading-relaxed line-clamp-3">
         {entry.entry}
       </p>
     </div>
