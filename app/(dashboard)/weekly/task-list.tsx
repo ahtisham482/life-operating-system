@@ -104,82 +104,16 @@ export function TaskList({
 
   return (
     <div className="space-y-4">
-      {/* Carry-forward from last week */}
-      {remainingSuggestions.length > 0 && (
-        <div className="glass-card rounded-2xl p-5 border-dashed border-white/[0.08] space-y-3">
-          <p className="text-[9px] font-mono tracking-[0.35em] text-white/40 uppercase">
-            Carry Forward from Last Week
-          </p>
-          <p className="text-[10px] font-mono text-white/20">
-            These tasks were not completed last week.
-          </p>
-          <div className={isPending ? "opacity-60" : ""}>
-            {remainingSuggestions.map((task) => (
-              <div
-                key={task.id}
-                className="flex items-center justify-between gap-3 py-2 border-b border-white/[0.04] last:border-b-0"
-              >
-                <span className="text-sm font-serif text-white/40 flex-1">
-                  {task.taskText}
-                </span>
-                <button
-                  onClick={() => handleAddSuggested(task)}
-                  className="px-3 py-1 text-[9px] font-mono uppercase tracking-widest border border-[#C49E45]/30 text-[#C49E45]/70 rounded hover:bg-[#C49E45]/10 transition-colors shrink-0"
-                >
-                  Add to This Week
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Master task suggestions due this week */}
-      {remainingMaster.length > 0 && (
-        <div className="glass-card rounded-2xl p-5 border-dashed border-white/[0.08] space-y-3">
-          <p className="text-[9px] font-mono tracking-[0.35em] text-white/40 uppercase">
-            Master Tasks Due This Week
-          </p>
-          <div className={isPending ? "opacity-60" : ""}>
-            {remainingMaster.map((task) => (
-              <div
-                key={task.id}
-                className="flex items-center justify-between gap-3 py-2 border-b border-white/[0.04] last:border-b-0"
-              >
-                <div className="flex-1 min-w-0">
-                  <span className="text-sm font-serif text-white/40">
-                    {task.taskName}
-                  </span>
-                  <span className="text-[9px] font-mono text-white/20 ml-2">
-                    due {task.dueDate}
-                  </span>
-                </div>
-                <button
-                  onClick={() => handleAddMaster(task)}
-                  className="px-3 py-1 text-[9px] font-mono uppercase tracking-widest border border-[#C49E45]/30 text-[#C49E45]/70 rounded hover:bg-[#C49E45]/10 transition-colors shrink-0"
-                >
-                  Add to This Week
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Current week tasks */}
-      <div className="bg-card border border-border p-5 rounded-lg space-y-4">
-        <p className="text-[10px] font-mono uppercase tracking-[0.25em] text-muted-foreground">
-          This Week&apos;s Tasks
-        </p>
-
+      {/* Task Checklist */}
+      <div className="glass-card rounded-2xl p-6 space-y-4">
         {tasks.length > 0 && (
           <p
-            className={`text-[11px] font-mono tracking-widest ${
-              allDone ? "text-primary" : "text-muted-foreground"
+            className={`text-[9px] font-mono tracking-[0.3em] uppercase ${
+              allDone ? "text-[#C49E45]" : "text-white/30"
             }`}
           >
-            {doneCount} / {tasks.length} TASKS DONE
-            {allDone ? " — WEEK EXECUTED ✓" : ""}
+            {doneCount}/{tasks.length} done
+            {allDone ? " — WEEK EXECUTED" : ""}
           </p>
         )}
 
@@ -188,14 +122,14 @@ export function TaskList({
           {tasks.map((task) => (
             <div
               key={task.id}
-              className="flex items-center gap-3 py-2.5 border-b border-border/30 last:border-b-0"
+              className="flex items-center gap-3 py-2.5 border-b border-white/[0.04] last:border-b-0 group"
             >
               <button
                 onClick={() => handleToggle(task)}
-                className={`w-5 h-5 flex items-center justify-center border rounded-sm text-[11px] shrink-0 transition-colors ${
+                className={`size-5 flex items-center justify-center border rounded transition-colors shrink-0 ${
                   task.isDone
-                    ? "border-primary bg-primary/10 text-primary"
-                    : "border-border text-transparent hover:border-border/80"
+                    ? "border-[#C49E45]/40 bg-[#C49E45]/10 text-[#C49E45]"
+                    : "border-white/10 text-transparent hover:border-white/20"
                 }`}
               >
                 {task.isDone ? "✓" : ""}
@@ -203,15 +137,15 @@ export function TaskList({
               <span
                 className={`flex-1 text-sm font-serif ${
                   task.isDone
-                    ? "line-through text-muted-foreground"
-                    : "text-foreground"
+                    ? "line-through text-white/25"
+                    : "text-white/70"
                 }`}
               >
                 {task.taskText}
               </span>
               <button
                 onClick={() => handleDelete(task.id)}
-                className="text-xs font-mono px-2 py-1 border border-red-500/30 text-red-400 rounded hover:bg-red-500/10 transition-colors"
+                className="text-[10px] font-mono px-1.5 py-0.5 text-white/10 hover:text-red-400 rounded transition-colors opacity-0 group-hover:opacity-100"
               >
                 ✗
               </button>
@@ -219,24 +153,83 @@ export function TaskList({
           ))}
         </div>
 
-        {/* Add task */}
+        {/* Add task input */}
         <div className="flex gap-2 pt-1">
           <input
             value={newTask}
             onChange={(e) => setNewTask(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleAdd()}
-            placeholder="Add a task for this week..."
-            className="flex-1 bg-background border border-border text-foreground p-2.5 text-sm font-serif rounded focus:outline-none focus:ring-1 focus:ring-ring"
+            placeholder="Add a task..."
+            className="flex-1 bg-black/20 border border-white/[0.06] text-white/80 p-2.5 text-sm font-serif rounded-lg focus:outline-none focus:ring-1 focus:ring-[#C49E45]/30 placeholder:text-white/15"
           />
           <button
             onClick={handleAdd}
             disabled={!newTask.trim()}
-            className="px-4 py-2 text-[11px] font-mono uppercase tracking-widest border border-primary text-primary hover:bg-primary/10 rounded transition-colors disabled:opacity-40"
+            className="px-4 py-2 text-[10px] font-mono uppercase tracking-widest border border-[#C49E45]/30 text-[#C49E45]/70 hover:bg-[#C49E45]/10 rounded-lg transition-colors disabled:opacity-30"
           >
             Add
           </button>
         </div>
       </div>
+
+      {/* Carry-forward from last week */}
+      {remainingSuggestions.length > 0 && (
+        <div className="glass-card rounded-2xl p-5 border-dashed space-y-3">
+          <p className="text-[8px] font-mono tracking-[0.3em] text-white/30 uppercase">
+            Carry Forward
+          </p>
+          <div className={isPending ? "opacity-60" : ""}>
+            {remainingSuggestions.map((task) => (
+              <div
+                key={task.id}
+                className="flex items-center justify-between gap-2 py-2 border-b border-white/[0.04] last:border-b-0"
+              >
+                <span className="text-xs font-serif text-white/30 flex-1">
+                  {task.taskText}
+                </span>
+                <button
+                  onClick={() => handleAddSuggested(task)}
+                  className="px-2 py-0.5 text-[8px] font-mono uppercase tracking-widest border border-[#C49E45]/20 text-[#C49E45]/50 rounded hover:bg-[#C49E45]/10 transition-colors shrink-0"
+                >
+                  Add
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Master task suggestions */}
+      {remainingMaster.length > 0 && (
+        <div className="glass-card rounded-2xl p-5 border-dashed space-y-3">
+          <p className="text-[8px] font-mono tracking-[0.3em] text-white/30 uppercase">
+            Master Tasks Due This Week
+          </p>
+          <div className={isPending ? "opacity-60" : ""}>
+            {remainingMaster.map((task) => (
+              <div
+                key={task.id}
+                className="flex items-center justify-between gap-2 py-2 border-b border-white/[0.04] last:border-b-0"
+              >
+                <div className="flex-1 min-w-0">
+                  <span className="text-xs font-serif text-white/30">
+                    {task.taskName}
+                  </span>
+                  <span className="text-[8px] font-mono text-white/15 ml-2">
+                    due {task.dueDate}
+                  </span>
+                </div>
+                <button
+                  onClick={() => handleAddMaster(task)}
+                  className="px-2 py-0.5 text-[8px] font-mono uppercase tracking-widest border border-[#C49E45]/20 text-[#C49E45]/50 rounded hover:bg-[#C49E45]/10 transition-colors shrink-0"
+                >
+                  Add
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

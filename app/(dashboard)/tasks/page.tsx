@@ -4,20 +4,13 @@ import { createClient } from "@/lib/supabase/server";
 import { fromDb } from "@/lib/utils";
 import { TaskForm } from "./task-form";
 import { DeleteTaskButton } from "./delete-button";
-import { Badge } from "@/components/ui/badge";
 import { QuickAdd } from "./quick-add";
 import type { Task } from "@/lib/db/schema";
 
-const PRIORITY_VARIANT: Record<string, "default" | "secondary" | "destructive"> = {
-  "🔴 High": "destructive",
-  "🟡 Medium": "default",
-  "🟢 Low": "secondary",
-};
-
-const STATUS_LABEL: Record<string, string> = {
-  "To Do": "☐",
-  "In Progress": "◉",
-  "Done": "✅",
+const PRIORITY_DOT: Record<string, string> = {
+  "🔴 High": "bg-red-500",
+  "🟡 Medium": "bg-yellow-500",
+  "🟢 Low": "bg-emerald-500",
 };
 
 export default async function TasksPage({
@@ -34,8 +27,8 @@ export default async function TasksPage({
 
   const allTasks = (rows || []).map((r) => fromDb<Task>(r));
 
+  // Apply life area filter only (status filtering is replaced by Kanban columns)
   const filtered = allTasks.filter((t) => {
-    if (params.status && t.status !== params.status) return false;
     if (params.lifeArea && t.lifeArea !== params.lifeArea) return false;
     return true;
   });
@@ -46,8 +39,14 @@ export default async function TasksPage({
     done: filtered.filter((t) => t.status === "Done"),
   };
 
+  const columns: { key: keyof typeof byStatus; label: string; active: boolean }[] = [
+    { key: "todo", label: "To Do", active: false },
+    { key: "inProgress", label: "In Progress", active: true },
+    { key: "done", label: "Done", active: false },
+  ];
+
   return (
-    <div className="p-8 max-w-5xl mx-auto space-y-8">
+    <div className="p-8 max-w-7xl mx-auto space-y-8">
       {/* Header */}
       <div className="flex items-start justify-between animate-slide-up" style={{ animationDelay: "0s", animationFillMode: "both" }}>
         <div className="space-y-2">
@@ -71,22 +70,8 @@ export default async function TasksPage({
 
       <div className="h-px bg-gradient-to-r from-transparent via-[#C49E45]/20 to-transparent" />
 
-      {/* Filter bar */}
+      {/* Life Area Filter */}
       <div className="flex gap-1.5 flex-wrap animate-slide-up" style={{ animationDelay: "0.05s", animationFillMode: "both" }}>
-        {["", "To Do", "In Progress", "Done"].map((s) => (
-          <a
-            key={s}
-            href={s ? `?status=${encodeURIComponent(s)}` : "/tasks"}
-            className={`px-3 py-1.5 rounded-lg text-[10px] font-mono uppercase tracking-widest border transition-all ${
-              (params.status ?? "") === s
-                ? "border-[#C49E45]/20 bg-[#C49E45]/[0.08] text-[#C49E45]"
-                : "border-white/[0.05] text-white/40 hover:text-white/90 hover:border-white/[0.08]"
-            }`}
-          >
-            {s || "All"}
-          </a>
-        ))}
-        <span className="mx-1 text-white/[0.05] self-center">|</span>
         {["", "💼 Job", "🚀 Business Building", "📖 Personal Dev", "🏠 Home & Life"].map((a) => (
           <a
             key={a}
@@ -102,7 +87,7 @@ export default async function TasksPage({
         ))}
       </div>
 
-      {/* Task List */}
+      {/* Kanban Board */}
       {filtered.length === 0 ? (
         <div className="py-16 text-center glass-card rounded-2xl">
           <p className="text-[11px] font-mono text-white/25 tracking-widest uppercase">
@@ -110,74 +95,108 @@ export default async function TasksPage({
           </p>
         </div>
       ) : (
-        <div className="glass-card rounded-2xl overflow-hidden animate-slide-up" style={{ animationDelay: "0.1s", animationFillMode: "both" }}>
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-white/[0.02] border-b border-white/[0.04]">
-                <th className="px-5 py-3 text-left text-[9px] font-mono uppercase tracking-[0.25em] text-white/25">Task</th>
-                <th className="px-5 py-3 text-left text-[9px] font-mono uppercase tracking-[0.25em] text-white/25">Area</th>
-                <th className="px-5 py-3 text-left text-[9px] font-mono uppercase tracking-[0.25em] text-white/25">Priority</th>
-                <th className="px-5 py-3 text-left text-[9px] font-mono uppercase tracking-[0.25em] text-white/25">Status</th>
-                <th className="px-5 py-3 text-left text-[9px] font-mono uppercase tracking-[0.25em] text-white/25">Due</th>
-                <th className="px-5 py-3 w-20"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((task) => (
-                <TaskRow key={task.id} task={task} />
-              ))}
-            </tbody>
-          </table>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-slide-up" style={{ animationDelay: "0.1s", animationFillMode: "both" }}>
+          {columns.map((col) => (
+            <div key={col.key} className="flex flex-col">
+              {/* Column container */}
+              <div
+                className={`glass-card rounded-2xl flex flex-col min-h-[300px] ${
+                  col.active ? "border-t-2 border-t-[#C49E45]/60" : ""
+                }`}
+              >
+                {/* Column header */}
+                <div className="px-5 py-4 border-b border-white/[0.04] flex items-center justify-between">
+                  <h3 className="text-sm font-serif text-white/80 tracking-wide">
+                    {col.label}
+                  </h3>
+                  <span className="text-[10px] font-mono bg-white/[0.06] text-white/40 px-2 py-0.5 rounded-full min-w-[24px] text-center">
+                    {byStatus[col.key].length}
+                  </span>
+                </div>
+
+                {/* Task cards */}
+                <div className="p-3 flex-1 space-y-3 overflow-y-auto">
+                  {byStatus[col.key].length === 0 ? (
+                    <div className="flex items-center justify-center h-full min-h-[100px]">
+                      <p className="text-[10px] font-mono text-white/15 tracking-widest uppercase">
+                        No tasks
+                      </p>
+                    </div>
+                  ) : (
+                    byStatus[col.key].map((task) => (
+                      <TaskCard key={task.id} task={task} />
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>
   );
 }
 
-function TaskRow({ task }: { task: Task }) {
+function TaskCard({ task }: { task: Task }) {
+  const dotColor = task.priority ? PRIORITY_DOT[task.priority] ?? "bg-white/20" : null;
+
   return (
-    <tr className="border-t border-white/[0.04] transition-colors hover:bg-white/[0.02]">
-      <td className="px-5 py-3.5">
-        <div className="flex items-center gap-2">
-          {task.type === "🔁 Habit" && <span className="text-primary/70 text-xs">🔁</span>}
-          <span className={`font-serif ${task.status === "Done" ? "line-through text-white/25" : "text-white/90"}`}>
+    <div
+      className={`glass-card rounded-xl p-4 hover:border-white/[0.1] transition-all group ${
+        task.status === "Done" ? "opacity-60" : ""
+      }`}
+    >
+      {/* Top row: task name + actions */}
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex items-start gap-2 flex-1 min-w-0">
+          {/* Priority dot */}
+          {dotColor && (
+            <span className={`w-2 h-2 rounded-full ${dotColor} mt-1.5 flex-shrink-0`} />
+          )}
+          <span
+            className={`text-sm font-serif leading-snug ${
+              task.status === "Done"
+                ? "line-through text-white/25"
+                : "text-white/90"
+            }`}
+          >
             {task.taskName}
           </span>
-          {task.recurring && task.type !== "🔁 Habit" && (
-            <span className="text-[9px] font-mono text-white/25 border border-white/[0.05] px-1 rounded">
-              {task.frequency}
-            </span>
-          )}
         </div>
-        {task.notes && (
-          <p className="text-[10px] text-white/25 mt-0.5 line-clamp-1">{task.notes}</p>
-        )}
-      </td>
-      <td className="px-5 py-3.5 text-[11px] text-white/40 whitespace-nowrap">
-        {task.lifeArea ?? "—"}
-      </td>
-      <td className="px-5 py-3.5">
-        {task.priority ? (
-          <Badge variant={PRIORITY_VARIANT[task.priority] ?? "secondary"}>
-            {task.priority}
-          </Badge>
-        ) : (
-          <span className="text-[11px] text-white/25">—</span>
-        )}
-      </td>
-      <td className="px-5 py-3.5 font-mono text-[11px]">
-        {STATUS_LABEL[task.status] ?? "☐"}{" "}
-        <span className="text-white/40">{task.status}</span>
-      </td>
-      <td className="px-5 py-3.5 text-[11px] text-white/25 font-mono">
-        {task.dueDate ?? "—"}
-      </td>
-      <td className="px-5 py-3.5">
-        <div className="flex items-center gap-1 justify-end">
+        <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
           <TaskForm task={task} />
           <DeleteTaskButton id={task.id} />
         </div>
-      </td>
-    </tr>
+      </div>
+
+      {/* Notes preview */}
+      {task.notes && (
+        <p className="text-[10px] text-white/25 mt-1.5 line-clamp-2 ml-4">
+          {task.notes}
+        </p>
+      )}
+
+      {/* Bottom row: life area tag + meta */}
+      <div className="flex items-center gap-2 mt-3 flex-wrap">
+        {task.lifeArea && (
+          <span className="text-[9px] font-mono text-white/30 bg-white/[0.04] px-2 py-0.5 rounded tracking-wider">
+            {task.lifeArea}
+          </span>
+        )}
+        {task.recurring && task.type !== "🔁 Habit" && task.frequency && (
+          <span className="text-[9px] font-mono text-white/20 border border-white/[0.05] px-1.5 py-0.5 rounded">
+            {task.frequency}
+          </span>
+        )}
+        {task.type === "🔁 Habit" && (
+          <span className="text-[9px] font-mono text-primary/50 px-1">🔁</span>
+        )}
+        {task.dueDate && (
+          <span className="text-[9px] font-mono text-white/20 ml-auto">
+            {task.dueDate}
+          </span>
+        )}
+      </div>
+    </div>
   );
 }

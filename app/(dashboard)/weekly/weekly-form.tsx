@@ -4,9 +4,9 @@ import { useState, useTransition } from "react";
 import { upsertWeeklyPlan } from "./actions";
 
 const QUESTIONS = [
-  "What is my ONE lead priority this week?",
-  "What are the minimum actions to keep other domains alive?",
-  "What am I removing or pausing this week?",
+  { key: "lead", label: "Lead Priority", question: "What is my ONE lead priority this week?" },
+  { key: "maintenance", label: "Maintenance", question: "Minimum actions to keep other domains alive?" },
+  { key: "remove", label: "Removing / Pausing", question: "What am I removing or pausing this week?" },
 ];
 
 type WeeklyFormProps = {
@@ -33,17 +33,13 @@ export function WeeklyForm({ weekKey, initialAnswers }: WeeklyFormProps) {
   }
 
   return (
-    <div className="space-y-4">
-      <p className="text-xs font-mono text-muted-foreground/60 tracking-wide">
-        Every Sunday — 20 minutes. Answer these 3 questions honestly.
-      </p>
-
+    <div className="glass-card rounded-2xl p-6 space-y-5">
       {QUESTIONS.map((q, i) => (
-        <div key={i} className="bg-card border border-border p-5 rounded-lg space-y-3">
-          <p className="text-[10px] font-mono uppercase tracking-[0.25em] text-muted-foreground">
-            Question {i + 1}
+        <div key={q.key} className="space-y-2">
+          <p className="text-[8px] font-mono uppercase tracking-[0.3em] text-white/30">
+            {q.label}
           </p>
-          <p className="text-sm font-serif text-primary">{q}</p>
+          <p className="text-xs font-serif text-white/60">{q.question}</p>
           <textarea
             value={answers[i]}
             onChange={(e) => {
@@ -51,19 +47,22 @@ export function WeeklyForm({ weekKey, initialAnswers }: WeeklyFormProps) {
               a[i] = e.target.value;
               setAnswers(a);
             }}
-            placeholder="Write your honest answer here..."
-            className="w-full bg-background border border-border text-foreground p-3 text-sm font-serif rounded resize-y min-h-[80px] focus:outline-none focus:ring-1 focus:ring-ring"
-            rows={3}
+            placeholder="Write your honest answer..."
+            className="w-full bg-black/20 border border-white/[0.06] text-white/80 p-3 text-sm font-serif rounded-lg resize-y min-h-[70px] focus:outline-none focus:ring-1 focus:ring-[#C49E45]/30 placeholder:text-white/15"
+            rows={2}
           />
+          {i < QUESTIONS.length - 1 && (
+            <div className="h-px bg-white/[0.04] mt-2" />
+          )}
         </div>
       ))}
 
       <button
         onClick={handleSave}
         disabled={isPending}
-        className="px-6 py-2.5 text-[11px] font-mono uppercase tracking-widest border border-primary text-primary hover:bg-primary/10 rounded transition-colors disabled:opacity-40"
+        className="w-full px-4 py-2.5 text-[10px] font-mono uppercase tracking-widest border border-[#C49E45]/30 text-[#C49E45]/70 hover:bg-[#C49E45]/10 rounded-lg transition-colors disabled:opacity-30"
       >
-        {isPending ? "Saving..." : "Save Weekly Plan"}
+        {isPending ? "Saving..." : "Save Plan"}
       </button>
     </div>
   );

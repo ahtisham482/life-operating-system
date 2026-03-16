@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { logMirrorSignal } from "@/lib/mirror/signals";
 
 function revalidateSeasonPaths() {
   revalidatePath("/season");
@@ -33,6 +34,15 @@ export async function createSeason(
   });
   if (error) throw new Error(error.message);
   revalidateSeasonPaths();
+  logMirrorSignal({
+    type: "season_update",
+    context: {
+      action: "create",
+      lead_domain: leadDomain,
+      goal_length: goal.length,
+      domain_count: Object.keys(domains).length,
+    },
+  });
 }
 
 export async function updateSeason(
@@ -80,4 +90,11 @@ export async function setLeadDomain(
     .eq("id", seasonId);
   if (error) throw new Error(error.message);
   revalidateSeasonPaths();
+  logMirrorSignal({
+    type: "season_update",
+    context: {
+      action: "set_lead_domain",
+      lead_domain: domainName,
+    },
+  });
 }
