@@ -12,6 +12,21 @@ dist
 dist-ssr
 *.local
 
+# Next.js
+.next
+out
+build
+
+# Env files (contain secrets)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Drizzle migrations output
+supabase/migrations
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
