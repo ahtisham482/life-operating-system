@@ -75,3 +75,35 @@ export async function deleteBookAction(id: string) {
   if (error) throw new Error(error.message);
   revalidateBookPaths();
 }
+
+// ─────────────────────────────────────────
+// PRESCRIBED BOOKS
+// ─────────────────────────────────────────
+export async function cyclePrescribedBookStatus(id: string, currentStatus: string) {
+  const next = currentStatus === "unread" ? "reading" : currentStatus === "reading" ? "done" : "unread";
+  const supabase = await createClient();
+  const { error } = await supabase.from("prescribed_books").update({ status: next }).eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidateBookPaths();
+}
+
+// ─────────────────────────────────────────
+// CUSTOM BOOKS
+// ─────────────────────────────────────────
+export async function addCustomBook(title: string, status: string, insight: string) {
+  const supabase = await createClient();
+  const { error } = await supabase.from("custom_books").insert({
+    title,
+    status: status || "Up Next",
+    insight: insight || null,
+  });
+  if (error) throw new Error(error.message);
+  revalidateBookPaths();
+}
+
+export async function deleteCustomBook(id: string) {
+  const supabase = await createClient();
+  const { error } = await supabase.from("custom_books").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidateBookPaths();
+}

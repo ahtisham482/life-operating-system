@@ -7,10 +7,14 @@ import { cn } from "@/lib/utils";
 import {
   Target, Grid2X2, CheckSquare, RotateCcw,
   DollarSign, BookOpen, BookMarked, Settings, LogOut,
+  Zap, Calendar, Flag,
 } from "lucide-react";
 
 const NAV = [
   { href: "/dashboard", icon: Target,      label: "Command Center", phase: 1 },
+  { href: "/checkin",   icon: Zap,         label: "Check-In",       phase: 1 },
+  { href: "/weekly",    icon: Calendar,    label: "Weekly",         phase: 1 },
+  { href: "/season",    icon: Flag,        label: "Season",         phase: 1 },
   { href: "/matrix",    icon: Grid2X2,     label: "Matrix",         phase: 1 },
   { href: "/tasks",     icon: CheckSquare, label: "Tasks",          phase: 1 },
   { href: "/habits",    icon: RotateCcw,   label: "Habits",         phase: 1 },

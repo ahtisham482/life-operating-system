@@ -4,8 +4,13 @@ import { createClient } from "@/lib/supabase/server";
 import { fromDb } from "@/lib/utils";
 import { BookForm } from "./book-form";
 import { DeleteBookActionButton } from "./delete-button";
+import { PrescribedBooks } from "./prescribed-books";
+import { CustomLibrary } from "./custom-library";
 import { Badge } from "@/components/ui/badge";
 import type { BookActionItem } from "@/lib/db/schema";
+
+type PrescribedBook = { id: string; title: string; author: string; status: string; sortOrder: number };
+type CustomBook = { id: string; title: string; status: string; insight: string | null };
 
 const STATUS_VARIANT: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
   "To Do": "outline",
@@ -30,12 +35,27 @@ export default async function BooksPage({
 }) {
   const params = await searchParams;
   const supabase = await createClient();
-  const { data: rows } = await supabase
-    .from("book_action_items")
-    .select("*")
-    .order("book_name", { ascending: true })
-    .order("phase_number", { ascending: true })
-    .order("order", { ascending: true });
+
+  // Fetch all book data in parallel
+  const [{ data: rows }, { data: prescribedRows }, { data: customRows }] = await Promise.all([
+    supabase
+      .from("book_action_items")
+      .select("*")
+      .order("book_name", { ascending: true })
+      .order("phase_number", { ascending: true })
+      .order("order", { ascending: true }),
+    supabase
+      .from("prescribed_books")
+      .select("*")
+      .order("sort_order", { ascending: true }),
+    supabase
+      .from("custom_books")
+      .select("*")
+      .order("created_at", { ascending: false }),
+  ]);
+
+  const prescribedBooks = (prescribedRows || []).map((r) => fromDb<PrescribedBook>(r));
+  const customBooks = (customRows || []).map((r) => fromDb<CustomBook>(r));
 
   const allItems = (rows || []).map((r) => fromDb<BookActionItem>(r));
 
@@ -72,12 +92,31 @@ export default async function BooksPage({
 
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-6">
-      {/* Header */}
+      {/* Page Title */}
+      <div className="space-y-1">
+        <h1 className="text-xl font-serif tracking-widest uppercase text-foreground">
+          Reading Tracker
+        </h1>
+        <p className="text-xs font-mono text-muted-foreground tracking-wider">
+          Prescribed reading, your library, and book action items.
+        </p>
+      </div>
+
+      {/* Prescribed Reading List */}
+      <PrescribedBooks books={prescribedBooks} />
+
+      {/* Custom Library */}
+      <CustomLibrary books={customBooks} />
+
+      {/* Separator */}
+      <div className="border-t border-border/50 pt-6" />
+
+      {/* Book Coach Header */}
       <div className="flex items-center justify-between">
         <div className="space-y-1">
-          <h1 className="text-xl font-serif tracking-widest uppercase text-foreground">
-            {"\u{1F4DA}"} Book Coach
-          </h1>
+          <h2 className="text-lg font-serif tracking-widest uppercase text-foreground">
+            {"\u{1F4DA}"} Book Coach — Action Items
+          </h2>
           <p className="text-xs font-mono text-muted-foreground tracking-wider">
             {allItems.length} total · {statusCounts.toDo} to do ·{" "}
             {statusCounts.inProgress} in progress · {statusCounts.done} done ·{" "}

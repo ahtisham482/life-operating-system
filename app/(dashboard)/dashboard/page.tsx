@@ -40,12 +40,32 @@ export default async function DashboardPage() {
   const dateLabel = getDateLabelKarachi();
 
   const supabase = await createClient();
-  const { data: rows } = await supabase
-    .from("tasks")
-    .select("*")
-    .neq("status", "Done");
+
+  // Fetch tasks, active season, and recent check-ins in parallel
+  const [{ data: rows }, { data: seasonRow }, { data: checkinRows }] = await Promise.all([
+    supabase.from("tasks").select("*").neq("status", "Done"),
+    supabase.from("seasons").select("*").eq("is_active", true).maybeSingle(),
+    supabase.from("daily_checkins").select("*").order("date", { ascending: false }).limit(60),
+  ]);
 
   const allActive = (rows || []).map((r) => fromDb<Task>(r));
+
+  // Season info
+  const season = seasonRow ? fromDb<{ goal: string; startDate: string; endDate: string; leadDomain: string }>(seasonRow) : null;
+  const daysLeft = season?.endDate ? Math.max(0, Math.ceil((new Date(season.endDate).getTime() - new Date().getTime()) / 86400000)) : null;
+
+  // Streak calculation
+  const checkins = (checkinRows || []).map((r) => fromDb<{ date: string; leadDone: boolean }>(r));
+  const checkinMap = new Map(checkins.map((c) => [c.date, c.leadDone]));
+  let streak = 0;
+  for (let i = 0; i <= 60; i++) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const k = d.toISOString().slice(0, 10);
+    if (checkinMap.get(k) === true) streak++;
+    else break;
+  }
+  const todayCheckedIn = checkinMap.has(today);
 
   const todayFocus = allActive.filter((t) => classifyTask(t, today) === "Q1");
   const thisWeek = allActive.filter(
@@ -61,13 +81,35 @@ export default async function DashboardPage() {
     <div className="p-6 max-w-5xl mx-auto space-y-8">
       {/* Header */}
       <div className="space-y-1">
+        <p className="text-[10px] font-mono tracking-[0.25em] text-primary uppercase">Life Operating System</p>
         <h1 className="text-xl font-serif tracking-widest uppercase text-foreground">
-          🎯 Command Center
+          Muhammad&apos;s Command Center
         </h1>
-        <p className="text-xs font-mono text-muted-foreground tracking-wider">{dateLabel}</p>
-        <p className="text-xs font-mono text-muted-foreground/60 tracking-wide italic mt-1">
-          Open every morning. Check Today&apos;s Focus → write top 3 on paper → execute → update at end of day.
-        </p>
+        <div className="flex gap-3 mt-3 flex-wrap">
+          {season?.goal && (
+            <span className="text-[11px] font-mono tracking-widest px-3 py-1 border border-primary/30 bg-primary/5 text-primary">
+              ◈ {season.goal.length > 40 ? season.goal.slice(0, 40) + "..." : season.goal}
+            </span>
+          )}
+          {daysLeft !== null && (
+            <span className="text-[11px] font-mono tracking-widest px-3 py-1 border border-border text-muted-foreground">
+              {daysLeft} DAYS LEFT IN SEASON
+            </span>
+          )}
+          {streak > 0 && (
+            <span className="text-[11px] font-mono tracking-widest px-3 py-1 border border-primary/30 bg-primary/5 text-primary">
+              🔥 {streak}-DAY STREAK
+            </span>
+          )}
+          <span className="text-[11px] font-mono tracking-widest px-3 py-1 border border-border text-muted-foreground">
+            {dateLabel}
+          </span>
+          {todayCheckedIn && (
+            <span className="text-[11px] font-mono tracking-widest px-3 py-1 border border-primary/30 bg-primary/5 text-primary">
+              ✓ CHECKED IN
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Today's Focus */}
@@ -169,7 +211,19 @@ export default async function DashboardPage() {
 
       {/* Quick Actions */}
       <section>
-        <div className="flex gap-3">
+        <div className="flex gap-3 flex-wrap">
+          <Link
+            href="/checkin"
+            className="flex-1 text-center py-2.5 border border-primary/30 bg-primary/5 rounded-md text-[10px] font-mono uppercase tracking-widest text-primary hover:bg-primary/10 transition-colors"
+          >
+            Daily Check-In
+          </Link>
+          <Link
+            href="/weekly"
+            className="flex-1 text-center py-2.5 border border-border rounded-md text-[10px] font-mono uppercase tracking-widest text-muted-foreground hover:text-foreground hover:border-primary/30 hover:bg-primary/5 transition-colors"
+          >
+            Weekly Plan
+          </Link>
           <Link
             href="/tasks"
             className="flex-1 text-center py-2.5 border border-border rounded-md text-[10px] font-mono uppercase tracking-widest text-muted-foreground hover:text-foreground hover:border-primary/30 hover:bg-primary/5 transition-colors"
@@ -178,7 +232,7 @@ export default async function DashboardPage() {
           </Link>
           <Link
             href="/matrix"
-            className="flex-1 text-center py-2.5 border border-primary/30 bg-primary/5 rounded-md text-[10px] font-mono uppercase tracking-widest text-primary hover:bg-primary/10 transition-colors"
+            className="flex-1 text-center py-2.5 border border-border rounded-md text-[10px] font-mono uppercase tracking-widest text-muted-foreground hover:text-foreground hover:border-primary/30 hover:bg-primary/5 transition-colors"
           >
             View Matrix
           </Link>
