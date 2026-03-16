@@ -1,9 +1,7 @@
 export const dynamic = "force-dynamic";
 
-import { db } from "@/lib/db";
-import { tasks } from "@/lib/db/schema";
-import { ne } from "drizzle-orm";
-import { getTodayKarachi, getDateLabelKarachi } from "@/lib/utils";
+import { createClient } from "@/lib/supabase/server";
+import { fromDb, getTodayKarachi, getDateLabelKarachi } from "@/lib/utils";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import type { Task } from "@/lib/db/schema";
@@ -41,7 +39,13 @@ export default async function DashboardPage() {
   const weekEnd = addDays(today, 7);
   const dateLabel = getDateLabelKarachi();
 
-  const allActive = await db.select().from(tasks).where(ne(tasks.status, "Done"));
+  const supabase = await createClient();
+  const { data: rows } = await supabase
+    .from("tasks")
+    .select("*")
+    .neq("status", "Done");
+
+  const allActive = (rows || []).map((r) => fromDb<Task>(r));
 
   const todayFocus = allActive.filter((t) => classifyTask(t, today) === "Q1");
   const thisWeek = allActive.filter(

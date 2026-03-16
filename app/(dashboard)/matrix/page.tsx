@@ -1,9 +1,7 @@
 export const dynamic = "force-dynamic";
 
-import { db } from "@/lib/db";
-import { tasks } from "@/lib/db/schema";
-import { ne } from "drizzle-orm";
-import { getTodayKarachi, getDateLabelKarachi, daysBetween } from "@/lib/utils";
+import { createClient } from "@/lib/supabase/server";
+import { fromDb, getTodayKarachi, getDateLabelKarachi, daysBetween } from "@/lib/utils";
 import type { Task } from "@/lib/db/schema";
 
 // ── Schedule mode ─────────────────────────────────────────────────────────────
@@ -81,7 +79,13 @@ export default async function MatrixPage() {
   const today = getTodayKarachi();
   const dateLabel = getDateLabelKarachi();
 
-  const allActive = await db.select().from(tasks).where(ne(tasks.status, "Done"));
+  const supabase = await createClient();
+  const { data: rows } = await supabase
+    .from("tasks")
+    .select("*")
+    .neq("status", "Done");
+
+  const allActive = (rows || []).map((r) => fromDb<Task>(r));
 
   const stuck: Task[] = [];
   const q1Office: Task[] = [];

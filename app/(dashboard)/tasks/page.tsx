@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 
-import { db } from "@/lib/db";
-import { tasks } from "@/lib/db/schema";
+import { createClient } from "@/lib/supabase/server";
+import { fromDb } from "@/lib/utils";
 import { TaskForm } from "./task-form";
 import { DeleteTaskButton } from "./delete-button";
 import { Badge } from "@/components/ui/badge";
@@ -25,9 +25,15 @@ export default async function TasksPage({
   searchParams: Promise<{ status?: string; lifeArea?: string }>;
 }) {
   const params = await searchParams;
-  const allTasks = await db.select().from(tasks).orderBy(tasks.createdAt);
+  const supabase = await createClient();
+  const { data: rows } = await supabase
+    .from("tasks")
+    .select("*")
+    .order("created_at", { ascending: true });
 
-  // Client-side filter (simple for Phase 1)
+  const allTasks = (rows || []).map((r) => fromDb<Task>(r));
+
+  // Filter client-side (simple for Phase 1)
   const filtered = allTasks.filter((t) => {
     if (params.status && t.status !== params.status) return false;
     if (params.lifeArea && t.lifeArea !== params.lifeArea) return false;

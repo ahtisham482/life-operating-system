@@ -1,10 +1,7 @@
 "use server";
 
-import { db } from "@/lib/db";
-import { tasks } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
-import { getTodayKarachi } from "@/lib/utils";
 
 export type TaskFormData = {
   taskName: string;
@@ -19,59 +16,62 @@ export type TaskFormData = {
   repeatEveryDays: number | null;
 };
 
-export async function createTask(data: TaskFormData) {
-  await db.insert(tasks).values({
-    taskName: data.taskName,
-    status: (data.status as "To Do" | "In Progress" | "Done") ?? "To Do",
-    priority: (data.priority as "🔴 High" | "🟡 Medium" | "🟢 Low") ?? undefined,
-    lifeArea: (data.lifeArea as "💼 Job" | "🚀 Business Building" | "📖 Personal Dev" | "🏠 Home & Life") ?? undefined,
-    type: (data.type as "🏗️ Project" | "✅ Task" | "🔧 Subtask" | "🔁 Habit") ?? undefined,
-    dueDate: data.dueDate ?? undefined,
-    notes: data.notes ?? undefined,
-    recurring: data.recurring,
-    frequency: (data.frequency as "Daily" | "Weekly" | "Monthly" | "Custom") ?? undefined,
-    repeatEveryDays: data.repeatEveryDays ?? undefined,
-  });
+function revalidateTaskPaths() {
   revalidatePath("/tasks");
   revalidatePath("/dashboard");
   revalidatePath("/matrix");
+}
+
+export async function createTask(data: TaskFormData) {
+  const supabase = await createClient();
+  const { error } = await supabase.from("tasks").insert({
+    task_name: data.taskName,
+    status: data.status || "To Do",
+    priority: data.priority || null,
+    life_area: data.lifeArea || null,
+    type: data.type || null,
+    due_date: data.dueDate || null,
+    notes: data.notes || null,
+    recurring: data.recurring,
+    frequency: data.frequency || null,
+    repeat_every_days: data.repeatEveryDays || null,
+  });
+  if (error) throw new Error(error.message);
+  revalidateTaskPaths();
 }
 
 export async function updateTask(id: string, data: Partial<TaskFormData>) {
-  await db
-    .update(tasks)
-    .set({
-      ...(data.taskName !== undefined && { taskName: data.taskName }),
-      ...(data.status !== undefined && { status: data.status as "To Do" | "In Progress" | "Done" }),
-      ...(data.priority !== undefined && { priority: (data.priority as "🔴 High" | "🟡 Medium" | "🟢 Low") ?? undefined }),
-      ...(data.lifeArea !== undefined && { lifeArea: (data.lifeArea as "💼 Job" | "🚀 Business Building" | "📖 Personal Dev" | "🏠 Home & Life") ?? undefined }),
-      ...(data.type !== undefined && { type: (data.type as "🏗️ Project" | "✅ Task" | "🔧 Subtask" | "🔁 Habit") ?? undefined }),
-      ...(data.dueDate !== undefined && { dueDate: data.dueDate ?? undefined }),
-      ...(data.notes !== undefined && { notes: data.notes ?? undefined }),
-      ...(data.recurring !== undefined && { recurring: data.recurring }),
-      ...(data.frequency !== undefined && { frequency: (data.frequency as "Daily" | "Weekly" | "Monthly" | "Custom") ?? undefined }),
-      ...(data.repeatEveryDays !== undefined && { repeatEveryDays: data.repeatEveryDays ?? undefined }),
-      updatedAt: new Date(),
-    })
-    .where(eq(tasks.id, id));
-  revalidatePath("/tasks");
-  revalidatePath("/dashboard");
-  revalidatePath("/matrix");
+  const supabase = await createClient();
+  const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
+  if (data.taskName !== undefined) patch.task_name = data.taskName;
+  if (data.status !== undefined) patch.status = data.status;
+  if (data.priority !== undefined) patch.priority = data.priority;
+  if (data.lifeArea !== undefined) patch.life_area = data.lifeArea;
+  if (data.type !== undefined) patch.type = data.type;
+  if (data.dueDate !== undefined) patch.due_date = data.dueDate;
+  if (data.notes !== undefined) patch.notes = data.notes;
+  if (data.recurring !== undefined) patch.recurring = data.recurring;
+  if (data.frequency !== undefined) patch.frequency = data.frequency;
+  if (data.repeatEveryDays !== undefined) patch.repeat_every_days = data.repeatEveryDays;
+
+  const { error } = await supabase.from("tasks").update(patch).eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidateTaskPaths();
 }
 
 export async function deleteTask(id: string) {
-  await db.delete(tasks).where(eq(tasks.id, id));
-  revalidatePath("/tasks");
-  revalidatePath("/dashboard");
-  revalidatePath("/matrix");
+  const supabase = await createClient();
+  const { error } = await supabase.from("tasks").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidateTaskPaths();
 }
 
 export async function markTaskDone(id: string) {
-  await db
-    .update(tasks)
-    .set({ status: "Done", updatedAt: new Date() })
-    .where(eq(tasks.id, id));
-  revalidatePath("/tasks");
-  revalidatePath("/dashboard");
-  revalidatePath("/matrix");
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("tasks")
+    .update({ status: "Done", updated_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidateTaskPaths();
 }
