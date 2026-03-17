@@ -2,14 +2,21 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import {
   Target, Grid2X2, CheckSquare, RotateCcw,
   DollarSign, BookOpen, BookMarked, Settings, LogOut,
-  Zap, Calendar, Flag, Brain,
+  Zap, Calendar, Flag, Brain, Menu, X, Inbox,
 } from "lucide-react";
 
 const NAV_SECTIONS = [
+  {
+    label: "Capture",
+    items: [
+      { href: "/inbox",     icon: Inbox,       label: "Inbox" },
+    ],
+  },
   {
     label: "Core",
     items: [
@@ -44,14 +51,11 @@ const NAV_SECTIONS = [
   },
 ];
 
-export function Sidebar() {
+function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
 
   return (
-    <aside className="flex flex-col w-60 shrink-0 border-r border-white/[0.05] bg-[rgba(10,10,10,0.8)] backdrop-blur-xl h-screen sticky top-0 relative">
-      {/* Subtle right edge glow */}
-      <div className="absolute right-0 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-[#C49E45]/10 to-transparent" />
-
+    <>
       {/* Logo */}
       <div className="px-6 py-6 border-b border-white/[0.05]">
         <div className="flex items-center gap-3.5">
@@ -83,6 +87,7 @@ export function Sidebar() {
                   <Link
                     key={href}
                     href={href}
+                    onClick={onNavigate}
                     className={cn(
                       "group flex items-center gap-3 px-3 py-2.5 rounded-xl text-[11px] font-mono uppercase tracking-wider transition-all duration-200",
                       active
@@ -120,6 +125,71 @@ export function Sidebar() {
           </button>
         </form>
       </div>
-    </aside>
+    </>
+  );
+}
+
+export function Sidebar() {
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const pathname = usePathname();
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
+
+  // Prevent body scroll when mobile menu is open
+  useEffect(() => {
+    if (mobileOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [mobileOpen]);
+
+  return (
+    <>
+      {/* Mobile hamburger button */}
+      <button
+        onClick={() => setMobileOpen(true)}
+        className="md:hidden fixed top-4 left-4 z-50 size-11 flex items-center justify-center rounded-xl bg-[rgba(10,10,10,0.9)] backdrop-blur-xl border border-white/[0.08] text-white/60 hover:text-white/90 transition-colors"
+        aria-label="Open menu"
+      >
+        <Menu className="h-5 w-5" />
+      </button>
+
+      {/* Mobile overlay + sidebar */}
+      {mobileOpen && (
+        <div className="md:hidden fixed inset-0 z-50">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => setMobileOpen(false)}
+          />
+          {/* Slide-in sidebar */}
+          <aside className="absolute left-0 top-0 bottom-0 w-72 flex flex-col bg-[rgba(10,10,10,0.95)] backdrop-blur-xl border-r border-white/[0.05] animate-slide-in-left">
+            {/* Close button */}
+            <button
+              onClick={() => setMobileOpen(false)}
+              className="absolute top-4 right-4 size-11 flex items-center justify-center rounded-xl text-white/40 hover:text-white/80 transition-colors"
+              aria-label="Close menu"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            <SidebarContent onNavigate={() => setMobileOpen(false)} />
+          </aside>
+        </div>
+      )}
+
+      {/* Desktop sidebar — hidden on mobile */}
+      <aside className="hidden md:flex flex-col w-60 shrink-0 border-r border-white/[0.05] bg-[rgba(10,10,10,0.8)] backdrop-blur-xl h-screen sticky top-0 relative">
+        {/* Subtle right edge glow */}
+        <div className="absolute right-0 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-[#C49E45]/10 to-transparent" />
+        <SidebarContent />
+      </aside>
+    </>
   );
 }

@@ -280,6 +280,54 @@
   }
 }
 
+/* Mobile sidebar slide-in */
+@keyframes slide-in-left {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
+.animate-slide-in-left {
+  animation: slide-in-left 0.25s ease-out;
+}
+
+/* Mobile touch targets */
+@media (max-width: 639px) {
+  button, a, [role="button"], input, select, textarea {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Override for inline small elements */
+  .badge, span[class*="badge"], .text-\[9px\], .text-\[10px\], .text-\[11px\] {
+    min-height: unset;
+    min-width: unset;
+  }
+
+  /* Ensure form inputs are properly sized */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="date"],
+  select,
+  textarea {
+    font-size: 16px; /* Prevents iOS zoom on focus */
+  }
+}
+
+/* Inbox modal animations */
+@keyframes fade-in-fast {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.animate-fade-in-fast { animation: fade-in-fast 0.15s ease-out; }
+
+@keyframes slide-up-fast {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-slide-up-fast { animation: slide-up-fast 0.2s ease-out; }
+
 /* Animations */
 
 @keyframes shimmer {

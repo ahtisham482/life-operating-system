@@ -55,11 +55,11 @@ export default async function ExpensesPage({
   const desirePct = monthTotal > 0 ? Math.round((desireTotal / monthTotal) * 100) : 0;
 
   return (
-    <div className="p-8 max-w-6xl mx-auto space-y-8">
+    <div className="p-4 sm:p-8 max-w-6xl mx-auto space-y-6 sm:space-y-8">
       {/* Header */}
-      <div className="flex items-start justify-between animate-slide-up" style={{ animationDelay: "0s", animationFillMode: "both" }}>
-        <div className="space-y-2">
-          <h1 className="text-3xl font-serif tracking-tight text-gradient-primary">
+      <div className="flex items-start justify-between gap-4 animate-slide-up" style={{ animationDelay: "0s", animationFillMode: "both" }}>
+        <div className="space-y-2 min-w-0">
+          <h1 className="text-2xl sm:text-3xl font-serif tracking-tight text-gradient-primary">
             Financial Tracking
           </h1>
           <p className="text-[11px] font-mono text-white/30 tracking-wider">
@@ -86,9 +86,9 @@ export default async function ExpensesPage({
       </div>
 
       {/* Split View: Table + Monthly Summary */}
-      <div className="grid grid-cols-5 gap-6 animate-slide-up" style={{ animationDelay: "0.1s", animationFillMode: "both" }}>
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 animate-slide-up" style={{ animationDelay: "0.1s", animationFillMode: "both" }}>
         {/* Left: Expense Table (col-span-3) */}
-        <div className="col-span-3">
+        <div className="lg:col-span-3">
           {filtered.length === 0 ? (
             <div className="py-16 text-center glass-card rounded-2xl">
               <p className="text-[11px] font-mono text-white/25 tracking-widest uppercase">
@@ -96,8 +96,8 @@ export default async function ExpensesPage({
               </p>
             </div>
           ) : (
-            <div className="glass-card rounded-2xl overflow-hidden">
-              <table className="w-full text-sm">
+            <div className="glass-card rounded-2xl overflow-x-auto">
+              <table className="w-full text-sm min-w-[500px]">
                 <thead>
                   <tr className="bg-white/[0.02] border-b border-white/[0.04]">
                     <th className="px-5 py-3 text-left text-[9px] font-mono uppercase tracking-[0.25em] text-white/25">
@@ -123,7 +123,7 @@ export default async function ExpensesPage({
         </div>
 
         {/* Right: Monthly Summary (col-span-2) */}
-        <div className="col-span-2">
+        <div className="lg:col-span-2">
           <div className="glass-card rounded-2xl p-6 space-y-6 sticky top-8">
             <p className="text-[9px] font-mono tracking-[0.35em] text-white/40 uppercase">
               Monthly Summary

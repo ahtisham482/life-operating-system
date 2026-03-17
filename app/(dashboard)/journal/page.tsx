@@ -54,7 +54,7 @@ export default async function JournalPage({
   const autoTitle = `${dateStr} \u2014 ${period}`;
 
   return (
-    <div className="p-8 max-w-5xl mx-auto space-y-8">
+    <div className="p-4 sm:p-8 max-w-5xl mx-auto space-y-6 sm:space-y-8">
       {/* Header */}
       <div className="flex items-start justify-between animate-slide-up" style={{ animationDelay: "0s", animationFillMode: "both" }}>
         <div className="space-y-2">

@@ -147,7 +147,7 @@ export default async function WeeklyPage() {
     currentTotal > 0 ? Math.round((currentDoneCount / currentTotal) * 100) : 0;
 
   return (
-    <div className="p-8 max-w-5xl mx-auto space-y-10">
+    <div className="p-4 sm:p-8 max-w-5xl mx-auto space-y-8 sm:space-y-10">
       {/* Header */}
       <div
         className="space-y-3 animate-slide-up"
