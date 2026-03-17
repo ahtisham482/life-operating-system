@@ -32,7 +32,7 @@ export default async function EngineLogsPage() {
   const recentActivity = logs.slice(0, 10);
 
   return (
-    <div className="p-8 max-w-5xl mx-auto space-y-10">
+    <div className="p-4 sm:p-8 max-w-5xl mx-auto space-y-8 sm:space-y-10">
       {/* Header */}
       <div className="space-y-3 animate-slide-up" style={{ animationDelay: "0s", animationFillMode: "both" }}>
         <h1 className="text-3xl font-serif tracking-tight text-gradient-primary">
@@ -102,7 +102,7 @@ export default async function EngineLogsPage() {
               return (
                 <div
                   key={log.id}
-                  className="flex items-center gap-3 py-2 px-1"
+                  className="flex items-center gap-2 sm:gap-3 py-2 px-1 flex-wrap"
                 >
                   <span className={`text-xs font-mono ${isError ? "text-red-400" : isSuccess ? "text-green-400/70" : "text-yellow-500/70"}`}>
                     {isError ? "\u2717" : "\u2713"}

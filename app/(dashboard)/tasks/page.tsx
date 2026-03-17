@@ -46,14 +46,14 @@ export default async function TasksPage({
   ];
 
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-8">
+    <div className="p-4 sm:p-8 max-w-7xl mx-auto space-y-6 sm:space-y-8">
       {/* Header */}
-      <div className="flex items-start justify-between animate-slide-up" style={{ animationDelay: "0s", animationFillMode: "both" }}>
-        <div className="space-y-2">
+      <div className="flex items-start justify-between gap-4 animate-slide-up" style={{ animationDelay: "0s", animationFillMode: "both" }}>
+        <div className="space-y-2 min-w-0">
           <p className="text-[9px] font-mono tracking-[0.35em] text-white/20 uppercase">
             Task Management
           </p>
-          <h1 className="text-3xl font-serif tracking-tight text-gradient-primary">
+          <h1 className="text-2xl sm:text-3xl font-serif tracking-tight text-gradient-primary">
             Master Tasks
           </h1>
           <p className="text-[11px] font-mono text-white/30 tracking-wider">
@@ -163,7 +163,7 @@ function TaskCard({ task }: { task: Task }) {
             {task.taskName}
           </span>
         </div>
-        <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+        <div className="flex items-center gap-0.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity flex-shrink-0">
           <TaskForm task={task} />
           <DeleteTaskButton id={task.id} />
         </div>

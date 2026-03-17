@@ -104,7 +104,7 @@ export default async function SeasonPage() {
   }
 
   return (
-    <div className="p-8 max-w-4xl mx-auto space-y-12">
+    <div className="p-4 sm:p-8 max-w-4xl mx-auto space-y-8 sm:space-y-12">
       {/* Header with progress */}
       <div className="space-y-3 animate-slide-up" style={{ animationDelay: "0s", animationFillMode: "both" }}>
         <p className="text-[9px] font-mono tracking-[0.35em] text-white/40 uppercase">
@@ -172,10 +172,10 @@ export default async function SeasonPage() {
               className="glass-card rounded-2xl p-8 border-[#C49E45]/30 animate-slide-up"
               style={{ animationDelay: "0.08s", animationFillMode: "both" }}
             >
-              <div className="flex items-start justify-between">
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3">
-                    <h2 className="text-2xl font-serif text-white/90">
+              <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
+                <div className="space-y-3 min-w-0 flex-1">
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <h2 className="text-xl sm:text-2xl font-serif text-white/90">
                       {leadDomainInfo.label}
                     </h2>
                     <span className="text-[9px] font-mono tracking-[0.3em] uppercase px-3 py-1 rounded-full border border-[#C49E45]/30 bg-[#C49E45]/10 text-[#C49E45]">
@@ -187,7 +187,7 @@ export default async function SeasonPage() {
                   </p>
 
                   {/* Stats */}
-                  <div className="flex gap-8 pt-2">
+                  <div className="flex flex-wrap gap-6 sm:gap-8 pt-2">
                     <div>
                       <p className="text-2xl font-serif text-gradient-primary leading-none">
                         {checkinCount > 0 ? `${leadDoneRate}%` : "—"}

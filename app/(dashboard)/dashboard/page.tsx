@@ -167,7 +167,7 @@ export default async function DashboardPage() {
   }
 
   return (
-    <div className="p-8 max-w-5xl mx-auto space-y-8">
+    <div className="p-4 sm:p-8 max-w-5xl mx-auto space-y-6 sm:space-y-8">
       {/* ── Engine Error Banner ─────────────────── */}
       {hasEngineError && (
         <div className="border border-red-500/30 bg-red-500/[0.05] rounded-2xl p-4 flex items-center justify-between">
@@ -186,7 +186,7 @@ export default async function DashboardPage() {
 
       {/* ── Greeting + Date ─────────────────────── */}
       <div className="space-y-1">
-        <h1 className="text-2xl font-serif tracking-wide text-gradient-primary">
+        <h1 className="text-xl sm:text-2xl font-serif tracking-wide text-gradient-primary">
           {greeting}
         </h1>
         <p className="font-mono text-[11px] tracking-widest text-white/30">
@@ -195,7 +195,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* ── 2x2 Quadrant Grid ───────────────────── */}
-      <div className="grid grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
         {/* ── Top-Left: Pulse Score ─────────────── */}
         <div className="glass-card rounded-2xl p-6 flex flex-col items-center justify-center">
           <p className="font-mono text-[9px] tracking-[0.35em] text-white/40 uppercase mb-4">
