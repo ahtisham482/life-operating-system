@@ -15,7 +15,7 @@
     },
     {
       "path": "/api/engines/notifications",
-      "schedule": "* * * * *"
+      "schedule": "0 3 * * *"
     }
   ]
 }

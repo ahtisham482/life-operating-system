@@ -8,10 +8,13 @@ const ENGINE_NAME = "Notification Engine";
 /**
  * GET /api/engines/notifications
  *
- * Cron-triggered endpoint that:
- * 1. Sends all due scheduled_notifications
- * 2. Generates recurring notifications (daily checkin, overdue digest, weekly review)
- *    based on each user's notification_preferences
+ * Daily cron-triggered endpoint that:
+ * 1. Sends all due scheduled_notifications (task-specific, time-based)
+ * 2. Generates and sends all enabled recurring notifications for today
+ *    (daily checkin, overdue digest, weekly review, habit reminder, tasks due)
+ *
+ * Runs once per day via Vercel cron. Each notification type uses
+ * ensureAndSend() to prevent duplicate sends if the engine runs multiple times.
  */
 export async function GET(request: Request) {
   // Verify cron secret
@@ -27,7 +30,7 @@ export async function GET(request: Request) {
   const errors: string[] = [];
 
   try {
-    // ── STEP 1: Process scheduled notifications that are due ──
+    // ── STEP 1: Process all scheduled notifications that are due ──
     const { data: dueNotifications, error: fetchError } = await supabase
       .from("scheduled_notifications")
       .select("*")
@@ -64,8 +67,9 @@ export async function GET(request: Request) {
       }
     }
 
-    // ── STEP 2: Generate recurring notifications ──
-    // Check each user's preferences and create notifications for today if not already created
+    // ── STEP 2: Generate all recurring notifications for today ──
+    // Daily batch mode: send all enabled notification types once per day.
+    // ensureAndSend() prevents duplicates if the engine runs more than once.
 
     const { data: allPrefs } = await supabase
       .from("notification_preferences")
@@ -73,30 +77,19 @@ export async function GET(request: Request) {
 
     if (allPrefs && allPrefs.length > 0) {
       const today = getTodayKarachi();
-      const currentHour = parseInt(
-        new Intl.DateTimeFormat("en-US", {
-          hour: "numeric",
-          hour12: false,
+      const dayOfWeek = new Date(
+        new Intl.DateTimeFormat("en-CA", {
           timeZone: "Asia/Karachi",
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
         }).format(now)
-      );
-      const currentMinute = parseInt(
-        new Intl.DateTimeFormat("en-US", {
-          minute: "numeric",
-          timeZone: "Asia/Karachi",
-        }).format(now)
-      );
-      const dayOfWeek = new Date().getDay(); // 0=Sunday
+      ).getDay();
 
       for (const prefs of allPrefs) {
         // ── Daily Check-in Reminder ──
-        if (prefs.daily_checkin_enabled && prefs.daily_checkin_time) {
-          const [checkinHour, checkinMinute] = prefs.daily_checkin_time
-            .split(":")
-            .map(Number);
-
-          // Send if we're within the current minute window
-          if (currentHour === checkinHour && currentMinute === checkinMinute) {
+        if (prefs.daily_checkin_enabled) {
+          try {
             await ensureAndSend(supabase, prefs.user_id, {
               type: "daily_checkin",
               title: "🌙 Time for your daily check-in",
@@ -106,20 +99,19 @@ export async function GET(request: Request) {
               today,
             });
             sentCount++;
+          } catch (err) {
+            errors.push(`daily_checkin for ${prefs.user_id}: ${err instanceof Error ? err.message : "Unknown"}`);
           }
         }
 
         // ── Overdue Digest ──
-        if (prefs.overdue_digest_enabled && prefs.overdue_digest_time) {
-          const [digestHour, digestMinute] = prefs.overdue_digest_time
-            .split(":")
-            .map(Number);
-
-          if (currentHour === digestHour && currentMinute === digestMinute) {
+        if (prefs.overdue_digest_enabled) {
+          try {
             // Check for overdue tasks
             const { data: overdueTasks } = await supabase
               .from("tasks")
               .select("task_name")
+              .eq("user_id", prefs.user_id)
               .lt("due_date", today)
               .neq("status", "Done")
               .limit(5);
@@ -139,20 +131,17 @@ export async function GET(request: Request) {
               });
               sentCount++;
             }
+          } catch (err) {
+            errors.push(`overdue_digest for ${prefs.user_id}: ${err instanceof Error ? err.message : "Unknown"}`);
           }
         }
 
-        // ── Weekly Review ──
+        // ── Weekly Review (only on the configured day) ──
         if (
           prefs.weekly_review_enabled &&
-          prefs.weekly_review_time &&
           dayOfWeek === (prefs.weekly_review_day ?? 0)
         ) {
-          const [reviewHour, reviewMinute] = prefs.weekly_review_time
-            .split(":")
-            .map(Number);
-
-          if (currentHour === reviewHour && currentMinute === reviewMinute) {
+          try {
             await ensureAndSend(supabase, prefs.user_id, {
               type: "weekly_review",
               title: "📅 Weekly review time",
@@ -162,16 +151,14 @@ export async function GET(request: Request) {
               today,
             });
             sentCount++;
+          } catch (err) {
+            errors.push(`weekly_review for ${prefs.user_id}: ${err instanceof Error ? err.message : "Unknown"}`);
           }
         }
 
         // ── Habit Reminder ──
-        if (prefs.habit_reminder_enabled && prefs.habit_reminder_time) {
-          const [habitHour, habitMinute] = prefs.habit_reminder_time
-            .split(":")
-            .map(Number);
-
-          if (currentHour === habitHour && currentMinute === habitMinute) {
+        if (prefs.habit_reminder_enabled) {
+          try {
             await ensureAndSend(supabase, prefs.user_id, {
               type: "habit_reminder",
               title: "✅ Track your habits",
@@ -181,19 +168,18 @@ export async function GET(request: Request) {
               today,
             });
             sentCount++;
+          } catch (err) {
+            errors.push(`habit_reminder for ${prefs.user_id}: ${err instanceof Error ? err.message : "Unknown"}`);
           }
         }
 
         // ── Tasks Due Today ──
         if (prefs.task_due_enabled) {
-          const [dueHour] = (prefs.overdue_digest_time || "09:00")
-            .split(":")
-            .map(Number);
-
-          if (currentHour === dueHour && currentMinute === 0) {
+          try {
             const { data: dueTodayTasks } = await supabase
               .from("tasks")
               .select("task_name")
+              .eq("user_id", prefs.user_id)
               .eq("due_date", today)
               .neq("status", "Done")
               .limit(5);
@@ -213,6 +199,8 @@ export async function GET(request: Request) {
               });
               sentCount++;
             }
+          } catch (err) {
+            errors.push(`task_due for ${prefs.user_id}: ${err instanceof Error ? err.message : "Unknown"}`);
           }
         }
       }
