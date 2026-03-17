@@ -32,15 +32,19 @@ type CaptureDetails = {
 };
 
 export default async function InboxPage() {
-  const supabase = await createClient();
-  const { data: captures } = await supabase
-    .from("engine_logs")
-    .select("*")
-    .eq("engine_name", "inbox_capture")
-    .order("run_at", { ascending: false })
-    .limit(50);
-
-  const items = captures ?? [];
+  let items: Record<string, unknown>[] = [];
+  try {
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from("engine_logs")
+      .select("*")
+      .eq("engine_name", "inbox_capture")
+      .order("run_at", { ascending: false })
+      .limit(50);
+    items = data ?? [];
+  } catch {
+    // DB query failed — show empty state gracefully
+  }
 
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
@@ -71,20 +75,20 @@ export default async function InboxPage() {
       {/* Capture List */}
       <div className="space-y-3">
         {items.map((capture) => {
-          const statusCfg = STATUS_CONFIG[capture.status] ?? STATUS_CONFIG.warning;
+          const statusCfg = STATUS_CONFIG[capture.status as string] ?? STATUS_CONFIG.warning;
           const StatusIcon = statusCfg.icon;
-          const details = (capture.details ?? {}) as CaptureDetails;
+          const details = ((capture.details ?? {}) as CaptureDetails);
           const routes = details.parsed_result ?? [];
-          const createdAt = new Date(capture.run_at);
+          const createdAt = new Date(capture.run_at as string);
 
           return (
             <div
-              key={capture.id}
+              key={capture.id as string}
               className="bg-white/[0.02] border border-white/[0.06] rounded-xl p-4 hover:border-white/[0.10] transition-colors"
             >
               {/* Input + Status */}
               <div className="flex items-start justify-between gap-3 mb-3">
-                <p className="text-sm text-white/70 flex-1">{capture.summary}</p>
+                <p className="text-sm text-white/70 flex-1">{capture.summary as string}</p>
                 <div className={cn("flex items-center gap-1.5 shrink-0", statusCfg.color)}>
                   <StatusIcon className="h-3 w-3" />
                   <span className="text-[10px] font-mono uppercase tracking-wider">{statusCfg.label}</span>

@@ -2,7 +2,15 @@ import Groq from "groq-sdk";
 import type { ParsedRoute } from "@/lib/db/schema";
 import { getTodayKarachi } from "@/lib/utils";
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+function getGroqClient() {
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) {
+    throw new Error(
+      "GROQ_API_KEY is not configured. Add it to your Vercel Environment Variables and redeploy."
+    );
+  }
+  return new Groq({ apiKey });
+}
 
 const SYSTEM_PROMPT = `You are an intent parser for a Life Operating System. Given a user's natural language input, classify it into one or more modules and extract structured data.
 
@@ -50,6 +58,7 @@ export async function parseInboxInput(rawInput: string): Promise<ParsedRoute[]> 
   const today = getTodayKarachi();
   const prompt = SYSTEM_PROMPT.replace("{{TODAY}}", today);
 
+  const groq = getGroqClient();
   const completion = await groq.chat.completions.create({
     model: "llama-3.3-70b-versatile",
     messages: [
