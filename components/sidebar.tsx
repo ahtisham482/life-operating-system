@@ -47,7 +47,6 @@ const NAV_SECTIONS = [
     items: [
       { href: "/mirror",    icon: Brain,       label: "Mirror AI" },
       { href: "/engines",   icon: Settings,    label: "Automations" },
-      { href: "/notifications", icon: Bell,    label: "Notifications" },
     ],
   },
 ];
@@ -116,7 +115,34 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
       </nav>
 
       {/* Bottom */}
-      <div className="px-3 py-4 border-t border-[#FFF8F0]/[0.05]">
+      <div className="px-3 py-4 border-t border-[#FFF8F0]/[0.05] space-y-0.5">
+        {(() => {
+          const settingsActive = pathname === "/settings" || pathname.startsWith("/settings/");
+          return (
+            <Link
+              href="/settings"
+              prefetch={true}
+              onClick={onNavigate}
+              className={cn(
+                "group flex items-center gap-3 px-3 py-2.5 rounded-xl text-[11px] font-mono uppercase tracking-wider transition-all duration-200",
+                settingsActive
+                  ? "bg-[#FF6B6B]/[0.08] text-[#FF6B6B] border border-[#FF6B6B]/[0.15] glow-primary-sm"
+                  : "text-[#FFF8F0]/35 hover:text-[#FFF8F0]/80 hover:bg-[#FFF8F0]/[0.03] border border-transparent"
+              )}
+            >
+              <Settings
+                className={cn(
+                  "h-3.5 w-3.5 shrink-0 transition-colors",
+                  settingsActive ? "text-[#FF6B6B]" : "text-[#FFF8F0]/25 group-hover:text-[#FFF8F0]/60"
+                )}
+              />
+              <span>Settings</span>
+              {settingsActive && (
+                <div className="ml-auto size-1.5 rounded-full bg-[#FF6B6B] animate-pulse" />
+              )}
+            </Link>
+          );
+        })()}
         <form action="/auth/signout" method="post">
           <button
             type="submit"
