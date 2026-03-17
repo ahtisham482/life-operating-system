@@ -191,17 +191,15 @@ export function TaskCard({
       animate={{ opacity: isDragging ? 0.3 : 1, y: 0 }}
       exit={{ opacity: 0, y: -4 }}
       transition={{ duration: 0.15, ease: "easeOut" }}
-      className={`rounded-xl p-3 border transition-colors duration-150 group cursor-default ${
-        task.status === "Done"
-          ? "bg-[#1E1C30] border-[#2A2845]"
-          : "bg-[#232140] border-[#2E2C50] hover:border-[#3A3860]"
+      className={`rounded-xl p-3 bg-[rgba(255,200,154,0.05)] border border-[rgba(255,200,154,0.08)] hover:border-[#FFF8F0]/[0.1] transition-colors group cursor-default ${
+        task.status === "Done" ? "opacity-50" : ""
       } ${isDragging ? "shadow-lg shadow-black/30" : ""} ${
         isFocused
           ? "ring-1 ring-[#FF6B6B]/40 border-[#FF6B6B]/20"
           : ""
       } ${
         isSelected
-          ? "ring-1 ring-[#FF6B6B]/50 bg-[#2A1E2E] border-[#FF6B6B]/20"
+          ? "ring-1 ring-[#FF6B6B]/50 bg-[#FF6B6B]/[0.04] border-[#FF6B6B]/20"
           : ""
       } ${
         taskIsOverdue && task.status !== "Done"
@@ -329,9 +327,7 @@ export function TaskCard({
 
       {/* Notes preview */}
       {task.notes && (
-        <p className={`text-[10px] mt-1.5 line-clamp-2 pl-6 ${
-          task.status === "Done" ? "text-[#FFF8F0]/10" : "text-[#FFF8F0]/20"
-        }`}>
+        <p className="text-[10px] text-[#FFF8F0]/20 mt-1.5 line-clamp-2 pl-6">
           {task.notes}
         </p>
       )}
@@ -384,7 +380,7 @@ export function TaskCardOverlay({ task }: { task: Task }) {
     : null;
 
   return (
-    <div className="rounded-xl p-3 shadow-2xl shadow-black/40 bg-[#1A1A2E] border border-[#FF6B6B]/20 rotate-[2deg] scale-105 w-[300px]">
+    <div className="glass-card rounded-xl p-3 shadow-2xl shadow-black/40 border border-[#FF6B6B]/20 rotate-[2deg] scale-105 w-[300px]">
       <div className="flex items-start gap-2">
         <span
           className={`w-[18px] h-[18px] min-w-[18px] mt-0.5 rounded border flex-shrink-0 flex items-center justify-center ${

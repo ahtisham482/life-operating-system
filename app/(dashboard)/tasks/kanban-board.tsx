@@ -633,7 +633,7 @@ export function KanbanBoard({ initialTasks }: { initialTasks: Task[] }) {
 
       {/* Bulk Action Bar (replaces keyboard hints when in select mode) */}
       {isSelectMode ? (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#1A1A2E]/95 border border-[#FF6B6B]/20 shadow-2xl animate-slide-up-fast">
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 px-4 py-2.5 rounded-xl glass-card border border-[#FF6B6B]/20 shadow-2xl animate-slide-up-fast">
           <span className="text-xs font-mono text-[#FF6B6B] mr-1">
             {selectedIds.size} selected
           </span>
@@ -686,7 +686,7 @@ export function KanbanBoard({ initialTasks }: { initialTasks: Task[] }) {
         </div>
       ) : focusedTaskId ? (
         <div
-          className={`fixed bottom-4 left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 px-4 py-2 rounded-xl bg-[#1A1A2E]/90 border border-[#FFF8F0]/[0.06] shadow-xl transition-opacity duration-500 ${
+          className={`fixed bottom-4 left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 px-4 py-2 rounded-xl glass-card border border-[#FFF8F0]/[0.08] shadow-xl transition-opacity duration-500 ${
             hintsVisible ? "opacity-100" : "opacity-0 hover:opacity-80"
           }`}
           onMouseEnter={() => setHintsVisible(true)}
@@ -709,7 +709,7 @@ export function KanbanBoard({ initialTasks }: { initialTasks: Task[] }) {
 
       {/* Undo Toast */}
       {undoState && (
-        <div className="fixed bottom-16 left-1/2 -translate-x-1/2 z-50 flex items-center gap-4 px-5 py-3 rounded-xl bg-[#1A1A2E]/95 border border-[#FFF8F0]/[0.08] shadow-2xl animate-slide-up-fast">
+        <div className="fixed bottom-16 left-1/2 -translate-x-1/2 z-50 flex items-center gap-4 px-5 py-3 rounded-xl glass-card border border-[#FFF8F0]/[0.08] shadow-2xl animate-slide-up-fast">
           <span className="text-sm font-serif text-[#FFF8F0]/60">
             Task deleted
           </span>
