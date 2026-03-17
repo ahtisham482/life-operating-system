@@ -25,6 +25,18 @@ function revalidateTaskPaths() {
 
 export async function createTask(data: TaskFormData) {
   const supabase = await createClient();
+
+  // Get max sort_order for the target status column
+  const { data: maxRow } = await supabase
+    .from("tasks")
+    .select("sort_order")
+    .eq("status", data.status || "To Do")
+    .order("sort_order", { ascending: false })
+    .limit(1)
+    .single();
+
+  const nextOrder = (maxRow?.sort_order ?? -1) + 1;
+
   const { error } = await supabase.from("tasks").insert({
     task_name: data.taskName,
     status: data.status || "To Do",
@@ -36,6 +48,7 @@ export async function createTask(data: TaskFormData) {
     recurring: data.recurring,
     frequency: data.frequency || null,
     repeat_every_days: data.repeatEveryDays || null,
+    sort_order: nextOrder,
   });
   if (error) throw new Error(error.message);
   revalidateTaskPaths();
@@ -75,11 +88,54 @@ export async function markTaskDone(id: string) {
     .eq("id", id);
   if (error) throw new Error(error.message);
 
-  // Fire-and-forget behavioral signal for Mirror AI
   logMirrorSignal({
     type: "task_complete",
     context: { task_id: id },
   });
 
+  revalidateTaskPaths();
+}
+
+// --- NEW: Quick field updates for inline editing ---
+
+export async function updateTaskField(
+  id: string,
+  field: string,
+  value: unknown
+) {
+  const supabase = await createClient();
+  const patch: Record<string, unknown> = {
+    [field]: value,
+    updated_at: new Date().toISOString(),
+  };
+  const { error } = await supabase.from("tasks").update(patch).eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidateTaskPaths();
+}
+
+// --- NEW: Batch reorder for DnD ---
+
+export async function reorderTasks(
+  updates: { id: string; sortOrder: number; status: string }[]
+) {
+  const supabase = await createClient();
+  const now = new Date().toISOString();
+
+  // Use Promise.all for parallel updates
+  const results = await Promise.all(
+    updates.map((u) =>
+      supabase
+        .from("tasks")
+        .update({
+          sort_order: u.sortOrder,
+          status: u.status,
+          updated_at: now,
+        })
+        .eq("id", u.id)
+    )
+  );
+
+  const failed = results.find((r) => r.error);
+  if (failed?.error) throw new Error(failed.error.message);
   revalidateTaskPaths();
 }
