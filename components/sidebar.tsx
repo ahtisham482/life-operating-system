@@ -156,7 +156,7 @@ export function Sidebar() {
       {/* Mobile hamburger button */}
       <button
         onClick={() => setMobileOpen(true)}
-        className="md:hidden fixed top-4 left-4 z-50 size-11 flex items-center justify-center rounded-xl bg-[rgba(10,10,10,0.9)] backdrop-blur-xl border border-[#FFF8F0]/[0.08] text-[#FFF8F0]/60 hover:text-[#FFF8F0]/90 transition-colors"
+        className="md:hidden fixed top-4 left-4 z-50 size-11 flex items-center justify-center rounded-xl bg-[rgba(22,22,42,0.95)] backdrop-blur-xl border border-[#FFF8F0]/[0.08] text-[#FFF8F0]/60 hover:text-[#FFF8F0]/90 transition-colors"
         aria-label="Open menu"
       >
         <Menu className="h-5 w-5" />
@@ -171,7 +171,7 @@ export function Sidebar() {
             onClick={() => setMobileOpen(false)}
           />
           {/* Slide-in sidebar */}
-          <aside className="absolute left-0 top-0 bottom-0 w-72 flex flex-col bg-[rgba(10,10,10,0.95)] backdrop-blur-xl border-r border-[#FFF8F0]/[0.05] animate-slide-in-left">
+          <aside className="absolute left-0 top-0 bottom-0 w-72 flex flex-col bg-[rgba(22,22,42,0.97)] backdrop-blur-xl border-r border-[#FFF8F0]/[0.05] animate-slide-in-left">
             {/* Close button */}
             <button
               onClick={() => setMobileOpen(false)}
@@ -186,7 +186,7 @@ export function Sidebar() {
       )}
 
       {/* Desktop sidebar — hidden on mobile */}
-      <aside className="hidden md:flex flex-col w-60 shrink-0 border-r border-[#FFF8F0]/[0.05] bg-[rgba(10,10,10,0.8)] backdrop-blur-xl h-screen sticky top-0 relative">
+      <aside className="hidden md:flex flex-col w-60 shrink-0 border-r border-[#FFF8F0]/[0.05] bg-[rgba(22,22,42,0.85)] backdrop-blur-xl h-screen sticky top-0 relative">
         {/* Subtle right edge glow */}
         <div className="absolute right-0 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-[#FF6B6B]/10 to-transparent" />
         <SidebarContent />

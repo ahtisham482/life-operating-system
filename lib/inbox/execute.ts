@@ -10,7 +10,10 @@ type ExecResult = {
   error?: string;
 };
 
-export async function executeRoutes(routes: ParsedRoute[]): Promise<ExecResult[]> {
+export async function executeRoutes(
+  routes: ParsedRoute[],
+  captureContext?: string
+): Promise<ExecResult[]> {
   const results: ExecResult[] = [];
 
   for (const route of routes) {
@@ -18,16 +21,16 @@ export async function executeRoutes(routes: ParsedRoute[]): Promise<ExecResult[]
       switch (route.module) {
         case "tasks":
         case "habits":
-          await executeTask(route);
+          await executeTask(route, captureContext);
           break;
         case "expenses":
-          await executeExpense(route);
+          await executeExpense(route, captureContext);
           break;
         case "journal":
-          await executeJournal(route);
+          await executeJournal(route, captureContext);
           break;
         case "books":
-          await executeBook(route);
+          await executeBook(route, captureContext);
           break;
         case "weekly":
           await executeWeekly(route);
@@ -39,7 +42,11 @@ export async function executeRoutes(routes: ParsedRoute[]): Promise<ExecResult[]
           await executeCheckin(route);
           break;
         default:
-          results.push({ module: route.module, success: false, error: "Unknown module" });
+          results.push({
+            module: route.module,
+            success: false,
+            error: "Unknown module",
+          });
           continue;
       }
       results.push({ module: route.module, success: true });
@@ -55,21 +62,37 @@ export async function executeRoutes(routes: ParsedRoute[]): Promise<ExecResult[]
   return results;
 }
 
-async function executeTask(route: ParsedRoute) {
+function buildNotes(
+  route: ParsedRoute,
+  captureContext?: string
+): string {
+  const parts: string[] = [];
+  parts.push(`Created via Inbox: "${route.summary}"`);
+  if (captureContext) {
+    parts.push("");
+    parts.push(captureContext);
+  }
+  return parts.join("\n");
+}
+
+async function executeTask(route: ParsedRoute, captureContext?: string) {
   const supabase = await createClient();
   const d = route.data;
   const isHabit = route.module === "habits" || d.type === "🔁 Habit";
 
   const { error } = await supabase.from("tasks").insert({
-    task_name: (d.taskName as string) || (d.habitDescription as string) || route.summary,
+    task_name:
+      (d.taskName as string) ||
+      (d.habitDescription as string) ||
+      route.summary,
     status: "To Do",
     priority: (d.priority as string) || null,
     life_area: (d.lifeArea as string) || null,
-    type: isHabit ? "🔁 Habit" : ((d.type as string) || "✅ Task"),
+    type: isHabit ? "🔁 Habit" : (d.type as string) || "✅ Task",
     due_date: (d.dueDate as string) || null,
-    notes: `Created via Inbox: "${route.summary}"`,
+    notes: buildNotes(route, captureContext),
     recurring: isHabit ? true : false,
-    frequency: isHabit ? ((d.frequency as string) || "Daily") : null,
+    frequency: isHabit ? (d.frequency as string) || "Daily" : null,
   });
   if (error) throw new Error(error.message);
 
@@ -79,7 +102,7 @@ async function executeTask(route: ParsedRoute) {
   revalidatePath("/matrix");
 }
 
-async function executeExpense(route: ParsedRoute) {
+async function executeExpense(route: ParsedRoute, captureContext?: string) {
   const supabase = await createClient();
   const d = route.data;
   const { error } = await supabase.from("expenses").insert({
@@ -88,7 +111,7 @@ async function executeExpense(route: ParsedRoute) {
     category: (d.category as string) || "Other",
     date: (d.date as string) || getTodayKarachi(),
     type: (d.type as string) || "Need",
-    notes: `Created via Inbox`,
+    notes: buildNotes(route, captureContext),
   });
   if (error) throw new Error(error.message);
 
@@ -100,13 +123,15 @@ async function executeExpense(route: ParsedRoute) {
   revalidatePath("/dashboard");
 }
 
-async function executeJournal(route: ParsedRoute) {
+async function executeJournal(route: ParsedRoute, captureContext?: string) {
   const supabase = await createClient();
   const d = route.data;
   const { error } = await supabase.from("journal_entries").insert({
     title: (d.title as string) || "Inbox Entry",
     date: (d.date as string) || getTodayKarachi(),
-    entry: (d.entry as string) || route.summary,
+    entry: captureContext
+      ? `${(d.entry as string) || route.summary}\n\n${captureContext}`
+      : (d.entry as string) || route.summary,
     mood: (d.mood as string) || "😐 Neutral",
     category: (d.category as string) || "General",
   });
@@ -120,13 +145,15 @@ async function executeJournal(route: ParsedRoute) {
   revalidatePath("/dashboard");
 }
 
-async function executeBook(route: ParsedRoute) {
+async function executeBook(route: ParsedRoute, captureContext?: string) {
   const supabase = await createClient();
   const d = route.data;
   const { error } = await supabase.from("custom_books").insert({
     title: (d.title as string) || route.summary,
     status: (d.status as string) || "Up Next",
-    insight: (d.insight as string) || null,
+    insight: captureContext
+      ? `${(d.insight as string) || ""}\n${captureContext}`.trim()
+      : (d.insight as string) || null,
   });
   if (error) throw new Error(error.message);
 
@@ -140,7 +167,9 @@ async function executeWeekly(route: ParsedRoute) {
   // Calculate the current week key (YYYY-WNN)
   const today = new Date();
   const jan1 = new Date(today.getFullYear(), 0, 1);
-  const weekNum = Math.ceil(((today.getTime() - jan1.getTime()) / 86400000 + jan1.getDay() + 1) / 7);
+  const weekNum = Math.ceil(
+    ((today.getTime() - jan1.getTime()) / 86400000 + jan1.getDay() + 1) / 7
+  );
   const weekKey = `${today.getFullYear()}-W${String(weekNum).padStart(2, "0")}`;
 
   const { error } = await supabase.from("weekly_plans").upsert(
