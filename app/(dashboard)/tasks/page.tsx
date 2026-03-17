@@ -13,9 +13,11 @@ export default async function TasksPage({
 }) {
   const params = await searchParams;
   const supabase = await createClient();
+  // Only fetch top-level tasks (exclude subtasks that have a parent)
   const { data: rows } = await supabase
     .from("tasks")
     .select("*")
+    .is("parent_project_id", null)
     .order("sort_order", { ascending: true })
     .order("created_at", { ascending: true });
 

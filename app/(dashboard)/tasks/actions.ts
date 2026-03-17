@@ -118,7 +118,125 @@ export async function searchTasks(query: string) {
   }));
 }
 
-// --- NEW: Quick field updates for inline editing ---
+// --- Bulk operations ---
+
+export async function bulkUpdateTasks(
+  ids: string[],
+  data: { status?: string; priority?: string | null }
+) {
+  if (ids.length === 0) return;
+  const supabase = await createClient();
+  const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
+  if (data.status !== undefined) patch.status = data.status;
+  if (data.priority !== undefined) patch.priority = data.priority;
+
+  const { error } = await supabase.from("tasks").update(patch).in("id", ids);
+  if (error) throw new Error(error.message);
+  revalidateTaskPaths();
+}
+
+export async function bulkDeleteTasks(ids: string[]) {
+  if (ids.length === 0) return;
+  const supabase = await createClient();
+  const { error } = await supabase.from("tasks").delete().in("id", ids);
+  if (error) throw new Error(error.message);
+  revalidateTaskPaths();
+}
+
+// --- Subtask operations ---
+
+export type SubtaskRow = {
+  id: string;
+  taskName: string;
+  status: string;
+  sortOrder: number | null;
+};
+
+export async function getSubtasks(parentId: string): Promise<SubtaskRow[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("tasks")
+    .select("id, task_name, status, sort_order")
+    .eq("parent_project_id", parentId)
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: true });
+
+  return (data || []).map((r) => ({
+    id: r.id as string,
+    taskName: r.task_name as string,
+    status: r.status as string,
+    sortOrder: r.sort_order as number | null,
+  }));
+}
+
+export async function createSubtask(
+  parentId: string,
+  name: string
+): Promise<SubtaskRow> {
+  const supabase = await createClient();
+
+  const { data: maxRow } = await supabase
+    .from("tasks")
+    .select("sort_order")
+    .eq("parent_project_id", parentId)
+    .order("sort_order", { ascending: false })
+    .limit(1)
+    .single();
+
+  const nextOrder = (maxRow?.sort_order ?? -1) + 1;
+
+  const { data, error } = await supabase
+    .from("tasks")
+    .insert({
+      task_name: name,
+      status: "To Do",
+      priority: null,
+      type: "🔧 Subtask",
+      parent_project_id: parentId,
+      sort_order: nextOrder,
+      recurring: false,
+    })
+    .select("id, task_name, status, sort_order")
+    .single();
+
+  if (error) throw new Error(error.message);
+  revalidateTaskPaths();
+
+  return {
+    id: data.id as string,
+    taskName: data.task_name as string,
+    status: data.status as string,
+    sortOrder: data.sort_order as number | null,
+  };
+}
+
+export async function toggleSubtaskStatus(id: string): Promise<string> {
+  const supabase = await createClient();
+
+  const { data: current } = await supabase
+    .from("tasks")
+    .select("status")
+    .eq("id", id)
+    .single();
+
+  const newStatus = current?.status === "Done" ? "To Do" : "Done";
+
+  const { error } = await supabase
+    .from("tasks")
+    .update({ status: newStatus, updated_at: new Date().toISOString() })
+    .eq("id", id);
+
+  if (error) throw new Error(error.message);
+
+  if (newStatus === "Done") {
+    logMirrorSignal({ type: "task_complete", context: { task_id: id } });
+  }
+
+  revalidateTaskPaths();
+  return newStatus;
+}
+
+// --- Quick field updates for inline editing ---
 
 export async function updateTaskField(
   id: string,

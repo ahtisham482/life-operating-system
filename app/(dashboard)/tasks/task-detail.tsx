@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { X, Trash2, Sparkles } from "lucide-react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { X, Trash2, Sparkles, Plus, Check, ListChecks, Loader2 } from "lucide-react";
 import type { Task } from "@/lib/db/schema";
-import { updateTask, deleteTask } from "./actions";
+import { updateTask, deleteTask, getSubtasks, createSubtask, toggleSubtaskStatus, deleteTask as deleteSubtask, type SubtaskRow } from "./actions";
 import { parseDateString, formatDateLabel } from "@/lib/parse-date";
 
 const FIELD_CLASS =
@@ -381,6 +381,9 @@ export function TaskDetailPanel({
               placeholder="Any additional context..."
             />
           </div>
+
+          {/* Subtasks Section */}
+          <SubtasksSection taskId={task.id} taskType={form.type} />
         </div>
 
         {/* Footer actions */}
@@ -435,6 +438,211 @@ export function TaskDetailPanel({
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ─── Subtasks Section ──────────────────────────────
+function SubtasksSection({ taskId, taskType }: { taskId: string; taskType: string }) {
+  const [subtasks, setSubtasks] = useState<SubtaskRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [addText, setAddText] = useState("");
+  const [adding, setAdding] = useState(false);
+  const [showAdd, setShowAdd] = useState(false);
+  const addInputRef = useRef<HTMLInputElement>(null);
+
+  // Fetch subtasks on mount / when taskId changes
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    getSubtasks(taskId).then((rows) => {
+      if (!cancelled) {
+        setSubtasks(rows);
+        setLoading(false);
+      }
+    }).catch(() => {
+      if (!cancelled) setLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, [taskId]);
+
+  // Focus add input when shown
+  useEffect(() => {
+    if (showAdd) addInputRef.current?.focus();
+  }, [showAdd]);
+
+  const handleAdd = useCallback(async () => {
+    const name = addText.trim();
+    if (!name) return;
+    setAdding(true);
+    try {
+      const row = await createSubtask(taskId, name);
+      setSubtasks((prev) => [...prev, row]);
+      setAddText("");
+      addInputRef.current?.focus();
+    } catch {
+      // keep text for retry
+    } finally {
+      setAdding(false);
+    }
+  }, [addText, taskId]);
+
+  const handleToggle = useCallback(async (id: string) => {
+    // Optimistic toggle
+    setSubtasks((prev) =>
+      prev.map((s) =>
+        s.id === id
+          ? { ...s, status: s.status === "Done" ? "To Do" : "Done" }
+          : s
+      )
+    );
+    try {
+      await toggleSubtaskStatus(id);
+    } catch {
+      // Refetch on error
+      const rows = await getSubtasks(taskId);
+      setSubtasks(rows);
+    }
+  }, [taskId]);
+
+  const handleDeleteSubtask = useCallback(async (id: string) => {
+    // Optimistic removal
+    setSubtasks((prev) => prev.filter((s) => s.id !== id));
+    try {
+      await deleteSubtask(id);
+    } catch {
+      const rows = await getSubtasks(taskId);
+      setSubtasks(rows);
+    }
+  }, [taskId]);
+
+  const doneCount = subtasks.filter((s) => s.status === "Done").length;
+  const totalCount = subtasks.length;
+  const progress = totalCount > 0 ? (doneCount / totalCount) * 100 : 0;
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <ListChecks className="w-3.5 h-3.5 text-[#FFF8F0]/30" />
+          <label className="text-[10px] font-mono text-[#FFF8F0]/40 tracking-widest uppercase">
+            Subtasks
+          </label>
+          {totalCount > 0 && (
+            <span className="text-[10px] font-mono text-[#FFF8F0]/25">
+              {doneCount}/{totalCount}
+            </span>
+          )}
+        </div>
+        <button
+          onClick={() => setShowAdd(true)}
+          className="w-5 h-5 flex items-center justify-center rounded text-[#FFF8F0]/20 hover:text-[#FF6B6B] hover:bg-[#FF6B6B]/10 transition-all"
+          title="Add subtask"
+        >
+          <Plus className="w-3.5 h-3.5" />
+        </button>
+      </div>
+
+      {/* Progress bar */}
+      {totalCount > 0 && (
+        <div className="h-1 w-full bg-[#FFF8F0]/[0.06] rounded-full overflow-hidden">
+          <div
+            className="h-full bg-gradient-to-r from-[#FF6B6B] to-[#FEC89A] transition-all duration-300 rounded-full"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+      )}
+
+      {/* Loading state */}
+      {loading && (
+        <div className="flex items-center justify-center py-4">
+          <Loader2 className="w-4 h-4 text-[#FFF8F0]/20 animate-spin" />
+        </div>
+      )}
+
+      {/* Subtask list */}
+      {!loading && subtasks.length > 0 && (
+        <div className="space-y-1">
+          {subtasks.map((sub) => (
+            <div
+              key={sub.id}
+              className="flex items-center gap-2 group/sub py-1 px-1 rounded-md hover:bg-[#FFF8F0]/[0.02] transition-colors"
+            >
+              <button
+                onClick={() => handleToggle(sub.id)}
+                className={`w-4 h-4 min-w-[16px] rounded border flex-shrink-0 flex items-center justify-center transition-all ${
+                  sub.status === "Done"
+                    ? "bg-[#FF6B6B]/80 border-[#FF6B6B]/60 text-black"
+                    : "border-[#FFF8F0]/20 hover:border-[#FF6B6B]/50 hover:bg-[#FF6B6B]/10"
+                }`}
+              >
+                {sub.status === "Done" && <Check className="w-2.5 h-2.5" />}
+              </button>
+              <span
+                className={`text-sm font-serif flex-1 ${
+                  sub.status === "Done"
+                    ? "line-through text-[#FFF8F0]/25"
+                    : "text-[#FFF8F0]/70"
+                }`}
+              >
+                {sub.taskName}
+              </span>
+              <button
+                onClick={() => handleDeleteSubtask(sub.id)}
+                className="w-4 h-4 flex items-center justify-center text-red-400/0 group-hover/sub:text-red-400/40 hover:!text-red-400 transition-all flex-shrink-0"
+                title="Delete subtask"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Empty state */}
+      {!loading && subtasks.length === 0 && !showAdd && (
+        <button
+          onClick={() => setShowAdd(true)}
+          className="w-full py-3 flex items-center justify-center gap-2 text-[10px] font-mono text-[#FFF8F0]/15 hover:text-[#FFF8F0]/30 border border-dashed border-[#FFF8F0]/[0.06] hover:border-[#FFF8F0]/[0.1] rounded-lg transition-colors"
+        >
+          <Plus className="w-3 h-3" />
+          Add a subtask
+        </button>
+      )}
+
+      {/* Inline add */}
+      {showAdd && (
+        <div className="flex items-center gap-2">
+          <input
+            ref={addInputRef}
+            type="text"
+            value={addText}
+            onChange={(e) => setAddText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                handleAdd();
+              }
+              if (e.key === "Escape") {
+                setShowAdd(false);
+                setAddText("");
+              }
+            }}
+            onBlur={() => {
+              if (!addText.trim()) {
+                setShowAdd(false);
+                setAddText("");
+              }
+            }}
+            placeholder="Subtask name..."
+            disabled={adding}
+            className="flex-1 h-8 px-2 bg-transparent border border-[#FFF8F0]/[0.08] rounded-md text-sm font-serif text-[#FFF8F0]/80 placeholder:text-[#FFF8F0]/20 focus:outline-none focus:ring-1 focus:ring-[#FF6B6B]/30 disabled:opacity-40"
+          />
+          {adding && (
+            <Loader2 className="w-3.5 h-3.5 text-[#FFF8F0]/20 animate-spin flex-shrink-0" />
+          )}
+        </div>
+      )}
     </div>
   );
 }

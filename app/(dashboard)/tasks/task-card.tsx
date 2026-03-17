@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { motion } from "framer-motion";
-import { Check, GripVertical } from "lucide-react";
+import { Check, GripVertical, ListChecks } from "lucide-react";
 import type { Task } from "@/lib/db/schema";
 import { updateTaskField, markTaskDone, updateTask } from "./actions";
 
@@ -48,21 +48,27 @@ function formatDueDate(dateStr: string): { text: string; color: string } {
 export function TaskCard({
   task,
   isFocused,
+  isSelected,
+  isSelectMode,
   onContextMenu,
   onCardClick,
   onTaskUpdate,
   onTaskDelete,
   onFocus,
   onTriggerEdit,
+  onToggleSelect,
 }: {
   task: Task;
   isFocused?: boolean;
+  isSelected?: boolean;
+  isSelectMode?: boolean;
   onContextMenu: (e: React.MouseEvent, task: Task) => void;
   onCardClick: (task: Task) => void;
   onTaskUpdate: (task: Task) => void;
   onTaskDelete: (id: string) => void;
   onFocus?: () => void;
   onTriggerEdit?: () => void;
+  onToggleSelect?: () => void;
 }) {
   const {
     attributes,
@@ -192,23 +198,59 @@ export function TaskCard({
           ? "ring-1 ring-[#FF6B6B]/40 border-[#FF6B6B]/20"
           : ""
       } ${
+        isSelected
+          ? "ring-1 ring-[#FF6B6B]/50 bg-[#FF6B6B]/[0.04] border-[#FF6B6B]/20"
+          : ""
+      } ${
         taskIsOverdue && task.status !== "Done"
           ? "border-l-2 border-l-red-500/40"
           : ""
       } ${justCompleted ? "animate-pulse ring-1 ring-emerald-500/30" : ""}`}
       onContextMenu={(e) => onContextMenu(e, task)}
-      onClick={onFocus}
+      onClick={(e) => {
+        if (isSelectMode && onToggleSelect) {
+          e.stopPropagation();
+          onToggleSelect();
+        } else {
+          onFocus?.();
+        }
+      }}
       tabIndex={0}
       onKeyDown={(e) => {
-        if (editing) return; // don't intercept while editing title
+        if (editing) return;
+        if ((e.key === "x" || e.key === "X") && onToggleSelect) {
+          e.preventDefault();
+          onToggleSelect();
+          return;
+        }
         if (e.key === "e" || e.key === "E") {
           e.preventDefault();
           setEditing(true);
         }
       }}
     >
-      {/* Top row: checkbox + title + priority + grip */}
+      {/* Top row: selection + checkbox + title + priority + grip */}
       <div className="flex items-start gap-2">
+        {/* Selection checkbox */}
+        {onToggleSelect && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleSelect();
+            }}
+            className={`w-4 h-4 min-w-[16px] mt-0.5 rounded-full border flex-shrink-0 flex items-center justify-center transition-all ${
+              isSelected
+                ? "bg-[#FF6B6B] border-[#FF6B6B] text-white"
+                : isSelectMode
+                ? "border-[#FFF8F0]/30 hover:border-[#FF6B6B]/50"
+                : "border-[#FFF8F0]/15 opacity-0 group-hover:opacity-100"
+            }`}
+            title="Select task"
+          >
+            {isSelected && <Check className="w-2.5 h-2.5" />}
+          </button>
+        )}
+
         {/* Status checkbox */}
         <button
           onClick={(e) => {
@@ -312,6 +354,11 @@ export function TaskCard({
         {task.type === "🔁 Habit" && (
           <span className="text-[9px] font-mono text-[#FF6B6B]/50 px-1">
             🔁
+          </span>
+        )}
+        {task.type === "🏗️ Project" && (
+          <span className="flex items-center gap-0.5 text-[9px] font-mono text-[#FEC89A]/40" title="Has subtasks">
+            <ListChecks className="w-3 h-3" />
           </span>
         )}
         {dueInfo && (

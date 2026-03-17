@@ -27,9 +27,9 @@ import {
   arrayMove,
 } from "@dnd-kit/sortable";
 import { AnimatePresence } from "framer-motion";
-import { Plus, Calendar as CalendarIcon } from "lucide-react";
+import { Plus, Calendar as CalendarIcon, CheckSquare, ArrowRight, Trash2, X as XIcon } from "lucide-react";
 import type { Task } from "@/lib/db/schema";
-import { createTask, reorderTasks, deleteTask } from "./actions";
+import { createTask, reorderTasks, deleteTask, bulkUpdateTasks, bulkDeleteTasks } from "./actions";
 import { TaskCard, TaskCardOverlay } from "./task-card";
 import { TaskDetailPanel } from "./task-detail";
 import { parseNaturalDate, type ParsedDate } from "@/lib/parse-date";
@@ -58,6 +58,10 @@ export function KanbanBoard({ initialTasks }: { initialTasks: Task[] }) {
   // Keyboard navigation state
   const [focusedTaskId, setFocusedTaskId] = useState<string | null>(null);
   const boardRef = useRef<HTMLDivElement>(null);
+
+  // Bulk selection state
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const isSelectMode = selectedIds.size > 0;
 
   // Undo toast state
   const [undoState, setUndoState] = useState<{
@@ -161,6 +165,82 @@ export function KanbanBoard({ initialTasks }: { initialTasks: Task[] }) {
     });
   }, [undoState]);
 
+  // ─── Bulk Selection Helpers ─────────────────────────────
+  const toggleSelect = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const clearSelection = useCallback(() => {
+    setSelectedIds(new Set());
+  }, []);
+
+  const selectAll = useCallback(() => {
+    setSelectedIds(new Set(allTaskIds));
+  }, [allTaskIds]);
+
+  // ─── Bulk Action Handlers ─────────────────────────────
+  const bulkMove = useCallback(
+    async (newStatus: string) => {
+      const ids = Array.from(selectedIds);
+      // Optimistic
+      setTasks((prev) =>
+        prev.map((t) =>
+          selectedIds.has(t.id)
+            ? { ...t, status: newStatus as Task["status"] }
+            : t
+        )
+      );
+      clearSelection();
+      try {
+        await bulkUpdateTasks(ids, { status: newStatus });
+      } catch {
+        setTasks(initialTasks);
+      }
+    },
+    [selectedIds, clearSelection, initialTasks]
+  );
+
+  const bulkPriority = useCallback(
+    async (priority: string | null) => {
+      const ids = Array.from(selectedIds);
+      // Optimistic
+      setTasks((prev) =>
+        prev.map((t) =>
+          selectedIds.has(t.id)
+            ? { ...t, priority: priority as Task["priority"] }
+            : t
+        )
+      );
+      clearSelection();
+      try {
+        await bulkUpdateTasks(ids, { priority });
+      } catch {
+        setTasks(initialTasks);
+      }
+    },
+    [selectedIds, clearSelection, initialTasks]
+  );
+
+  const bulkDelete = useCallback(async () => {
+    const ids = Array.from(selectedIds);
+    // Optimistic
+    setTasks((prev) => prev.filter((t) => !selectedIds.has(t.id)));
+    if (focusedTaskId && selectedIds.has(focusedTaskId))
+      setFocusedTaskId(null);
+    if (detailTask && selectedIds.has(detailTask.id)) setDetailTask(null);
+    clearSelection();
+    try {
+      await bulkDeleteTasks(ids);
+    } catch {
+      setTasks(initialTasks);
+    }
+  }, [selectedIds, focusedTaskId, detailTask, clearSelection, initialTasks]);
+
   // ─── Keyboard Navigation ─────────────────────────────
   useEffect(() => {
     function handleKeyDown(e: globalThis.KeyboardEvent) {
@@ -185,7 +265,22 @@ export function KanbanBoard({ initialTasks }: { initialTasks: Task[] }) {
       // Don't intercept when detail panel, context menu, or help overlay is open
       if (detailTask || contextMenu || showShortcutHelp) return;
 
+      // Ctrl+A / Cmd+A select all
+      if ((e.ctrlKey || e.metaKey) && e.key === "a") {
+        e.preventDefault();
+        selectAll();
+        return;
+      }
+
       switch (e.key) {
+        case "x":
+        case "X": {
+          if (focusedTaskId) {
+            e.preventDefault();
+            toggleSelect(focusedTaskId);
+          }
+          break;
+        }
         case "ArrowDown":
         case "j": {
           e.preventDefault();
@@ -242,7 +337,9 @@ export function KanbanBoard({ initialTasks }: { initialTasks: Task[] }) {
           break;
         }
         case "Escape": {
-          if (focusedTaskId) {
+          if (isSelectMode) {
+            clearSelection();
+          } else if (focusedTaskId) {
             setFocusedTaskId(null);
           }
           break;
@@ -251,7 +348,7 @@ export function KanbanBoard({ initialTasks }: { initialTasks: Task[] }) {
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [focusedTaskId, allTaskIds, tasks, detailTask, contextMenu, showShortcutHelp]);
+  }, [focusedTaskId, allTaskIds, tasks, detailTask, contextMenu, showShortcutHelp, isSelectMode, clearSelection, selectAll, toggleSelect]);
 
   // ─── DnD Handlers ──────────────────────────────────
   function onDragStart(event: DragStartEvent) {
@@ -500,11 +597,14 @@ export function KanbanBoard({ initialTasks }: { initialTasks: Task[] }) {
               status={status}
               tasks={tasksByStatus[status]}
               focusedTaskId={focusedTaskId}
+              selectedIds={selectedIds}
+              isSelectMode={isSelectMode}
               onContextMenu={handleContextMenu}
               onCardClick={setDetailTask}
               onTaskUpdate={handleTaskUpdate}
               onTaskDelete={handleTaskDelete}
               onTaskFocus={setFocusedTaskId}
+              onToggleSelect={toggleSelect}
               quickAddRef={status === "To Do" ? todoQuickAddRef : undefined}
             />
           ))}
@@ -516,11 +616,64 @@ export function KanbanBoard({ initialTasks }: { initialTasks: Task[] }) {
         </DragOverlay>
       </DndContext>
 
-      {/* Keyboard hint bar */}
-      {focusedTaskId && (
+      {/* Bulk Action Bar (replaces keyboard hints when in select mode) */}
+      {isSelectMode ? (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 px-4 py-2.5 rounded-xl glass-card border border-[#FF6B6B]/20 shadow-2xl animate-slide-up-fast">
+          <span className="text-xs font-mono text-[#FF6B6B] mr-1">
+            {selectedIds.size} selected
+          </span>
+          <div className="h-4 w-px bg-[#FFF8F0]/10" />
+          {/* Move to status */}
+          {STATUSES.map((s) => (
+            <button
+              key={s}
+              onClick={() => bulkMove(s)}
+              className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-mono text-[#FFF8F0]/60 hover:text-[#FFF8F0]/90 hover:bg-[#FFF8F0]/[0.06] rounded-lg transition-colors"
+              title={`Move to ${s}`}
+            >
+              <ArrowRight className="w-3 h-3" />
+              {s}
+            </button>
+          ))}
+          <div className="h-4 w-px bg-[#FFF8F0]/10" />
+          {/* Priority */}
+          {[
+            { value: "🔴 High", dot: "bg-red-500" },
+            { value: "🟡 Medium", dot: "bg-yellow-500" },
+            { value: "🟢 Low", dot: "bg-emerald-500" },
+          ].map((p) => (
+            <button
+              key={p.value}
+              onClick={() => bulkPriority(p.value)}
+              className="flex items-center gap-1 px-2 py-1 text-[10px] font-mono text-[#FFF8F0]/60 hover:text-[#FFF8F0]/90 hover:bg-[#FFF8F0]/[0.06] rounded-lg transition-colors"
+              title={`Set ${p.value}`}
+            >
+              <span className={`w-2 h-2 rounded-full ${p.dot}`} />
+            </button>
+          ))}
+          <div className="h-4 w-px bg-[#FFF8F0]/10" />
+          {/* Delete */}
+          <button
+            onClick={bulkDelete}
+            className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-mono text-red-400/70 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+            title="Delete selected"
+          >
+            <Trash2 className="w-3 h-3" />
+          </button>
+          {/* Clear selection */}
+          <button
+            onClick={clearSelection}
+            className="flex items-center gap-1 px-2 py-1 text-[10px] font-mono text-[#FFF8F0]/30 hover:text-[#FFF8F0]/60 hover:bg-[#FFF8F0]/[0.06] rounded-lg transition-colors ml-1"
+            title="Clear selection (Esc)"
+          >
+            <XIcon className="w-3 h-3" />
+          </button>
+        </div>
+      ) : focusedTaskId ? (
         <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 px-4 py-2 rounded-xl glass-card border border-[#FFF8F0]/[0.08] shadow-xl animate-slide-up-fast">
           <KbdHint keys={["↑", "↓"]} label="Navigate" />
           <KbdHint keys={["Enter"]} label="Details" />
+          <KbdHint keys={["X"]} label="Select" />
           <KbdHint keys={["E"]} label="Edit" />
           <KbdHint keys={["Del"]} label="Delete" />
           <KbdHint keys={["N"]} label="New" />
@@ -528,7 +681,7 @@ export function KanbanBoard({ initialTasks }: { initialTasks: Task[] }) {
           <KbdHint keys={["?"]} label="Help" />
           <KbdHint keys={["Esc"]} label="Unfocus" />
         </div>
-      )}
+      ) : null}
 
       {/* Undo Toast */}
       {undoState && (
@@ -563,6 +716,8 @@ export function KanbanBoard({ initialTasks }: { initialTasks: Task[] }) {
               <ShortcutRow keys={["↑", "↓"]} altKeys={["j", "k"]} label="Navigate tasks" />
               <ShortcutRow keys={["Enter"]} label="Open details" />
               <ShortcutRow keys={["E"]} label="Edit title inline" />
+              <ShortcutRow keys={["X"]} label="Toggle select" />
+              <ShortcutRow keys={["⌘", "A"]} label="Select all" />
               <ShortcutRow keys={["Del", "⌫"]} label="Delete task" />
               <ShortcutRow keys={["N"]} label="Quick add (To Do)" />
               <ShortcutRow keys={["⌘", "K"]} label="Command palette" />
@@ -670,21 +825,27 @@ function KanbanColumn({
   status,
   tasks,
   focusedTaskId,
+  selectedIds,
+  isSelectMode,
   onContextMenu,
   onCardClick,
   onTaskUpdate,
   onTaskDelete,
   onTaskFocus,
+  onToggleSelect,
   quickAddRef,
 }: {
   status: Status;
   tasks: Task[];
   focusedTaskId: string | null;
+  selectedIds: Set<string>;
+  isSelectMode: boolean;
   onContextMenu: (e: React.MouseEvent, task: Task) => void;
   onCardClick: (task: Task) => void;
   onTaskUpdate: (task: Task) => void;
   onTaskDelete: (id: string) => void;
   onTaskFocus: (id: string) => void;
+  onToggleSelect: (id: string) => void;
   quickAddRef?: React.MutableRefObject<{ triggerAdd: () => void } | null>;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
@@ -818,11 +979,14 @@ function KanbanColumn({
                     key={task.id}
                     task={task}
                     isFocused={focusedTaskId === task.id}
+                    isSelected={selectedIds.has(task.id)}
+                    isSelectMode={isSelectMode}
                     onContextMenu={onContextMenu}
                     onCardClick={onCardClick}
                     onTaskUpdate={onTaskUpdate}
                     onTaskDelete={onTaskDelete}
                     onFocus={() => onTaskFocus(task.id)}
+                    onToggleSelect={() => onToggleSelect(task.id)}
                   />
                 ))}
               </AnimatePresence>
