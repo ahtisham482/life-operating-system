@@ -3,6 +3,10 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { logMirrorSignal } from "@/lib/mirror/signals";
+import {
+  scheduleTaskDueNotification,
+  cancelTaskNotifications,
+} from "@/lib/push/schedule";
 
 export type TaskFormData = {
   taskName: string;
@@ -37,20 +41,35 @@ export async function createTask(data: TaskFormData) {
 
   const nextOrder = (maxRow?.sort_order ?? -1) + 1;
 
-  const { error } = await supabase.from("tasks").insert({
-    task_name: data.taskName,
-    status: data.status || "To Do",
-    priority: data.priority || null,
-    life_area: data.lifeArea || null,
-    type: data.type || null,
-    due_date: data.dueDate || null,
-    notes: data.notes || null,
-    recurring: data.recurring,
-    frequency: data.frequency || null,
-    repeat_every_days: data.repeatEveryDays || null,
-    sort_order: nextOrder,
-  });
+  const { data: inserted, error } = await supabase
+    .from("tasks")
+    .insert({
+      task_name: data.taskName,
+      status: data.status || "To Do",
+      priority: data.priority || null,
+      life_area: data.lifeArea || null,
+      type: data.type || null,
+      due_date: data.dueDate || null,
+      notes: data.notes || null,
+      recurring: data.recurring,
+      frequency: data.frequency || null,
+      repeat_every_days: data.repeatEveryDays || null,
+      sort_order: nextOrder,
+    })
+    .select("id, user_id")
+    .single();
   if (error) throw new Error(error.message);
+
+  // Schedule push notification if task has a due date
+  if (data.dueDate && inserted) {
+    scheduleTaskDueNotification(
+      inserted.user_id,
+      inserted.id,
+      data.taskName,
+      data.dueDate
+    ).catch(() => {}); // non-blocking
+  }
+
   revalidateTaskPaths();
 }
 
@@ -70,11 +89,43 @@ export async function updateTask(id: string, data: Partial<TaskFormData>) {
 
   const { error } = await supabase.from("tasks").update(patch).eq("id", id);
   if (error) throw new Error(error.message);
+
+  // Reschedule notification if due date changed
+  if (data.dueDate !== undefined) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      if (data.dueDate) {
+        // Fetch task name for notification body
+        const { data: task } = await supabase
+          .from("tasks")
+          .select("task_name")
+          .eq("id", id)
+          .single();
+        scheduleTaskDueNotification(
+          user.id,
+          id,
+          task?.task_name || data.taskName || "Task",
+          data.dueDate
+        ).catch(() => {});
+      } else {
+        // Due date removed — cancel pending notification
+        cancelTaskNotifications(user.id, id).catch(() => {});
+      }
+    }
+  }
+
   revalidateTaskPaths();
 }
 
 export async function deleteTask(id: string) {
   const supabase = await createClient();
+
+  // Cancel any pending notifications for this task
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) {
+    cancelTaskNotifications(user.id, id).catch(() => {});
+  }
+
   const { error } = await supabase.from("tasks").delete().eq("id", id);
   if (error) throw new Error(error.message);
   revalidateTaskPaths();
@@ -87,6 +138,12 @@ export async function markTaskDone(id: string) {
     .update({ status: "Done", updated_at: new Date().toISOString() })
     .eq("id", id);
   if (error) throw new Error(error.message);
+
+  // Cancel any pending due-date notification
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) {
+    cancelTaskNotifications(user.id, id).catch(() => {});
+  }
 
   logMirrorSignal({
     type: "task_complete",

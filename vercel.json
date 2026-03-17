@@ -12,6 +12,10 @@
     {
       "path": "/api/engines/watchdog",
       "schedule": "0 4 * * *"
+    },
+    {
+      "path": "/api/engines/notifications",
+      "schedule": "* * * * *"
     }
   ]
 }

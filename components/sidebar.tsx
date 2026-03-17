@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import {
   Target, Grid2X2, CheckSquare, RotateCcw,
   DollarSign, BookOpen, BookMarked, Settings, LogOut,
-  Zap, Calendar, Flag, Brain, Menu, X, Inbox,
+  Zap, Calendar, Flag, Brain, Menu, X, Inbox, Bell,
 } from "lucide-react";
 
 const NAV_SECTIONS = [
@@ -47,6 +47,7 @@ const NAV_SECTIONS = [
     items: [
       { href: "/mirror",    icon: Brain,       label: "Mirror AI" },
       { href: "/engines",   icon: Settings,    label: "Automations" },
+      { href: "/notifications", icon: Bell,    label: "Notifications" },
     ],
   },
 ];
