@@ -79,11 +79,11 @@ export default async function MatrixPage() {
   }
 
   return (
-    <div className="p-8 max-w-6xl mx-auto space-y-8">
+    <div className="p-4 sm:p-8 max-w-6xl mx-auto space-y-6 sm:space-y-8">
       {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <div className="flex items-start justify-between">
-        <div className="space-y-1">
-          <h1 className="text-3xl font-serif tracking-tight text-gradient-primary">
+      <div className="flex items-start justify-between gap-4">
+        <div className="space-y-1 min-w-0">
+          <h1 className="text-2xl sm:text-3xl font-serif tracking-tight text-gradient-primary">
             Priority Matrix
           </h1>
           <p className="text-[11px] font-mono text-white/30 tracking-wider">
@@ -122,7 +122,7 @@ export default async function MatrixPage() {
       )}
 
       {/* ── 2x2 Matrix Grid ────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
         {/* ── Top-Left: Do Now (Q1) ─────────────── */}
         <div className="glass-card rounded-2xl border-t-2 border-red-500/50 overflow-hidden">
           <div className="px-5 py-4">

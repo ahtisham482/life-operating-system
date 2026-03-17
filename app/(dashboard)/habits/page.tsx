@@ -122,14 +122,14 @@ export default async function HabitsPage() {
   const totalHabits = ALL_HABIT_KEYS.length;
 
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-10">
+    <div className="p-4 sm:p-8 max-w-7xl mx-auto space-y-8 sm:space-y-10">
       {/* Header */}
       <div className="space-y-2 animate-slide-up" style={{ animationDelay: "0s", animationFillMode: "both" }}>
         <p className="text-[9px] font-mono tracking-[0.35em] text-white/20 uppercase">
           Daily Discipline
         </p>
-        <div className="flex items-center gap-4">
-          <h1 className="text-3xl font-serif tracking-tight text-gradient-primary">
+        <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
+          <h1 className="text-2xl sm:text-3xl font-serif tracking-tight text-gradient-primary">
             {"Today's Habits"}
           </h1>
           <span className="text-[11px] font-mono bg-white/[0.06] text-white/50 px-3 py-1 rounded-full tracking-wider">
@@ -173,8 +173,9 @@ export default async function HabitsPage() {
               Weekly Streaks
             </h2>
 
+            <div className="overflow-x-auto -mx-6 px-6">
             {/* Day column headers */}
-            <div className="flex items-center mb-3">
+            <div className="flex items-center mb-3 min-w-[320px]">
               <div className="w-24 flex-shrink-0" />
               <div className="flex-1 grid grid-cols-7 gap-1">
                 {weekDays.map((wd, i) => (
@@ -188,7 +189,7 @@ export default async function HabitsPage() {
             </div>
 
             {/* Habit rows with heatmap squares */}
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 min-w-[320px]">
               {ALL_HABIT_KEYS.map((key) => (
                 <div key={key} className="flex items-center">
                   <div className="w-24 flex-shrink-0 pr-2">
@@ -220,6 +221,8 @@ export default async function HabitsPage() {
                 </div>
               ))}
             </div>
+
+            </div>{/* end overflow-x-auto */}
 
             {/* Legend */}
             <div className="flex items-center gap-4 mt-5 pt-4 border-t border-white/[0.04]">

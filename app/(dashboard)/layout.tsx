@@ -13,7 +13,7 @@ export default function DashboardLayout({
         <div className="absolute bottom-[-10%] left-[5%] w-[30%] h-[30%] bg-[#C49E45]/[0.02] blur-[100px] rounded-full" />
       </div>
       <Sidebar />
-      <main className="relative z-10 flex-1 overflow-y-auto">
+      <main className="relative z-10 flex-1 overflow-y-auto pt-16 md:pt-0">
         <div className="animate-fade-in">
           {children}
         </div>

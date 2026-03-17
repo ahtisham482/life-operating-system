@@ -92,7 +92,7 @@ export default async function BooksPage({
   };
 
   return (
-    <div className="p-8 max-w-6xl mx-auto space-y-8">
+    <div className="p-4 sm:p-8 max-w-6xl mx-auto space-y-6 sm:space-y-8">
       {/* Header */}
       <div className="flex items-start justify-between animate-slide-up" style={{ animationDelay: "0s", animationFillMode: "both" }}>
         <div className="space-y-2">
@@ -118,7 +118,7 @@ export default async function BooksPage({
         <div className="space-y-8 animate-slide-up" style={{ animationDelay: "0.06s", animationFillMode: "both" }}>
           {/* Book Grid */}
           {prescribedBooks.length > 0 ? (
-            <div className="grid grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               {prescribedBooks.map((book) => {
                 const actionCount = allItems.filter(
                   (item) => item.bookName.toLowerCase().includes(book.title.toLowerCase().split(" ").slice(0, 2).join(" "))
@@ -153,7 +153,7 @@ export default async function BooksPage({
         <div className="space-y-8 animate-slide-up" style={{ animationDelay: "0.06s", animationFillMode: "both" }}>
           {/* Book Grid */}
           {customBooks.length > 0 && (
-            <div className="grid grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               {customBooks.map((book) => (
                 <BookCard
                   key={book.id}
@@ -284,64 +284,69 @@ function ActionItemRow({
 }) {
   return (
     <div
-      className="flex items-center gap-3 px-4 py-3 border-t border-white/[0.04] first:border-t-0 hover:bg-white/[0.02] transition-colors"
+      className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 px-4 py-3 border-t border-white/[0.04] first:border-t-0 hover:bg-white/[0.02] transition-colors"
     >
-      {/* Order number */}
-      <span className="text-[10px] font-mono text-white/30 w-6 text-right shrink-0">
-        {item.order}.
-      </span>
-
-      {/* Action item text */}
-      <div className="flex-1 min-w-0">
-        <span
-          className={`font-serif ${
-            item.status === "Done"
-              ? "line-through text-white/40"
-              : item.status === "Abandoned"
-                ? "line-through text-white/30"
-                : "text-white/90"
-          }`}
-        >
-          {item.actionItem}
+      <div className="flex items-start sm:items-center gap-3 flex-1 min-w-0">
+        {/* Order number */}
+        <span className="text-[10px] font-mono text-white/30 w-6 text-right shrink-0 mt-0.5 sm:mt-0">
+          {item.order}.
         </span>
-        {item.dependsOn && (
-          <p className="text-[10px] text-white/30 font-mono mt-0.5">
-            depends on: {item.dependsOn}
-          </p>
-        )}
-        {item.pageContent && (
-          <p className="text-xs text-white/40 mt-0.5 line-clamp-1">
-            {item.pageContent}
-          </p>
-        )}
+
+        {/* Action item text */}
+        <div className="flex-1 min-w-0">
+          <span
+            className={`font-serif ${
+              item.status === "Done"
+                ? "line-through text-white/40"
+                : item.status === "Abandoned"
+                  ? "line-through text-white/30"
+                  : "text-white/90"
+            }`}
+          >
+            {item.actionItem}
+          </span>
+          {item.dependsOn && (
+            <p className="text-[10px] text-white/30 font-mono mt-0.5">
+              depends on: {item.dependsOn}
+            </p>
+          )}
+          {item.pageContent && (
+            <p className="text-xs text-white/40 mt-0.5 line-clamp-1">
+              {item.pageContent}
+            </p>
+          )}
+        </div>
       </div>
 
-      {/* Type badge */}
-      <Badge variant="secondary" className="shrink-0">
-        {item.itemType}
-      </Badge>
+      {/* Badges + actions row */}
+      <div className="flex items-center gap-2 flex-wrap pl-9 sm:pl-0">
+        {/* Type badge */}
+        <Badge variant="secondary" className="shrink-0">
+          {item.itemType}
+        </Badge>
 
-      {/* Status badge */}
-      <Badge variant={STATUS_VARIANT[item.status] ?? "outline"} className="shrink-0">
-        {STATUS_ICON[item.status] ?? "\u2610"} {item.status}
-      </Badge>
+        {/* Status badge */}
+        <Badge variant={STATUS_VARIANT[item.status] ?? "outline"} className="shrink-0">
+          {STATUS_ICON[item.status] ?? "\u2610"} {item.status}
+        </Badge>
 
-      {/* Life area */}
-      <span className="text-xs text-white/40 whitespace-nowrap shrink-0 w-28 text-right">
-        {item.lifeArea ?? "\u2014"}
-      </span>
-
-      {/* Input needed indicator */}
-      {item.inputNeeded && (
-        <span className="text-[9px] font-mono text-primary border border-primary/30 px-1 rounded shrink-0">
-          INPUT
+        {/* Life area */}
+        <span className="text-xs text-white/40 whitespace-nowrap shrink-0">
+          {item.lifeArea ?? "\u2014"}
         </span>
-      )}
 
-      {/* Actions */}
-      <div className="flex items-center gap-1 shrink-0">
-        <BookForm bookAction={item} />
-        <DeleteBookActionButton id={item.id} />
+        {/* Input needed indicator */}
+        {item.inputNeeded && (
+          <span className="text-[9px] font-mono text-primary border border-primary/30 px-1 rounded shrink-0">
+            INPUT
+          </span>
+        )}
+
+        {/* Actions */}
+        <div className="flex items-center gap-1 shrink-0 ml-auto">
+          <BookForm bookAction={item} />
+          <DeleteBookActionButton id={item.id} />
+        </div>
       </div>
     </div>
   );

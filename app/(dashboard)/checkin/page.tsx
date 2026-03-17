@@ -109,7 +109,7 @@ export default async function CheckinPage() {
   const topMood = Object.entries(moodCounts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? "—";
 
   return (
-    <div className="p-8 max-w-2xl mx-auto space-y-16">
+    <div className="p-4 sm:p-8 max-w-2xl mx-auto space-y-10 sm:space-y-16">
       {/* Header */}
       <div className="text-center space-y-3 animate-slide-up" style={{ animationDelay: "0s", animationFillMode: "both" }}>
         <p className="font-mono text-[9px] tracking-[0.35em] text-white/40 uppercase">
@@ -148,7 +148,7 @@ export default async function CheckinPage() {
       <section className="animate-slide-up" style={{ animationDelay: "0.16s", animationFillMode: "both" }}>
         <div className="flex flex-col items-center gap-6">
           {/* 7-Day Circles */}
-          <div className="flex items-center gap-4 justify-center">
+          <div className="flex items-center gap-2 sm:gap-4 justify-center">
             {last7.map(({ key, label, entry, isToday }) => {
               const score = entry ? toScore(entry.leadDone) : 0;
               const hasEntry = !!entry;
@@ -210,7 +210,7 @@ export default async function CheckinPage() {
           <p className="font-mono text-[9px] tracking-[0.35em] text-white/40 uppercase mb-6 text-center">
             Pattern Insights
           </p>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {/* Average Score */}
             <div className="glass-card rounded-2xl p-6 text-center">
               <p className="text-3xl font-serif text-gradient-primary leading-none">
