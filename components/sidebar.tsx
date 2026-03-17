@@ -87,6 +87,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
                   <Link
                     key={href}
                     href={href}
+                    prefetch={true}
                     onClick={onNavigate}
                     className={cn(
                       "group flex items-center gap-3 px-3 py-2.5 rounded-xl text-[11px] font-mono uppercase tracking-wider transition-all duration-200",
