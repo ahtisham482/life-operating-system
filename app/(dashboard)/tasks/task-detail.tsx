@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { X, Trash2 } from "lucide-react";
+import { X, Trash2, Sparkles } from "lucide-react";
 import type { Task } from "@/lib/db/schema";
 import { updateTask, deleteTask } from "./actions";
+import { parseDateString, formatDateLabel } from "@/lib/parse-date";
 
 const FIELD_CLASS =
   "w-full h-9 px-3 py-1 bg-transparent border border-[#FFF8F0]/[0.08] rounded-md text-sm text-[#FFF8F0]/80 focus:outline-none focus:ring-1 focus:ring-[#FF6B6B]/30 transition-colors";
@@ -35,6 +36,8 @@ export function TaskDetailPanel({
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showSaved, setShowSaved] = useState(false);
+  const [nlpInput, setNlpInput] = useState("");
+  const [nlpPreview, setNlpPreview] = useState<string | null>(null);
 
   // Reset form when task changes
   useEffect(() => {
@@ -234,6 +237,52 @@ export function TaskDetailPanel({
               onChange={(e) => set("dueDate", e.target.value)}
               className={FIELD_CLASS}
             />
+
+            {/* Natural language date input */}
+            <div className="relative">
+              <input
+                type="text"
+                value={nlpInput}
+                onChange={(e) => {
+                  setNlpInput(e.target.value);
+                  if (e.target.value.trim()) {
+                    const parsed = parseDateString(e.target.value);
+                    setNlpPreview(parsed);
+                  } else {
+                    setNlpPreview(null);
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    const parsed = parseDateString(nlpInput);
+                    if (parsed) {
+                      set("dueDate", parsed);
+                      setNlpInput("");
+                      setNlpPreview(null);
+                    }
+                  }
+                  if (e.key === "Escape") {
+                    setNlpInput("");
+                    setNlpPreview(null);
+                  }
+                }}
+                placeholder="Type 'tomorrow', 'next friday', 'in 3 days'..."
+                className="w-full h-8 px-3 py-1 bg-transparent border border-dashed border-[#FFF8F0]/[0.06] rounded-md text-xs font-mono text-[#FFF8F0]/60 placeholder:text-[#FFF8F0]/15 focus:outline-none focus:ring-1 focus:ring-[#FF6B6B]/20 focus:border-[#FF6B6B]/20 transition-colors"
+              />
+              {nlpPreview && (
+                <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+                  <span className="text-[9px] font-mono text-[#FF6B6B]/60 bg-[#FF6B6B]/[0.08] px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <Sparkles className="w-2.5 h-2.5" />
+                    {formatDateLabel(nlpPreview)}
+                  </span>
+                  <span className="text-[9px] font-mono text-[#FFF8F0]/15">
+                    ↵
+                  </span>
+                </div>
+              )}
+            </div>
+
             {/* Smart date shortcuts */}
             <div className="flex gap-1.5 flex-wrap pt-1">
               {[

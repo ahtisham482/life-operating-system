@@ -27,11 +27,12 @@ import {
   arrayMove,
 } from "@dnd-kit/sortable";
 import { AnimatePresence } from "framer-motion";
-import { Plus } from "lucide-react";
+import { Plus, Calendar as CalendarIcon } from "lucide-react";
 import type { Task } from "@/lib/db/schema";
 import { createTask, reorderTasks, deleteTask } from "./actions";
 import { TaskCard, TaskCardOverlay } from "./task-card";
 import { TaskDetailPanel } from "./task-detail";
+import { parseNaturalDate, type ParsedDate } from "@/lib/parse-date";
 
 // ─── Constants ───────────────────────────────────────
 const STATUSES = ["To Do", "In Progress", "Done"] as const;
@@ -523,6 +524,7 @@ export function KanbanBoard({ initialTasks }: { initialTasks: Task[] }) {
           <KbdHint keys={["E"]} label="Edit" />
           <KbdHint keys={["Del"]} label="Delete" />
           <KbdHint keys={["N"]} label="New" />
+          <KbdHint keys={["⌘K"]} label="Palette" />
           <KbdHint keys={["?"]} label="Help" />
           <KbdHint keys={["Esc"]} label="Unfocus" />
         </div>
@@ -563,6 +565,8 @@ export function KanbanBoard({ initialTasks }: { initialTasks: Task[] }) {
               <ShortcutRow keys={["E"]} label="Edit title inline" />
               <ShortcutRow keys={["Del", "⌫"]} label="Delete task" />
               <ShortcutRow keys={["N"]} label="Quick add (To Do)" />
+              <ShortcutRow keys={["⌘", "K"]} label="Command palette" />
+              <ShortcutRow keys={["/"]} label="Command palette" />
               <ShortcutRow keys={["?"]} label="Toggle this help" />
               <ShortcutRow keys={["Esc"]} label="Close / unfocus" />
             </div>
@@ -689,6 +693,7 @@ function KanbanColumn({
   const [adding, setAdding] = useState(false);
   const [addText, setAddText] = useState("");
   const [addPending, setAddPending] = useState(false);
+  const [inlineParsedDate, setInlineParsedDate] = useState<ParsedDate | null>(null);
   const addInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -712,31 +717,48 @@ function KanbanColumn({
     };
   }, [quickAddRef]);
 
+  // Parse NLP date as user types in inline add
+  useEffect(() => {
+    if (!addText.trim()) {
+      setInlineParsedDate(null);
+      return;
+    }
+    const result = parseNaturalDate(addText);
+    setInlineParsedDate(result.parsedDate);
+  }, [addText]);
+
   async function handleInlineAdd(e: KeyboardEvent<HTMLInputElement>) {
     if (e.key === "Escape") {
       setAdding(false);
       setAddText("");
+      setInlineParsedDate(null);
       return;
     }
     if (e.key !== "Enter") return;
-    const name = addText.trim();
-    if (!name) return;
+    const raw = addText.trim();
+    if (!raw) return;
+
+    // Parse NLP date from the input text
+    const parsed = parseNaturalDate(raw);
+    const taskName = parsed.taskName || raw;
+    const dueDate = parsed.parsedDate?.date ?? null;
 
     setAddPending(true);
     try {
       await createTask({
-        taskName: name,
+        taskName,
         status,
         priority: "🟡 Medium",
         type: "✅ Task",
         lifeArea: null,
-        dueDate: null,
+        dueDate,
         notes: null,
         recurring: false,
         frequency: null,
         repeatEveryDays: null,
       });
       setAddText("");
+      setInlineParsedDate(null);
       // Keep inline add open for rapid entry
     } catch {
       // Keep text so user can retry
@@ -822,12 +844,25 @@ function KanbanColumn({
                   if (!addText.trim()) {
                     setAdding(false);
                     setAddText("");
+                    setInlineParsedDate(null);
                   }
                 }}
-                placeholder="Task name — Enter to save, Esc to cancel"
+                placeholder="Task name — try 'Buy milk tomorrow'"
                 disabled={addPending}
                 className="w-full h-10 px-3 bg-transparent text-sm font-serif text-[#FFF8F0]/90 placeholder:text-[#FFF8F0]/25 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#FF6B6B]/30 disabled:opacity-40"
               />
+              {/* NLP Date Preview */}
+              {inlineParsedDate && (
+                <div className="px-3 pb-2.5 flex items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 text-[9px] font-mono text-[#FF6B6B]/70 bg-[#FF6B6B]/[0.08] px-2 py-0.5 rounded-full">
+                    <CalendarIcon className="w-2.5 h-2.5" />
+                    {inlineParsedDate.label}
+                  </span>
+                  <span className="text-[9px] font-mono text-[#FFF8F0]/15">
+                    {inlineParsedDate.date}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         )}

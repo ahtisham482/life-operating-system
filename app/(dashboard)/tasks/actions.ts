@@ -96,6 +96,28 @@ export async function markTaskDone(id: string) {
   revalidateTaskPaths();
 }
 
+// --- Search tasks (for command palette) ---
+
+export async function searchTasks(query: string) {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("tasks")
+    .select("id, task_name, status, priority, due_date, life_area")
+    .ilike("task_name", `%${query}%`)
+    .neq("status", "Done")
+    .order("updated_at", { ascending: false })
+    .limit(5);
+
+  return (data || []).map((r) => ({
+    id: r.id as string,
+    taskName: r.task_name as string,
+    status: r.status as string,
+    priority: r.priority as string | null,
+    dueDate: r.due_date as string | null,
+    lifeArea: r.life_area as string | null,
+  }));
+}
+
 // --- NEW: Quick field updates for inline editing ---
 
 export async function updateTaskField(

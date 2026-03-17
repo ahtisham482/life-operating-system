@@ -1,5 +1,6 @@
 import { Sidebar } from "@/components/sidebar";
 import { InboxCapture } from "@/components/inbox-capture";
+import { CommandPalette } from "@/components/command-palette";
 
 export default function DashboardLayout({
   children,
@@ -20,6 +21,7 @@ export default function DashboardLayout({
         </div>
       </main>
       <InboxCapture />
+      <CommandPalette />
     </div>
   );
 }
