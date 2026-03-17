@@ -170,6 +170,16 @@ export const workspaceExclusions = pgTable("workspace_exclusions", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
+// ─────────────────────────────────────────
+// INBOX TYPES (audit trail uses engine_logs)
+// ─────────────────────────────────────────
+export type ParsedRoute = {
+  module: "tasks" | "expenses" | "journal" | "books" | "weekly" | "season" | "checkin" | "habits";
+  confidence: number;
+  summary: string;
+  data: Record<string, unknown>;
+};
+
 // Type exports
 export type Task = typeof tasks.$inferSelect;
 export type NewTask = typeof tasks.$inferInsert;

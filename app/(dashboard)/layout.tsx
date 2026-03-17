@@ -1,4 +1,5 @@
 import { Sidebar } from "@/components/sidebar";
+import { InboxCapture } from "@/components/inbox-capture";
 
 export default function DashboardLayout({
   children,
@@ -18,6 +19,7 @@ export default function DashboardLayout({
           {children}
         </div>
       </main>
+      <InboxCapture />
     </div>
   );
 }

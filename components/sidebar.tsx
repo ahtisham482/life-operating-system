@@ -7,10 +7,16 @@ import { cn } from "@/lib/utils";
 import {
   Target, Grid2X2, CheckSquare, RotateCcw,
   DollarSign, BookOpen, BookMarked, Settings, LogOut,
-  Zap, Calendar, Flag, Brain, Menu, X,
+  Zap, Calendar, Flag, Brain, Menu, X, Inbox,
 } from "lucide-react";
 
 const NAV_SECTIONS = [
+  {
+    label: "Capture",
+    items: [
+      { href: "/inbox",     icon: Inbox,       label: "Inbox" },
+    ],
+  },
   {
     label: "Core",
     items: [
