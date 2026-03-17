@@ -119,7 +119,7 @@ export function TaskCard({
         {/* Status checkbox */}
         <button
           onClick={toggleComplete}
-          className={`w-4.5 h-4.5 mt-0.5 rounded border flex-shrink-0 flex items-center justify-center transition-all ${
+          className={`w-[18px] h-[18px] min-w-[18px] mt-0.5 rounded border flex-shrink-0 flex items-center justify-center transition-all ${
             task.status === "Done"
               ? "bg-[#C49E45]/80 border-[#C49E45]/60 text-black"
               : "border-white/20 hover:border-[#C49E45]/50 hover:bg-[#C49E45]/10"
@@ -229,7 +229,7 @@ export function TaskCardOverlay({ task }: { task: Task }) {
     <div className="glass-card rounded-xl p-3 shadow-2xl shadow-black/40 border border-[#C49E45]/20 rotate-[2deg] scale-105 w-[300px]">
       <div className="flex items-start gap-2">
         <span
-          className={`w-4.5 h-4.5 mt-0.5 rounded border flex-shrink-0 flex items-center justify-center ${
+          className={`w-[18px] h-[18px] min-w-[18px] mt-0.5 rounded border flex-shrink-0 flex items-center justify-center ${
             task.status === "Done"
               ? "bg-[#C49E45]/80 border-[#C49E45]/60 text-black"
               : "border-white/20"
