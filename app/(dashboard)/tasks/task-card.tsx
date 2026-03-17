@@ -191,17 +191,17 @@ export function TaskCard({
       animate={{ opacity: isDragging ? 0.3 : 1, y: 0 }}
       exit={{ opacity: 0, y: -4 }}
       transition={{ duration: 0.15, ease: "easeOut" }}
-      className={`rounded-xl p-3 border transition-all group cursor-default ${
+      className={`rounded-xl p-3 border transition-colors duration-150 group cursor-default ${
         task.status === "Done"
-          ? "bg-[#FFF8F0]/[0.02] border-[#FFF8F0]/[0.04]"
-          : "bg-[#FFF8F0]/[0.04] border-[#FFF8F0]/[0.08] hover:border-[#FFF8F0]/[0.12]"
+          ? "bg-[#1E1C30] border-[#2A2845]"
+          : "bg-[#232140] border-[#2E2C50] hover:border-[#3A3860]"
       } ${isDragging ? "shadow-lg shadow-black/30" : ""} ${
         isFocused
           ? "ring-1 ring-[#FF6B6B]/40 border-[#FF6B6B]/20"
           : ""
       } ${
         isSelected
-          ? "ring-1 ring-[#FF6B6B]/50 bg-[#FF6B6B]/[0.04] border-[#FF6B6B]/20"
+          ? "ring-1 ring-[#FF6B6B]/50 bg-[#2A1E2E] border-[#FF6B6B]/20"
           : ""
       } ${
         taskIsOverdue && task.status !== "Done"

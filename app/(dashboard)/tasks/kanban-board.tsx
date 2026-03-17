@@ -72,6 +72,21 @@ export function KanbanBoard({ initialTasks }: { initialTasks: Task[] }) {
   // Keyboard shortcut help overlay state
   const [showShortcutHelp, setShowShortcutHelp] = useState(false);
 
+  // Auto-hide keyboard hints bar after 3 seconds
+  const [hintsVisible, setHintsVisible] = useState(true);
+  const hintsTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    if (focusedTaskId) {
+      setHintsVisible(true);
+      if (hintsTimerRef.current) clearTimeout(hintsTimerRef.current);
+      hintsTimerRef.current = setTimeout(() => setHintsVisible(false), 3000);
+    }
+    return () => {
+      if (hintsTimerRef.current) clearTimeout(hintsTimerRef.current);
+    };
+  }, [focusedTaskId]);
+
   // Ref for quick-add ("N" key) — points at the To Do column's add trigger
   const todoQuickAddRef = useRef<{ triggerAdd: () => void } | null>(null);
 
@@ -618,7 +633,7 @@ export function KanbanBoard({ initialTasks }: { initialTasks: Task[] }) {
 
       {/* Bulk Action Bar (replaces keyboard hints when in select mode) */}
       {isSelectMode ? (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 px-4 py-2.5 rounded-xl glass-card border border-[#FF6B6B]/20 shadow-2xl animate-slide-up-fast">
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#1A1A2E]/95 border border-[#FF6B6B]/20 shadow-2xl animate-slide-up-fast">
           <span className="text-xs font-mono text-[#FF6B6B] mr-1">
             {selectedIds.size} selected
           </span>
@@ -670,7 +685,16 @@ export function KanbanBoard({ initialTasks }: { initialTasks: Task[] }) {
           </button>
         </div>
       ) : focusedTaskId ? (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 px-4 py-2 rounded-xl glass-card border border-[#FFF8F0]/[0.08] shadow-xl animate-slide-up-fast">
+        <div
+          className={`fixed bottom-4 left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 px-4 py-2 rounded-xl bg-[#1A1A2E]/90 border border-[#FFF8F0]/[0.06] shadow-xl transition-opacity duration-500 ${
+            hintsVisible ? "opacity-100" : "opacity-0 hover:opacity-80"
+          }`}
+          onMouseEnter={() => setHintsVisible(true)}
+          onMouseLeave={() => {
+            if (hintsTimerRef.current) clearTimeout(hintsTimerRef.current);
+            hintsTimerRef.current = setTimeout(() => setHintsVisible(false), 1500);
+          }}
+        >
           <KbdHint keys={["↑", "↓"]} label="Navigate" />
           <KbdHint keys={["Enter"]} label="Details" />
           <KbdHint keys={["X"]} label="Select" />
@@ -685,7 +709,7 @@ export function KanbanBoard({ initialTasks }: { initialTasks: Task[] }) {
 
       {/* Undo Toast */}
       {undoState && (
-        <div className="fixed bottom-16 left-1/2 -translate-x-1/2 z-50 flex items-center gap-4 px-5 py-3 rounded-xl glass-card border border-[#FFF8F0]/[0.08] shadow-2xl animate-slide-up-fast">
+        <div className="fixed bottom-16 left-1/2 -translate-x-1/2 z-50 flex items-center gap-4 px-5 py-3 rounded-xl bg-[#1A1A2E]/95 border border-[#FFF8F0]/[0.08] shadow-2xl animate-slide-up-fast">
           <span className="text-sm font-serif text-[#FFF8F0]/60">
             Task deleted
           </span>
