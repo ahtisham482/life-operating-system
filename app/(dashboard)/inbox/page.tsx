@@ -50,23 +50,23 @@ export default async function InboxPage() {
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
       {/* Header */}
       <div className="flex items-center gap-4 mb-8">
-        <div className="size-11 rounded-xl bg-[#C49E45]/10 border border-[#C49E45]/20 flex items-center justify-center">
-          <Inbox className="h-5 w-5 text-[#C49E45]" />
+        <div className="size-11 rounded-xl bg-[#FF6B6B]/10 border border-[#FF6B6B]/20 flex items-center justify-center">
+          <Inbox className="h-5 w-5 text-[#FF6B6B]" />
         </div>
         <div>
-          <h1 className="text-lg font-serif text-[#C49E45] tracking-wide">Inbox History</h1>
-          <p className="text-xs text-white/30 font-mono">All captured inputs and their routing</p>
+          <h1 className="text-lg font-serif text-[#FF6B6B] tracking-wide">Inbox History</h1>
+          <p className="text-xs text-[#FFF8F0]/30 font-mono">All captured inputs and their routing</p>
         </div>
       </div>
 
       {/* Empty State */}
       {items.length === 0 && (
         <div className="text-center py-16">
-          <div className="size-16 rounded-2xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center mx-auto mb-4">
-            <Inbox className="h-7 w-7 text-white/15" />
+          <div className="size-16 rounded-2xl bg-[#FFF8F0]/[0.03] border border-[#FFF8F0]/[0.06] flex items-center justify-center mx-auto mb-4">
+            <Inbox className="h-7 w-7 text-[#FFF8F0]/15" />
           </div>
-          <p className="text-sm text-white/30 font-mono mb-1">No captures yet</p>
-          <p className="text-xs text-white/15">
+          <p className="text-sm text-[#FFF8F0]/30 font-mono mb-1">No captures yet</p>
+          <p className="text-xs text-[#FFF8F0]/15">
             Use the floating button or press Ctrl+K to capture your first thought
           </p>
         </div>
@@ -84,11 +84,11 @@ export default async function InboxPage() {
           return (
             <div
               key={capture.id as string}
-              className="bg-white/[0.02] border border-white/[0.06] rounded-xl p-4 hover:border-white/[0.10] transition-colors"
+              className="bg-[#FFF8F0]/[0.02] border border-[#FFF8F0]/[0.06] rounded-xl p-4 hover:border-[#FFF8F0]/[0.10] transition-colors"
             >
               {/* Input + Status */}
               <div className="flex items-start justify-between gap-3 mb-3">
-                <p className="text-sm text-white/70 flex-1">{capture.summary as string}</p>
+                <p className="text-sm text-[#FFF8F0]/70 flex-1">{capture.summary as string}</p>
                 <div className={cn("flex items-center gap-1.5 shrink-0", statusCfg.color)}>
                   <StatusIcon className="h-3 w-3" />
                   <span className="text-[10px] font-mono uppercase tracking-wider">{statusCfg.label}</span>
@@ -99,11 +99,11 @@ export default async function InboxPage() {
               {routes.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 mb-2">
                   {routes.map((route: ParsedRouteRow, i: number) => {
-                    const meta = MODULE_META[route.module] ?? { label: route.module, icon: "📦", color: "text-white/40" };
+                    const meta = MODULE_META[route.module] ?? { label: route.module, icon: "📦", color: "text-[#FFF8F0]/40" };
                     return (
                       <span
                         key={i}
-                        className="inline-flex items-center gap-1 text-[10px] font-mono bg-white/[0.04] border border-white/[0.06] rounded-md px-2 py-0.5 text-white/40"
+                        className="inline-flex items-center gap-1 text-[10px] font-mono bg-[#FFF8F0]/[0.04] border border-[#FFF8F0]/[0.06] rounded-md px-2 py-0.5 text-[#FFF8F0]/40"
                       >
                         <span>{meta.icon}</span>
                         <span className={meta.color}>{meta.label}</span>
@@ -114,7 +114,7 @@ export default async function InboxPage() {
               )}
 
               {/* Timestamp */}
-              <p className="text-[10px] text-white/15 font-mono">
+              <p className="text-[10px] text-[#FFF8F0]/15 font-mono">
                 {createdAt.toLocaleDateString("en-US", {
                   month: "short",
                   day: "numeric",

@@ -27,7 +27,7 @@ export function TaskActions({ taskId }: { taskId: string }) {
       <button
         onClick={handleComplete}
         disabled={isPending}
-        className="px-1.5 py-0.5 text-[9px] font-mono rounded border border-[#C49E45]/20 text-[#C49E45]/60 hover:bg-[#C49E45]/10 hover:text-[#C49E45] transition-all"
+        className="px-1.5 py-0.5 text-[9px] font-mono rounded border border-[#FF6B6B]/20 text-[#FF6B6B]/60 hover:bg-[#FF6B6B]/10 hover:text-[#FF6B6B] transition-all"
         title="Complete"
       >
         ✓
@@ -35,7 +35,7 @@ export function TaskActions({ taskId }: { taskId: string }) {
       <button
         onClick={handleReschedule}
         disabled={isPending}
-        className="px-1.5 py-0.5 text-[9px] font-mono rounded border border-white/[0.08] text-white/30 hover:bg-white/[0.05] hover:text-white/60 transition-all"
+        className="px-1.5 py-0.5 text-[9px] font-mono rounded border border-[#FFF8F0]/[0.08] text-[#FFF8F0]/30 hover:bg-[#FFF8F0]/[0.05] hover:text-[#FFF8F0]/60 transition-all"
         title="Reschedule +7d"
       >
         →
@@ -43,7 +43,7 @@ export function TaskActions({ taskId }: { taskId: string }) {
       <button
         onClick={handleDrop}
         disabled={isPending}
-        className="px-1.5 py-0.5 text-[9px] font-mono rounded border border-white/[0.08] text-white/30 hover:bg-white/[0.05] hover:text-white/60 transition-all"
+        className="px-1.5 py-0.5 text-[9px] font-mono rounded border border-[#FFF8F0]/[0.08] text-[#FFF8F0]/30 hover:bg-[#FFF8F0]/[0.05] hover:text-[#FFF8F0]/60 transition-all"
         title="Drop to Q4"
       >
         ↓

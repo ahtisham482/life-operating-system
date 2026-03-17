@@ -90,8 +90,8 @@ export function QuickExpense() {
             onClick={() => setSelected(selected === cat.category ? null : cat.category)}
             className={`px-3 py-2.5 rounded-xl border text-[10px] font-mono transition-all ${
               selected === cat.category
-                ? "border-[#C49E45]/20 bg-[#C49E45]/[0.08] text-[#C49E45]"
-                : "border-white/[0.05] text-white/50 hover:border-white/[0.1] hover:text-white/80"
+                ? "border-[#FF6B6B]/20 bg-[#FF6B6B]/[0.08] text-[#FF6B6B]"
+                : "border-[#FFF8F0]/[0.05] text-[#FFF8F0]/50 hover:border-[#FFF8F0]/[0.1] hover:text-[#FFF8F0]/80"
             }`}
           >
             <span className="text-base block mb-1">{cat.icon}</span>
@@ -110,7 +110,7 @@ export function QuickExpense() {
             onChange={(e) => setAmount(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Amount (PKR)"
-            className="w-full h-12 text-lg font-mono bg-transparent border-b border-white/[0.1] focus:border-[#C49E45]/40 text-white/90 outline-none text-center"
+            className="w-full h-12 text-lg font-mono bg-transparent border-b border-[#FFF8F0]/[0.1] focus:border-[#FF6B6B]/40 text-[#FFF8F0]/90 outline-none text-center"
             min="1"
           />
 
@@ -122,8 +122,8 @@ export function QuickExpense() {
                 onClick={() => setDateMode("today")}
                 className={`px-3 py-1.5 rounded-lg text-[10px] font-mono uppercase tracking-widest border transition-all ${
                   dateMode === "today"
-                    ? "border-[#C49E45]/20 bg-[#C49E45]/[0.08] text-[#C49E45]"
-                    : "border-white/[0.05] text-white/40 hover:text-white/80"
+                    ? "border-[#FF6B6B]/20 bg-[#FF6B6B]/[0.08] text-[#FF6B6B]"
+                    : "border-[#FFF8F0]/[0.05] text-[#FFF8F0]/40 hover:text-[#FFF8F0]/80"
                 }`}
               >
                 Today
@@ -133,8 +133,8 @@ export function QuickExpense() {
                 onClick={() => setDateMode("yesterday")}
                 className={`px-3 py-1.5 rounded-lg text-[10px] font-mono uppercase tracking-widest border transition-all ${
                   dateMode === "yesterday"
-                    ? "border-[#C49E45]/20 bg-[#C49E45]/[0.08] text-[#C49E45]"
-                    : "border-white/[0.05] text-white/40 hover:text-white/80"
+                    ? "border-[#FF6B6B]/20 bg-[#FF6B6B]/[0.08] text-[#FF6B6B]"
+                    : "border-[#FFF8F0]/[0.05] text-[#FFF8F0]/40 hover:text-[#FFF8F0]/80"
                 }`}
               >
                 Yesterday
@@ -148,8 +148,8 @@ export function QuickExpense() {
                 onClick={() => setExpenseType("Need")}
                 className={`px-3 py-1.5 rounded-lg text-[10px] font-mono uppercase tracking-widest border transition-all ${
                   expenseType === "Need"
-                    ? "border-[#C49E45]/20 bg-[#C49E45]/[0.08] text-[#C49E45]"
-                    : "border-white/[0.05] text-white/40 hover:text-white/80"
+                    ? "border-[#FF6B6B]/20 bg-[#FF6B6B]/[0.08] text-[#FF6B6B]"
+                    : "border-[#FFF8F0]/[0.05] text-[#FFF8F0]/40 hover:text-[#FFF8F0]/80"
                 }`}
               >
                 Need
@@ -159,8 +159,8 @@ export function QuickExpense() {
                 onClick={() => setExpenseType("Desire")}
                 className={`px-3 py-1.5 rounded-lg text-[10px] font-mono uppercase tracking-widest border transition-all ${
                   expenseType === "Desire"
-                    ? "border-[#C49E45]/20 bg-[#C49E45]/[0.08] text-[#C49E45]"
-                    : "border-white/[0.05] text-white/40 hover:text-white/80"
+                    ? "border-[#FF6B6B]/20 bg-[#FF6B6B]/[0.08] text-[#FF6B6B]"
+                    : "border-[#FFF8F0]/[0.05] text-[#FFF8F0]/40 hover:text-[#FFF8F0]/80"
                 }`}
               >
                 Desire
@@ -173,7 +173,7 @@ export function QuickExpense() {
             type="button"
             onClick={handleSubmit}
             disabled={isPending || !amount || Number(amount) <= 0}
-            className="w-full py-2.5 rounded-xl border border-[#C49E45]/20 bg-[#C49E45]/[0.08] text-[#C49E45] text-[11px] font-mono uppercase tracking-widest hover:bg-[#C49E45]/[0.15] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            className="w-full py-2.5 rounded-xl border border-[#FF6B6B]/20 bg-[#FF6B6B]/[0.08] text-[#FF6B6B] text-[11px] font-mono uppercase tracking-widest hover:bg-[#FF6B6B]/[0.15] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {isPending ? "Saving..." : "Add Expense"}
           </button>
@@ -182,7 +182,7 @@ export function QuickExpense() {
 
       {/* Success message */}
       {success && (
-        <p className="text-[10px] font-mono text-[#C49E45]/70 text-center tracking-wider animate-slide-up">
+        <p className="text-[10px] font-mono text-[#FF6B6B]/70 text-center tracking-wider animate-slide-up">
           Expense added successfully
         </p>
       )}

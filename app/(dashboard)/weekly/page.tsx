@@ -153,7 +153,7 @@ export default async function WeeklyPage() {
         className="space-y-3 animate-slide-up"
         style={{ animationDelay: "0s", animationFillMode: "both" }}
       >
-        <p className="text-[9px] font-mono tracking-[0.35em] text-white/40 uppercase">
+        <p className="text-[9px] font-mono tracking-[0.35em] text-[#FFF8F0]/40 uppercase">
           Weekly Planning
         </p>
         <h1 className="text-3xl font-serif tracking-widest uppercase text-gradient-primary">
@@ -164,25 +164,25 @@ export default async function WeeklyPage() {
         {currentTotal > 0 && (
           <div className="pt-2">
             <div className="flex items-center gap-4">
-              <div className="flex-1 h-2 bg-white/[0.05] rounded-full overflow-hidden">
+              <div className="flex-1 h-2 bg-[#FFF8F0]/[0.05] rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-gradient-to-r from-[#C49E45]/60 to-[#C49E45] rounded-full transition-all duration-500"
+                  className="h-full bg-gradient-to-r from-[#FF6B6B]/60 to-[#FF6B6B] rounded-full transition-all duration-500"
                   style={{ width: `${progressPercent}%` }}
                 />
               </div>
-              <p className="text-[11px] font-mono text-white/50 shrink-0">
+              <p className="text-[11px] font-mono text-[#FFF8F0]/50 shrink-0">
                 {currentDoneCount}/{currentTotal} tasks done
               </p>
             </div>
             {currentDoneCount === currentTotal && (
-              <p className="text-[10px] font-mono text-[#C49E45] mt-1.5 tracking-widest">
+              <p className="text-[10px] font-mono text-[#FF6B6B] mt-1.5 tracking-widest">
                 WEEK EXECUTED
               </p>
             )}
           </div>
         )}
 
-        <div className="h-px bg-gradient-to-r from-transparent via-[#C49E45]/20 to-transparent mt-4" />
+        <div className="h-px bg-gradient-to-r from-transparent via-[#FF6B6B]/20 to-transparent mt-4" />
       </div>
 
       {/* Two-Column Layout */}
@@ -192,7 +192,7 @@ export default async function WeeklyPage() {
       >
         {/* Left Column — This Week's Plan */}
         <div>
-          <p className="font-mono text-[9px] tracking-[0.35em] text-white/40 uppercase mb-4">
+          <p className="font-mono text-[9px] tracking-[0.35em] text-[#FFF8F0]/40 uppercase mb-4">
             This Week&apos;s Plan
           </p>
           <WeeklyForm
@@ -207,7 +207,7 @@ export default async function WeeklyPage() {
 
         {/* Right Column — Weekly Tasks */}
         <div>
-          <p className="font-mono text-[9px] tracking-[0.35em] text-white/40 uppercase mb-4">
+          <p className="font-mono text-[9px] tracking-[0.35em] text-[#FFF8F0]/40 uppercase mb-4">
             Weekly Tasks
           </p>
           <TaskList
@@ -233,43 +233,43 @@ export default async function WeeklyPage() {
           style={{ animationDelay: "0.16s", animationFillMode: "both" }}
         >
           <details>
-            <summary className="cursor-pointer font-mono text-[9px] tracking-[0.35em] text-white/30 uppercase hover:text-white/50 transition-colors">
+            <summary className="cursor-pointer font-mono text-[9px] tracking-[0.35em] text-[#FFF8F0]/30 uppercase hover:text-[#FFF8F0]/50 transition-colors">
               Last Week You Said...
             </summary>
             <div className="glass-card rounded-2xl p-6 mt-4 space-y-3">
               {prevPlan?.leadPriority && (
                 <div>
-                  <p className="text-[8px] font-mono text-white/20 uppercase tracking-wider mb-0.5">
+                  <p className="text-[8px] font-mono text-[#FFF8F0]/20 uppercase tracking-wider mb-0.5">
                     Lead Priority
                   </p>
-                  <p className="text-sm font-serif text-white/30 italic">
+                  <p className="text-sm font-serif text-[#FFF8F0]/30 italic">
                     &ldquo;{prevPlan.leadPriority}&rdquo;
                   </p>
                 </div>
               )}
               {prevPlan?.maintenanceActions && (
                 <div>
-                  <p className="text-[8px] font-mono text-white/20 uppercase tracking-wider mb-0.5">
+                  <p className="text-[8px] font-mono text-[#FFF8F0]/20 uppercase tracking-wider mb-0.5">
                     Maintenance Actions
                   </p>
-                  <p className="text-sm font-serif text-white/30 italic">
+                  <p className="text-sm font-serif text-[#FFF8F0]/30 italic">
                     &ldquo;{prevPlan.maintenanceActions}&rdquo;
                   </p>
                 </div>
               )}
               {prevPlan?.removingPausing && (
                 <div>
-                  <p className="text-[8px] font-mono text-white/20 uppercase tracking-wider mb-0.5">
+                  <p className="text-[8px] font-mono text-[#FFF8F0]/20 uppercase tracking-wider mb-0.5">
                     Removing / Pausing
                   </p>
-                  <p className="text-sm font-serif text-white/30 italic">
+                  <p className="text-sm font-serif text-[#FFF8F0]/30 italic">
                     &ldquo;{prevPlan.removingPausing}&rdquo;
                   </p>
                 </div>
               )}
               {prevTasks.length > 0 && (
                 <div className="pt-1">
-                  <p className="text-[9px] font-mono text-white/20">
+                  <p className="text-[9px] font-mono text-[#FFF8F0]/20">
                     {prevDoneCount} / {prevTasks.length} tasks completed last week
                   </p>
                 </div>

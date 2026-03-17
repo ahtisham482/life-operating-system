@@ -11,15 +11,15 @@ import { ScheduleToggle } from "./schedule-toggle";
 // ── Task row sub-component ───────────────────────────────────────────────────
 function TaskRow({ task }: { task: Task }) {
   return (
-    <div className="flex items-center gap-3 px-4 py-2.5 hover:bg-white/[0.02] transition-colors border-t border-white/[0.04] first:border-t-0">
+    <div className="flex items-center gap-3 px-4 py-2.5 hover:bg-[#FFF8F0]/[0.02] transition-colors border-t border-[#FFF8F0]/[0.04] first:border-t-0">
       <div className="flex-1 min-w-0">
-        <span className="text-sm font-serif text-white/90 truncate block">
+        <span className="text-sm font-serif text-[#FFF8F0]/90 truncate block">
           {task.type === "🔁 Habit" && <span className="mr-1 text-xs">🔁</span>}
           {task.taskName}
         </span>
       </div>
       {task.lifeArea && (
-        <span className="font-mono text-[9px] tracking-[0.2em] text-white/30 uppercase shrink-0">
+        <span className="font-mono text-[9px] tracking-[0.2em] text-[#FFF8F0]/30 uppercase shrink-0">
           {task.lifeArea}
         </span>
       )}
@@ -30,7 +30,7 @@ function TaskRow({ task }: { task: Task }) {
 
 function EmptyBlock({ msg }: { msg: string }) {
   return (
-    <p className="px-4 py-6 text-center text-white/40 text-xs font-mono">{msg}</p>
+    <p className="px-4 py-6 text-center text-[#FFF8F0]/40 text-xs font-mono">{msg}</p>
   );
 }
 
@@ -86,7 +86,7 @@ export default async function MatrixPage() {
           <h1 className="text-2xl sm:text-3xl font-serif tracking-tight text-gradient-primary">
             Priority Matrix
           </h1>
-          <p className="text-[11px] font-mono text-white/30 tracking-wider">
+          <p className="text-[11px] font-mono text-[#FFF8F0]/30 tracking-wider">
             Focus on what matters most.
           </p>
         </div>
@@ -106,7 +106,7 @@ export default async function MatrixPage() {
                 key={task.id}
                 className="flex items-center gap-3 py-2 border-t border-red-500/10 first:border-t-0"
               >
-                <span className="flex-1 text-sm font-serif text-white/90">{task.taskName}</span>
+                <span className="flex-1 text-sm font-serif text-[#FFF8F0]/90">{task.taskName}</span>
                 <span
                   className={`font-mono text-[10px] font-bold ${
                     days >= 6 ? "text-red-400" : "text-yellow-400"
@@ -129,11 +129,11 @@ export default async function MatrixPage() {
             <h2 className="text-sm font-mono uppercase tracking-widest text-red-400">
               Do Now
             </h2>
-            <p className="text-[10px] font-mono text-white/25 mt-0.5">
+            <p className="text-[10px] font-mono text-[#FFF8F0]/25 mt-0.5">
               Urgent + Important ({q1.length})
             </p>
           </div>
-          <div className="border-t border-white/[0.05]">
+          <div className="border-t border-[#FFF8F0]/[0.05]">
             {q1.length === 0 ? (
               <EmptyBlock msg="No urgent tasks" />
             ) : (
@@ -148,11 +148,11 @@ export default async function MatrixPage() {
             <h2 className="text-sm font-mono uppercase tracking-widest text-blue-400">
               Schedule
             </h2>
-            <p className="text-[10px] font-mono text-white/25 mt-0.5">
+            <p className="text-[10px] font-mono text-[#FFF8F0]/25 mt-0.5">
               Important, Not Urgent ({q2.length})
             </p>
           </div>
-          <div className="border-t border-white/[0.05]">
+          <div className="border-t border-[#FFF8F0]/[0.05]">
             {q2.length === 0 ? (
               <EmptyBlock msg="No scheduled tasks" />
             ) : (
@@ -167,11 +167,11 @@ export default async function MatrixPage() {
             <h2 className="text-sm font-mono uppercase tracking-widest text-yellow-400">
               Delegate
             </h2>
-            <p className="text-[10px] font-mono text-white/25 mt-0.5">
+            <p className="text-[10px] font-mono text-[#FFF8F0]/25 mt-0.5">
               Urgent, Not Important ({q3.length})
             </p>
           </div>
-          <div className="border-t border-white/[0.05]">
+          <div className="border-t border-[#FFF8F0]/[0.05]">
             {q3.length === 0 ? (
               <EmptyBlock msg="No tasks to delegate" />
             ) : (
@@ -181,16 +181,16 @@ export default async function MatrixPage() {
         </div>
 
         {/* ── Bottom-Right: Eliminate (Q4) ──────── */}
-        <div className="glass-card rounded-2xl border-t-2 border-white/20 overflow-hidden">
+        <div className="glass-card rounded-2xl border-t-2 border-[#FFF8F0]/20 overflow-hidden">
           <div className="px-5 py-4">
-            <h2 className="text-sm font-mono uppercase tracking-widest text-white/40">
+            <h2 className="text-sm font-mono uppercase tracking-widest text-[#FFF8F0]/40">
               Eliminate
             </h2>
-            <p className="text-[10px] font-mono text-white/25 mt-0.5">
+            <p className="text-[10px] font-mono text-[#FFF8F0]/25 mt-0.5">
               Not Urgent, Not Important ({q4.length})
             </p>
           </div>
-          <div className="border-t border-white/[0.05]">
+          <div className="border-t border-[#FFF8F0]/[0.05]">
             {q4.length === 0 ? (
               <EmptyBlock msg="No tasks to eliminate" />
             ) : (

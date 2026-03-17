@@ -107,7 +107,7 @@ export default async function SeasonPage() {
     <div className="p-4 sm:p-8 max-w-4xl mx-auto space-y-8 sm:space-y-12">
       {/* Header with progress */}
       <div className="space-y-3 animate-slide-up" style={{ animationDelay: "0s", animationFillMode: "both" }}>
-        <p className="text-[9px] font-mono tracking-[0.35em] text-white/40 uppercase">
+        <p className="text-[9px] font-mono tracking-[0.35em] text-[#FFF8F0]/40 uppercase">
           90-Day Focus
         </p>
         <h1 className="text-3xl font-serif tracking-widest uppercase text-gradient-primary">
@@ -115,37 +115,37 @@ export default async function SeasonPage() {
         </h1>
         {season && (
           <>
-            <p className="text-sm font-serif text-white/50 italic">
+            <p className="text-sm font-serif text-[#FFF8F0]/50 italic">
               {season.goal || "No goal set"}
             </p>
             <div className="pt-2">
               <div className="flex items-center gap-4">
-                <div className="flex-1 h-2.5 bg-white/[0.05] rounded-full overflow-hidden">
+                <div className="flex-1 h-2.5 bg-[#FFF8F0]/[0.05] rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-gradient-to-r from-[#C49E45]/60 to-[#C49E45] rounded-full transition-all duration-500"
+                    className="h-full bg-gradient-to-r from-[#FF6B6B]/60 to-[#FF6B6B] rounded-full transition-all duration-500"
                     style={{ width: `${daysProgressPercent}%` }}
                   />
                 </div>
-                <p className="text-[11px] font-mono text-white/50 shrink-0">
+                <p className="text-[11px] font-mono text-[#FFF8F0]/50 shrink-0">
                   Day {daysProgress} of {totalDays}
                 </p>
               </div>
-              <p className="text-[9px] font-mono text-white/20 mt-1.5 tracking-wider">
+              <p className="text-[9px] font-mono text-[#FFF8F0]/20 mt-1.5 tracking-wider">
                 {formatDate(season.startDate)} — {formatDate(season.endDate)}
                 {daysLeft !== null && ` · ${daysLeft} days remaining`}
               </p>
             </div>
           </>
         )}
-        <div className="h-px bg-gradient-to-r from-transparent via-[#C49E45]/20 to-transparent mt-4" />
+        <div className="h-px bg-gradient-to-r from-transparent via-[#FF6B6B]/20 to-transparent mt-4" />
       </div>
 
       {!season ? (
         <div className="space-y-4 animate-slide-up" style={{ animationDelay: "0.08s", animationFillMode: "both" }}>
-          <p className="text-sm text-white/40 font-mono">
+          <p className="text-sm text-[#FFF8F0]/40 font-mono">
             No active season. Start a new one below.
           </p>
-          <div className="glass-card rounded-2xl p-6 hover:border-white/[0.08] transition-all">
+          <div className="glass-card rounded-2xl p-6 hover:border-[#FFF8F0]/[0.08] transition-all">
             <SeasonForm />
           </div>
         </div>
@@ -154,13 +154,13 @@ export default async function SeasonPage() {
           {/* Transition Banner */}
           {daysLeft !== null && daysLeft <= 7 && (
             <div
-              className="border border-[#C49E45]/30 bg-[#C49E45]/[0.06] rounded-2xl p-6 animate-slide-up"
+              className="border border-[#FF6B6B]/30 bg-[#FF6B6B]/[0.06] rounded-2xl p-6 animate-slide-up"
               style={{ animationDelay: "0.04s", animationFillMode: "both" }}
             >
-              <p className="text-sm font-serif text-[#C49E45]">
+              <p className="text-sm font-serif text-[#FF6B6B]">
                 Season ending in {daysLeft} day{daysLeft !== 1 ? "s" : ""}
               </p>
-              <p className="text-[10px] font-mono text-white/40 mt-1">
+              <p className="text-[10px] font-mono text-[#FFF8F0]/40 mt-1">
                 Review your progress and plan your next season.
               </p>
             </div>
@@ -169,20 +169,20 @@ export default async function SeasonPage() {
           {/* Hero Card — Lead Domain */}
           {leadDomainInfo && (
             <div
-              className="glass-card rounded-2xl p-8 border-[#C49E45]/30 animate-slide-up"
+              className="glass-card rounded-2xl p-8 border-[#FF6B6B]/30 animate-slide-up"
               style={{ animationDelay: "0.08s", animationFillMode: "both" }}
             >
               <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
                 <div className="space-y-3 min-w-0 flex-1">
                   <div className="flex items-center gap-3 flex-wrap">
-                    <h2 className="text-xl sm:text-2xl font-serif text-white/90">
+                    <h2 className="text-xl sm:text-2xl font-serif text-[#FFF8F0]/90">
                       {leadDomainInfo.label}
                     </h2>
-                    <span className="text-[9px] font-mono tracking-[0.3em] uppercase px-3 py-1 rounded-full border border-[#C49E45]/30 bg-[#C49E45]/10 text-[#C49E45]">
+                    <span className="text-[9px] font-mono tracking-[0.3em] uppercase px-3 py-1 rounded-full border border-[#FF6B6B]/30 bg-[#FF6B6B]/10 text-[#FF6B6B]">
                       Lead
                     </span>
                   </div>
-                  <p className="text-[10px] font-mono text-white/30 tracking-wider">
+                  <p className="text-[10px] font-mono text-[#FFF8F0]/30 tracking-wider">
                     {leadDomainInfo.desc}
                   </p>
 
@@ -192,7 +192,7 @@ export default async function SeasonPage() {
                       <p className="text-2xl font-serif text-gradient-primary leading-none">
                         {checkinCount > 0 ? `${leadDoneRate}%` : "—"}
                       </p>
-                      <p className="text-[8px] font-mono text-white/25 mt-1 tracking-[0.3em] uppercase">
+                      <p className="text-[8px] font-mono text-[#FFF8F0]/25 mt-1 tracking-[0.3em] uppercase">
                         Lead-Done Rate
                       </p>
                     </div>
@@ -200,7 +200,7 @@ export default async function SeasonPage() {
                       <p className="text-2xl font-serif text-gradient-primary leading-none">
                         {completedTaskCount}
                       </p>
-                      <p className="text-[8px] font-mono text-white/25 mt-1 tracking-[0.3em] uppercase">
+                      <p className="text-[8px] font-mono text-[#FFF8F0]/25 mt-1 tracking-[0.3em] uppercase">
                         Tasks Done
                       </p>
                     </div>
@@ -208,7 +208,7 @@ export default async function SeasonPage() {
                       <p className="text-2xl font-serif text-gradient-primary leading-none">
                         {checkinCount}
                       </p>
-                      <p className="text-[8px] font-mono text-white/25 mt-1 tracking-[0.3em] uppercase">
+                      <p className="text-[8px] font-mono text-[#FFF8F0]/25 mt-1 tracking-[0.3em] uppercase">
                         Check-ins
                       </p>
                     </div>
@@ -216,7 +216,7 @@ export default async function SeasonPage() {
 
                   {/* Goal Quote */}
                   {season.goal && (
-                    <p className="text-sm font-serif text-white/40 italic pt-2">
+                    <p className="text-sm font-serif text-[#FFF8F0]/40 italic pt-2">
                       &ldquo;{season.goal}&rdquo;
                     </p>
                   )}
@@ -229,7 +229,7 @@ export default async function SeasonPage() {
 
           {/* Domain Grid */}
           <div className="animate-slide-up" style={{ animationDelay: "0.16s", animationFillMode: "both" }}>
-            <p className="font-mono text-[9px] tracking-[0.35em] text-white/40 uppercase mb-4">
+            <p className="font-mono text-[9px] tracking-[0.35em] text-[#FFF8F0]/40 uppercase mb-4">
               All Domains
             </p>
             <DomainList

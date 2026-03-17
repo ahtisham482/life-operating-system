@@ -99,14 +99,14 @@ export default async function BooksPage({
           <h1 className="text-3xl font-serif tracking-tight text-gradient-primary">
             Reading Library
           </h1>
-          <p className="text-[11px] font-mono text-white/30 tracking-wider">
+          <p className="text-[11px] font-mono text-[#FFF8F0]/30 tracking-wider">
             {totalBooks} books
           </p>
         </div>
         <BookForm />
       </div>
 
-      <div className="h-px bg-gradient-to-r from-transparent via-[#C49E45]/20 to-transparent" />
+      <div className="h-px bg-gradient-to-r from-transparent via-[#FF6B6B]/20 to-transparent" />
 
       {/* Tab Buttons */}
       <div className="animate-slide-up" style={{ animationDelay: "0.03s", animationFillMode: "both" }}>
@@ -137,7 +137,7 @@ export default async function BooksPage({
             </div>
           ) : (
             <div className="py-16 text-center glass-card rounded-2xl">
-              <p className="text-[11px] font-mono text-white/25 tracking-widest uppercase">
+              <p className="text-[11px] font-mono text-[#FFF8F0]/25 tracking-widest uppercase">
                 No prescribed books yet.
               </p>
             </div>
@@ -172,16 +172,16 @@ export default async function BooksPage({
       )}
 
       {/* Separator */}
-      <div className="h-px bg-gradient-to-r from-transparent via-[#C49E45]/20 to-transparent" />
+      <div className="h-px bg-gradient-to-r from-transparent via-[#FF6B6B]/20 to-transparent" />
 
       {/* Book Coach — Action Items */}
       <div className="space-y-6">
         <div className="flex items-center justify-between animate-slide-up" style={{ animationDelay: "0.15s", animationFillMode: "both" }}>
           <div className="space-y-1">
-            <h2 className="text-lg font-serif tracking-wide text-white/90">
+            <h2 className="text-lg font-serif tracking-wide text-[#FFF8F0]/90">
               Action Items
             </h2>
-            <p className="text-[10px] font-mono text-white/30 tracking-wider">
+            <p className="text-[10px] font-mono text-[#FFF8F0]/30 tracking-wider">
               {allItems.length} total &middot; {statusCounts.toDo} to do &middot;{" "}
               {statusCounts.inProgress} in progress &middot; {statusCounts.done} done
             </p>
@@ -191,7 +191,7 @@ export default async function BooksPage({
         {/* Content */}
         {filtered.length === 0 ? (
           <div className="py-16 text-center glass-card rounded-2xl">
-            <p className="text-[11px] font-mono text-white/25 tracking-widest uppercase">
+            <p className="text-[11px] font-mono text-[#FFF8F0]/25 tracking-widest uppercase">
               No book action items yet. Add your first book.
             </p>
           </div>
@@ -200,11 +200,11 @@ export default async function BooksPage({
             {Array.from(bookGroups.entries()).map(([bookName, phases]) => (
               <div key={bookName} className="space-y-4">
                 {/* Book header */}
-                <div className="border-b border-white/[0.08] pb-2">
-                  <h2 className="text-lg font-serif tracking-wide text-white/90">
+                <div className="border-b border-[#FFF8F0]/[0.08] pb-2">
+                  <h2 className="text-lg font-serif tracking-wide text-[#FFF8F0]/90">
                     {bookName}
                   </h2>
-                  <p className="text-[10px] font-mono text-white/40 tracking-wider uppercase">
+                  <p className="text-[10px] font-mono text-[#FFF8F0]/40 tracking-wider uppercase">
                     {Array.from(phases.values()).reduce((sum, phaseItems) => sum + phaseItems.length, 0)} action items
                     &middot; {phases.size} phases
                   </p>
@@ -213,7 +213,7 @@ export default async function BooksPage({
                 {/* Phase groups */}
                 {Array.from(phases.entries()).map(([phaseName, phaseItems]) => (
                   <div key={phaseName} className="space-y-2 pl-4">
-                    <h3 className="text-xs font-mono uppercase tracking-widest text-white/40">
+                    <h3 className="text-xs font-mono uppercase tracking-widest text-[#FFF8F0]/40">
                       {phaseName}
                     </h3>
                     <div className="glass-card rounded-2xl overflow-hidden">
@@ -245,19 +245,19 @@ function BookCard({
   actionCount: number;
 }) {
   const statusColors = {
-    Reading: "bg-[#C49E45]/20 text-[#C49E45]",
+    Reading: "bg-[#FF6B6B]/20 text-[#FF6B6B]",
     Completed: "bg-green-500/20 text-green-400",
-    "To Read": "bg-white/[0.06] text-white/40",
+    "To Read": "bg-[#FFF8F0]/[0.06] text-[#FFF8F0]/40",
   };
 
   return (
-    <div className="glass-card rounded-2xl p-6 flex flex-col justify-between hover:border-white/[0.08] transition-all min-h-[200px]">
+    <div className="glass-card rounded-2xl p-6 flex flex-col justify-between hover:border-[#FFF8F0]/[0.08] transition-all min-h-[200px]">
       <div className="space-y-2">
-        <h3 className="text-lg font-serif text-white/90 leading-snug">
+        <h3 className="text-lg font-serif text-[#FFF8F0]/90 leading-snug">
           {title}
         </h3>
         {author && (
-          <p className="text-[11px] font-mono text-white/30 tracking-wider">
+          <p className="text-[11px] font-mono text-[#FFF8F0]/30 tracking-wider">
             {author}
           </p>
         )}
@@ -267,7 +267,7 @@ function BookCard({
           {status}
         </span>
         {actionCount > 0 && (
-          <p className="text-[10px] font-mono text-white/20">
+          <p className="text-[10px] font-mono text-[#FFF8F0]/20">
             {actionCount} action items
           </p>
         )}
@@ -284,11 +284,11 @@ function ActionItemRow({
 }) {
   return (
     <div
-      className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 px-4 py-3 border-t border-white/[0.04] first:border-t-0 hover:bg-white/[0.02] transition-colors"
+      className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 px-4 py-3 border-t border-[#FFF8F0]/[0.04] first:border-t-0 hover:bg-[#FFF8F0]/[0.02] transition-colors"
     >
       <div className="flex items-start sm:items-center gap-3 flex-1 min-w-0">
         {/* Order number */}
-        <span className="text-[10px] font-mono text-white/30 w-6 text-right shrink-0 mt-0.5 sm:mt-0">
+        <span className="text-[10px] font-mono text-[#FFF8F0]/30 w-6 text-right shrink-0 mt-0.5 sm:mt-0">
           {item.order}.
         </span>
 
@@ -297,21 +297,21 @@ function ActionItemRow({
           <span
             className={`font-serif ${
               item.status === "Done"
-                ? "line-through text-white/40"
+                ? "line-through text-[#FFF8F0]/40"
                 : item.status === "Abandoned"
-                  ? "line-through text-white/30"
-                  : "text-white/90"
+                  ? "line-through text-[#FFF8F0]/30"
+                  : "text-[#FFF8F0]/90"
             }`}
           >
             {item.actionItem}
           </span>
           {item.dependsOn && (
-            <p className="text-[10px] text-white/30 font-mono mt-0.5">
+            <p className="text-[10px] text-[#FFF8F0]/30 font-mono mt-0.5">
               depends on: {item.dependsOn}
             </p>
           )}
           {item.pageContent && (
-            <p className="text-xs text-white/40 mt-0.5 line-clamp-1">
+            <p className="text-xs text-[#FFF8F0]/40 mt-0.5 line-clamp-1">
               {item.pageContent}
             </p>
           )}
@@ -331,7 +331,7 @@ function ActionItemRow({
         </Badge>
 
         {/* Life area */}
-        <span className="text-xs text-white/40 whitespace-nowrap shrink-0">
+        <span className="text-xs text-[#FFF8F0]/40 whitespace-nowrap shrink-0">
           {item.lifeArea ?? "\u2014"}
         </span>
 

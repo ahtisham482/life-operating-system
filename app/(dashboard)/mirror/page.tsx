@@ -45,34 +45,34 @@ export default async function MirrorPage() {
         <h1 className="text-3xl font-serif tracking-tight text-gradient-primary">
           Mirror
         </h1>
-        <p className="text-sm font-serif text-white/50">
+        <p className="text-sm font-serif text-[#FFF8F0]/50">
           Your personal intelligence that learns from you.
         </p>
-        <span className="inline-block text-[10px] font-mono tracking-widest px-3 py-1.5 rounded-full border border-[#C49E45]/20 bg-[#C49E45]/[0.06] text-[#C49E45] backdrop-blur-sm">
+        <span className="inline-block text-[10px] font-mono tracking-widest px-3 py-1.5 rounded-full border border-[#FF6B6B]/20 bg-[#FF6B6B]/[0.06] text-[#FF6B6B] backdrop-blur-sm">
           Stage {stage.level}: {stage.label} &middot; {totalSignals} observations
         </span>
-        <div className="h-px bg-gradient-to-r from-transparent via-[#C49E45]/20 to-transparent mt-4" />
+        <div className="h-px bg-gradient-to-r from-transparent via-[#FF6B6B]/20 to-transparent mt-4" />
       </div>
 
       {/* Daily Insight Hero Card */}
       <section
-        className="glass-card rounded-2xl p-8 border-t-2 border-[#C49E45]/40 animate-slide-up"
+        className="glass-card rounded-2xl p-8 border-t-2 border-[#FF6B6B]/40 animate-slide-up"
         style={{ animationDelay: "0.04s", animationFillMode: "both" }}
       >
-        <p className="text-[9px] font-mono tracking-[0.35em] text-[#C49E45]/60 uppercase mb-4">
+        <p className="text-[9px] font-mono tracking-[0.35em] text-[#FF6B6B]/60 uppercase mb-4">
           Daily Insight
         </p>
         {dailyInsight ? (
           <>
-            <p className="text-lg font-serif text-white/80 leading-relaxed">
+            <p className="text-lg font-serif text-[#FFF8F0]/80 leading-relaxed">
               {dailyInsight}
             </p>
-            <p className="text-[10px] font-mono text-white/30 tracking-wider mt-4">
+            <p className="text-[10px] font-mono text-[#FFF8F0]/30 tracking-wider mt-4">
               Based on 30 days of data
             </p>
           </>
         ) : (
-          <p className="text-sm font-serif text-white/40 italic">
+          <p className="text-sm font-serif text-[#FFF8F0]/40 italic">
             Mirror is still learning. Keep using LOS to unlock insights.
           </p>
         )}
@@ -86,7 +86,7 @@ export default async function MirrorPage() {
       {/* Knowledge Section */}
       {entries.length > 0 && (
         <section className="space-y-4 animate-slide-up" style={{ animationDelay: "0.12s", animationFillMode: "both" }}>
-          <h2 className="text-xs font-mono uppercase tracking-widest text-[#C49E45]/60">
+          <h2 className="text-xs font-mono uppercase tracking-widest text-[#FF6B6B]/60">
             Knowledge Entries
           </h2>
           <div className="space-y-2">
@@ -102,7 +102,7 @@ export default async function MirrorPage() {
                   className="glass-card rounded-xl px-5 py-3 flex items-center justify-between gap-4"
                 >
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-serif text-white/80 truncate">
+                    <p className="text-sm font-serif text-[#FFF8F0]/80 truncate">
                       {entry.content}
                     </p>
                   </div>
@@ -110,7 +110,7 @@ export default async function MirrorPage() {
                     {pct > 0 && (
                       <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${
                         pct >= 70
-                          ? "border-[#C49E45]/30 text-[#C49E45]"
+                          ? "border-[#FF6B6B]/30 text-[#FF6B6B]"
                           : pct >= 40
                             ? "border-yellow-500/30 text-yellow-500"
                             : "border-red-400/30 text-red-400"
@@ -118,7 +118,7 @@ export default async function MirrorPage() {
                         {pct}%
                       </span>
                     )}
-                    <span className="text-[10px] font-mono text-white/25">
+                    <span className="text-[10px] font-mono text-[#FFF8F0]/25">
                       {dateStr}
                     </span>
                   </div>
@@ -141,13 +141,13 @@ export default async function MirrorPage() {
 
       {/* Stats Row */}
       <div className="flex flex-wrap gap-3 animate-slide-up" style={{ animationDelay: "0.24s", animationFillMode: "both" }}>
-        <span className="text-[10px] font-mono tracking-widest px-4 py-2 rounded-full border border-white/[0.06] bg-white/[0.02] text-white/40 backdrop-blur-sm">
+        <span className="text-[10px] font-mono tracking-widest px-4 py-2 rounded-full border border-[#FFF8F0]/[0.06] bg-[#FFF8F0]/[0.02] text-[#FFF8F0]/40 backdrop-blur-sm">
           {totalSignals} observations
         </span>
-        <span className="text-[10px] font-mono tracking-widest px-4 py-2 rounded-full border border-white/[0.06] bg-white/[0.02] text-white/40 backdrop-blur-sm">
+        <span className="text-[10px] font-mono tracking-widest px-4 py-2 rounded-full border border-[#FFF8F0]/[0.06] bg-[#FFF8F0]/[0.02] text-[#FFF8F0]/40 backdrop-blur-sm">
           {entries.length} entries
         </span>
-        <span className="text-[10px] font-mono tracking-widest px-4 py-2 rounded-full border border-[#C49E45]/20 bg-[#C49E45]/[0.06] text-[#C49E45] backdrop-blur-sm">
+        <span className="text-[10px] font-mono tracking-widest px-4 py-2 rounded-full border border-[#FF6B6B]/20 bg-[#FF6B6B]/[0.06] text-[#FF6B6B] backdrop-blur-sm">
           Stage {stage.level}: {stage.label}
         </span>
       </div>

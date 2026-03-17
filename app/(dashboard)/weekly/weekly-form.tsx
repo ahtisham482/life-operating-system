@@ -36,10 +36,10 @@ export function WeeklyForm({ weekKey, initialAnswers }: WeeklyFormProps) {
     <div className="glass-card rounded-2xl p-6 space-y-5">
       {QUESTIONS.map((q, i) => (
         <div key={q.key} className="space-y-2">
-          <p className="text-[8px] font-mono uppercase tracking-[0.3em] text-white/30">
+          <p className="text-[8px] font-mono uppercase tracking-[0.3em] text-[#FFF8F0]/30">
             {q.label}
           </p>
-          <p className="text-xs font-serif text-white/60">{q.question}</p>
+          <p className="text-xs font-serif text-[#FFF8F0]/60">{q.question}</p>
           <textarea
             value={answers[i]}
             onChange={(e) => {
@@ -48,11 +48,11 @@ export function WeeklyForm({ weekKey, initialAnswers }: WeeklyFormProps) {
               setAnswers(a);
             }}
             placeholder="Write your honest answer..."
-            className="w-full bg-black/20 border border-white/[0.06] text-white/80 p-3 text-sm font-serif rounded-lg resize-y min-h-[70px] focus:outline-none focus:ring-1 focus:ring-[#C49E45]/30 placeholder:text-white/15"
+            className="w-full bg-black/20 border border-[#FFF8F0]/[0.06] text-[#FFF8F0]/80 p-3 text-sm font-serif rounded-lg resize-y min-h-[70px] focus:outline-none focus:ring-1 focus:ring-[#FF6B6B]/30 placeholder:text-[#FFF8F0]/15"
             rows={2}
           />
           {i < QUESTIONS.length - 1 && (
-            <div className="h-px bg-white/[0.04] mt-2" />
+            <div className="h-px bg-[#FFF8F0]/[0.04] mt-2" />
           )}
         </div>
       ))}
@@ -60,7 +60,7 @@ export function WeeklyForm({ weekKey, initialAnswers }: WeeklyFormProps) {
       <button
         onClick={handleSave}
         disabled={isPending}
-        className="w-full px-4 py-2.5 text-[10px] font-mono uppercase tracking-widest border border-[#C49E45]/30 text-[#C49E45]/70 hover:bg-[#C49E45]/10 rounded-lg transition-colors disabled:opacity-30"
+        className="w-full px-4 py-2.5 text-[10px] font-mono uppercase tracking-widest border border-[#FF6B6B]/30 text-[#FF6B6B]/70 hover:bg-[#FF6B6B]/10 rounded-lg transition-colors disabled:opacity-30"
       >
         {isPending ? "Saving..." : "Save Plan"}
       </button>

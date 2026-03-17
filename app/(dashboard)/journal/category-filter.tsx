@@ -28,7 +28,7 @@ export function JournalCategoryFilter({ current }: { current: string }) {
     <select
       value={current}
       onChange={handleChange}
-      className="h-9 px-3 py-1 bg-transparent border border-white/[0.08] rounded-lg text-sm font-mono text-white/70 focus:outline-none focus:border-[#C49E45]/30 transition-colors cursor-pointer"
+      className="h-9 px-3 py-1 bg-transparent border border-[#FFF8F0]/[0.08] rounded-lg text-sm font-mono text-[#FFF8F0]/70 focus:outline-none focus:border-[#FF6B6B]/30 transition-colors cursor-pointer"
     >
       <option value="">All Categories</option>
       {CATEGORIES.map((c) => (

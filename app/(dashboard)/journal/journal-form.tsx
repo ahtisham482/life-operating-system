@@ -169,10 +169,10 @@ export function JournalForm({
         <form onSubmit={handleSubmit} className="space-y-4 pt-2">
           {/* Check-in reflection prompt */}
           {checkinReflection && !isEdit && (
-            <div className="bg-[#C49E45]/[0.05] border border-[#C49E45]/10 rounded-lg px-4 py-3 mb-3">
-              <p className="text-[9px] font-mono uppercase tracking-wider text-[#C49E45]/60 mb-1">From your check-in today</p>
-              <p className="text-sm font-serif text-white/60 italic">&ldquo;{checkinReflection}&rdquo;</p>
-              <p className="text-[9px] font-mono text-white/30 mt-1">Want to expand on this?</p>
+            <div className="bg-[#FF6B6B]/[0.05] border border-[#FF6B6B]/10 rounded-lg px-4 py-3 mb-3">
+              <p className="text-[9px] font-mono uppercase tracking-wider text-[#FF6B6B]/60 mb-1">From your check-in today</p>
+              <p className="text-sm font-serif text-[#FFF8F0]/60 italic">&ldquo;{checkinReflection}&rdquo;</p>
+              <p className="text-[9px] font-mono text-[#FFF8F0]/30 mt-1">Want to expand on this?</p>
             </div>
           )}
 
@@ -220,9 +220,9 @@ export function JournalForm({
 
           {/* Daily prompt (new entries only) */}
           {!isEdit && (
-            <div className="bg-white/[0.02] border border-white/[0.05] rounded-lg px-4 py-3">
-              <p className="text-[9px] font-mono uppercase tracking-wider text-white/30 mb-1">Today&apos;s prompt</p>
-              <p className="text-sm font-serif text-white/50 italic">{dailyPrompt}</p>
+            <div className="bg-[#FFF8F0]/[0.02] border border-[#FFF8F0]/[0.05] rounded-lg px-4 py-3">
+              <p className="text-[9px] font-mono uppercase tracking-wider text-[#FFF8F0]/30 mb-1">Today&apos;s prompt</p>
+              <p className="text-sm font-serif text-[#FFF8F0]/50 italic">{dailyPrompt}</p>
             </div>
           )}
 

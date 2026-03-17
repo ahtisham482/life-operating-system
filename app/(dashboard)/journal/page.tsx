@@ -61,23 +61,23 @@ export default async function JournalPage({
           <h1 className="text-3xl font-serif tracking-tight text-gradient-primary">
             Journal
           </h1>
-          <p className="text-[11px] font-mono text-white/30 tracking-wider">
+          <p className="text-[11px] font-mono text-[#FFF8F0]/30 tracking-wider">
             {allEntries.length} total entries
           </p>
         </div>
       </div>
 
-      <div className="h-px bg-gradient-to-r from-transparent via-[#C49E45]/20 to-transparent" />
+      <div className="h-px bg-gradient-to-r from-transparent via-[#FF6B6B]/20 to-transparent" />
 
       {/* ═══ Writing Zone Hero ═══ */}
       <section className="animate-slide-up" style={{ animationDelay: "0.03s", animationFillMode: "both" }}>
         {/* Check-in reflection prompt */}
         {checkinReflection && (
-          <div className="bg-[#C49E45]/[0.04] border border-[#C49E45]/10 rounded-xl px-5 py-4 mb-4">
-            <p className="text-[9px] font-mono uppercase tracking-wider text-[#C49E45]/50 mb-1">
+          <div className="bg-[#FF6B6B]/[0.04] border border-[#FF6B6B]/10 rounded-xl px-5 py-4 mb-4">
+            <p className="text-[9px] font-mono uppercase tracking-wider text-[#FF6B6B]/50 mb-1">
               Earlier you said
             </p>
-            <p className="text-sm font-serif text-white/50 italic leading-relaxed">
+            <p className="text-sm font-serif text-[#FFF8F0]/50 italic leading-relaxed">
               &ldquo;{checkinReflection}&rdquo;
             </p>
           </div>
@@ -86,13 +86,13 @@ export default async function JournalPage({
         {/* Writing card */}
         <div className="glass-card rounded-2xl p-8 space-y-5">
           {/* Auto title */}
-          <p className="font-mono text-[13px] text-white/30 tracking-wider">
+          <p className="font-mono text-[13px] text-[#FFF8F0]/30 tracking-wider">
             {autoTitle}
           </p>
 
           {/* Mood row */}
           <div className="flex items-center gap-2">
-            <span className="text-[9px] font-mono text-white/25 uppercase tracking-wider mr-1">Mood</span>
+            <span className="text-[9px] font-mono text-[#FFF8F0]/25 uppercase tracking-wider mr-1">Mood</span>
             {MOODS.map((mood) => {
               const emoji = mood.split(" ")[0];
               return (
@@ -113,13 +113,13 @@ export default async function JournalPage({
       </section>
 
       {/* ═══ Past Entries ═══ */}
-      <div className="h-px bg-gradient-to-r from-transparent via-[#C49E45]/10 to-transparent" />
+      <div className="h-px bg-gradient-to-r from-transparent via-[#FF6B6B]/10 to-transparent" />
 
       {/* Filter — single dropdown */}
       <div className="flex items-center justify-between animate-slide-up" style={{ animationDelay: "0.06s", animationFillMode: "both" }}>
-        <p className="text-[9px] font-mono tracking-[0.35em] text-white/40 uppercase">
+        <p className="text-[9px] font-mono tracking-[0.35em] text-[#FFF8F0]/40 uppercase">
           Past Entries
-          <span className="ml-2 text-white/20">{filtered.length} shown</span>
+          <span className="ml-2 text-[#FFF8F0]/20">{filtered.length} shown</span>
         </p>
         <JournalCategoryFilter current={params.category || ""} />
       </div>
@@ -127,7 +127,7 @@ export default async function JournalPage({
       {/* Journal Cards */}
       {filtered.length === 0 ? (
         <div className="py-16 text-center glass-card rounded-2xl">
-          <p className="text-[11px] font-mono text-white/25 tracking-widest uppercase">
+          <p className="text-[11px] font-mono text-[#FFF8F0]/25 tracking-widest uppercase">
             No journal entries yet. Start writing.
           </p>
         </div>
@@ -146,18 +146,18 @@ function JournalCard({ entry }: { entry: JournalEntry }) {
   const moodEmoji = entry.mood.split(" ")[0];
 
   return (
-    <div className="glass-card rounded-2xl p-6 space-y-3 hover:border-white/[0.08] transition-all">
+    <div className="glass-card rounded-2xl p-6 space-y-3 hover:border-[#FFF8F0]/[0.08] transition-all">
       {/* Card header */}
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-1 min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <span className="text-lg">{moodEmoji}</span>
-            <h2 className="font-serif text-white/90 text-base leading-snug">
+            <h2 className="font-serif text-[#FFF8F0]/90 text-base leading-snug">
               {entry.title}
             </h2>
           </div>
           <div className="flex items-center gap-2">
-            <p className="text-[10px] font-mono text-white/25 tracking-wider">
+            <p className="text-[10px] font-mono text-[#FFF8F0]/25 tracking-wider">
               {entry.date}
             </p>
             <Badge variant="outline" className="text-[9px]">{entry.category}</Badge>
@@ -170,7 +170,7 @@ function JournalCard({ entry }: { entry: JournalEntry }) {
       </div>
 
       {/* Entry text */}
-      <p className="text-sm text-white/30 font-serif leading-relaxed">
+      <p className="text-sm text-[#FFF8F0]/30 font-serif leading-relaxed">
         {entry.entry}
       </p>
     </div>

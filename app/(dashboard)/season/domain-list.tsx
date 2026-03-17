@@ -56,16 +56,16 @@ export function DomainList({
             <div
               key={d.id}
               onClick={() => handleToggle(d.id)}
-              className={`glass-card rounded-2xl p-5 cursor-pointer transition-all hover:border-white/[0.08] ${
+              className={`glass-card rounded-2xl p-5 cursor-pointer transition-all hover:border-[#FFF8F0]/[0.08] ${
                 isLead
-                  ? "border-[#C49E45]/30 bg-[#C49E45]/[0.04]"
+                  ? "border-[#FF6B6B]/30 bg-[#FF6B6B]/[0.04]"
                   : ""
               }`}
             >
               <div className="flex items-center justify-between mb-2">
                 <span
                   className={`text-lg ${
-                    isLead ? "text-[#C49E45]" : "text-white/20"
+                    isLead ? "text-[#FF6B6B]" : "text-[#FFF8F0]/20"
                   }`}
                 >
                   {d.icon}
@@ -73,8 +73,8 @@ export function DomainList({
                 <span
                   className={`text-[8px] font-mono tracking-[0.3em] uppercase px-2 py-0.5 rounded-full border ${
                     isLead
-                      ? "text-[#C49E45] border-[#C49E45]/30 bg-[#C49E45]/10"
-                      : "text-white/25 border-white/[0.06]"
+                      ? "text-[#FF6B6B] border-[#FF6B6B]/30 bg-[#FF6B6B]/10"
+                      : "text-[#FFF8F0]/25 border-[#FFF8F0]/[0.06]"
                   }`}
                 >
                   {mode.toUpperCase()}
@@ -82,13 +82,13 @@ export function DomainList({
               </div>
               <p
                 className={`text-sm font-serif ${
-                  isLead ? "text-white/90" : "text-white/50"
+                  isLead ? "text-[#FFF8F0]/90" : "text-[#FFF8F0]/50"
                 }`}
               >
                 {d.label}
               </p>
               {!isLead && guidance && (
-                <p className="text-[9px] font-mono text-white/20 mt-2 leading-relaxed">
+                <p className="text-[9px] font-mono text-[#FFF8F0]/20 mt-2 leading-relaxed">
                   {guidance}
                 </p>
               )}

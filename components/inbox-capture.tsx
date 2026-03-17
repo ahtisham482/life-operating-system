@@ -127,8 +127,8 @@ export function InboxCapture() {
         onClick={() => setOpen(true)}
         className={cn(
           "fixed bottom-6 right-6 z-40 size-14 rounded-2xl flex items-center justify-center",
-          "bg-gradient-to-br from-[#C49E45] to-[#A07D2E] text-[#090909]",
-          "shadow-lg shadow-[#C49E45]/20 hover:shadow-xl hover:shadow-[#C49E45]/30",
+          "bg-gradient-to-br from-[#FF6B6B] to-[#A07D2E] text-[#090909]",
+          "shadow-lg shadow-[#FF6B6B]/20 hover:shadow-xl hover:shadow-[#FF6B6B]/30",
           "hover:scale-105 active:scale-95 transition-all duration-200",
           "md:bottom-8 md:right-8"
         )}
@@ -148,19 +148,19 @@ export function InboxCapture() {
 
           {/* Modal Panel */}
           <div className={cn(
-            "relative z-10 w-full sm:max-w-lg bg-[#0E0E0E] border border-white/[0.08] overflow-hidden animate-slide-up-fast",
+            "relative z-10 w-full sm:max-w-lg bg-[#0E0E0E] border border-[#FFF8F0]/[0.08] overflow-hidden animate-slide-up-fast",
             "rounded-t-2xl sm:rounded-2xl",
             "max-h-[85vh] sm:max-h-[80vh] flex flex-col"
           )}>
             {/* Header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[#FFF8F0]/[0.06]">
               <div className="flex items-center gap-3">
-                <div className="size-8 rounded-xl bg-[#C49E45]/10 border border-[#C49E45]/20 flex items-center justify-center">
-                  <Inbox className="h-4 w-4 text-[#C49E45]" />
+                <div className="size-8 rounded-xl bg-[#FF6B6B]/10 border border-[#FF6B6B]/20 flex items-center justify-center">
+                  <Inbox className="h-4 w-4 text-[#FF6B6B]" />
                 </div>
                 <div>
-                  <p className="text-xs font-mono uppercase tracking-[0.2em] text-white/80">Quick Capture</p>
-                  <p className="text-[10px] text-white/30 font-mono">
+                  <p className="text-xs font-mono uppercase tracking-[0.2em] text-[#FFF8F0]/80">Quick Capture</p>
+                  <p className="text-[10px] text-[#FFF8F0]/30 font-mono">
                     {phase === "input" && "Type anything — we'll route it"}
                     {phase === "parsing" && "Analyzing your input..."}
                     {phase === "confirm" && "Review routing below"}
@@ -172,7 +172,7 @@ export function InboxCapture() {
               </div>
               <button
                 onClick={handleClose}
-                className="size-9 flex items-center justify-center rounded-xl text-white/30 hover:text-white/70 hover:bg-white/[0.05] transition-colors"
+                className="size-9 flex items-center justify-center rounded-xl text-[#FFF8F0]/30 hover:text-[#FFF8F0]/70 hover:bg-[#FFF8F0]/[0.05] transition-colors"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -196,16 +196,16 @@ export function InboxCapture() {
                     placeholder='Try: "Buy groceries by Saturday" or "Spent $45 on dinner tonight"'
                     disabled={phase === "parsing"}
                     className={cn(
-                      "w-full min-h-[100px] sm:min-h-[80px] bg-white/[0.03] border border-white/[0.08] rounded-xl px-4 py-3",
-                      "text-sm text-white/90 placeholder:text-white/20 resize-none",
-                      "focus:outline-none focus:border-[#C49E45]/30 focus:ring-1 focus:ring-[#C49E45]/20",
+                      "w-full min-h-[100px] sm:min-h-[80px] bg-[#FFF8F0]/[0.03] border border-[#FFF8F0]/[0.08] rounded-xl px-4 py-3",
+                      "text-sm text-[#FFF8F0]/90 placeholder:text-[#FFF8F0]/20 resize-none",
+                      "focus:outline-none focus:border-[#FF6B6B]/30 focus:ring-1 focus:ring-[#FF6B6B]/20",
                       "transition-all duration-200",
                       phase === "parsing" && "opacity-50"
                     )}
                     rows={3}
                   />
                   <div className="flex items-center justify-between">
-                    <p className="text-[10px] text-white/20 font-mono">
+                    <p className="text-[10px] text-[#FFF8F0]/20 font-mono">
                       Press Enter to send &middot; Shift+Enter for new line
                     </p>
                     <button
@@ -214,8 +214,8 @@ export function InboxCapture() {
                       className={cn(
                         "flex items-center gap-2 px-4 py-2.5 rounded-xl text-[11px] font-mono uppercase tracking-wider transition-all",
                         rawInput.trim() && phase !== "parsing"
-                          ? "bg-[#C49E45]/10 text-[#C49E45] border border-[#C49E45]/20 hover:bg-[#C49E45]/20"
-                          : "bg-white/[0.03] text-white/20 border border-white/[0.05] cursor-not-allowed"
+                          ? "bg-[#FF6B6B]/10 text-[#FF6B6B] border border-[#FF6B6B]/20 hover:bg-[#FF6B6B]/20"
+                          : "bg-[#FFF8F0]/[0.03] text-[#FFF8F0]/20 border border-[#FFF8F0]/[0.05] cursor-not-allowed"
                       )}
                     >
                       {phase === "parsing" ? (
@@ -233,24 +233,24 @@ export function InboxCapture() {
               {phase === "confirm" && (
                 <div className="space-y-4">
                   {/* Original input */}
-                  <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl px-4 py-3">
-                    <p className="text-[10px] font-mono uppercase tracking-wider text-white/30 mb-1">Your input</p>
-                    <p className="text-sm text-white/70">{rawInput}</p>
+                  <div className="bg-[#FFF8F0]/[0.03] border border-[#FFF8F0]/[0.06] rounded-xl px-4 py-3">
+                    <p className="text-[10px] font-mono uppercase tracking-wider text-[#FFF8F0]/30 mb-1">Your input</p>
+                    <p className="text-sm text-[#FFF8F0]/70">{rawInput}</p>
                   </div>
 
                   {/* Detected routes */}
                   <div>
-                    <p className="text-[10px] font-mono uppercase tracking-wider text-white/30 mb-3 flex items-center gap-2">
+                    <p className="text-[10px] font-mono uppercase tracking-wider text-[#FFF8F0]/30 mb-3 flex items-center gap-2">
                       <ChevronDown className="h-3 w-3" />
                       Routing to {routes.length} module{routes.length > 1 ? "s" : ""}
                     </p>
                     <div className="space-y-2">
                       {routes.map((route, idx) => {
-                        const meta = MODULE_META[route.module] ?? { label: route.module, icon: "📦", color: "text-white/60" };
+                        const meta = MODULE_META[route.module] ?? { label: route.module, icon: "📦", color: "text-[#FFF8F0]/60" };
                         return (
                           <div
                             key={idx}
-                            className="bg-white/[0.03] border border-white/[0.08] rounded-xl px-4 py-3 group hover:border-white/[0.12] transition-colors"
+                            className="bg-[#FFF8F0]/[0.03] border border-[#FFF8F0]/[0.08] rounded-xl px-4 py-3 group hover:border-[#FFF8F0]/[0.12] transition-colors"
                           >
                             <div className="flex items-start justify-between gap-3">
                               <div className="flex items-start gap-3 flex-1 min-w-0">
@@ -260,11 +260,11 @@ export function InboxCapture() {
                                     <span className={cn("text-xs font-mono uppercase tracking-wider", meta.color)}>
                                       {meta.label}
                                     </span>
-                                    <span className="text-[10px] font-mono text-white/20">
+                                    <span className="text-[10px] font-mono text-[#FFF8F0]/20">
                                       {Math.round(route.confidence * 100)}% match
                                     </span>
                                   </div>
-                                  <p className="text-sm text-white/60 truncate">{route.summary}</p>
+                                  <p className="text-sm text-[#FFF8F0]/60 truncate">{route.summary}</p>
                                   {/* Show extracted data */}
                                   <div className="mt-2 flex flex-wrap gap-1.5">
                                     {Object.entries(route.data)
@@ -273,7 +273,7 @@ export function InboxCapture() {
                                       .map(([key, val]) => (
                                         <span
                                           key={key}
-                                          className="text-[10px] font-mono bg-white/[0.05] border border-white/[0.06] rounded-md px-2 py-0.5 text-white/40"
+                                          className="text-[10px] font-mono bg-[#FFF8F0]/[0.05] border border-[#FFF8F0]/[0.06] rounded-md px-2 py-0.5 text-[#FFF8F0]/40"
                                         >
                                           {key}: {String(val).substring(0, 25)}
                                         </span>
@@ -284,7 +284,7 @@ export function InboxCapture() {
                               {routes.length > 1 && (
                                 <button
                                   onClick={() => handleRemoveRoute(idx)}
-                                  className="size-7 flex items-center justify-center rounded-lg text-white/20 hover:text-red-400 hover:bg-red-400/10 transition-colors opacity-0 group-hover:opacity-100 shrink-0"
+                                  className="size-7 flex items-center justify-center rounded-lg text-[#FFF8F0]/20 hover:text-red-400 hover:bg-red-400/10 transition-colors opacity-0 group-hover:opacity-100 shrink-0"
                                   title="Remove this route"
                                 >
                                   <X className="h-3.5 w-3.5" />
@@ -302,8 +302,8 @@ export function InboxCapture() {
               {/* EXECUTING PHASE */}
               {phase === "executing" && (
                 <div className="flex flex-col items-center justify-center py-8 gap-4">
-                  <Loader2 className="h-8 w-8 text-[#C49E45] animate-spin" />
-                  <p className="text-sm text-white/40 font-mono">Creating entries...</p>
+                  <Loader2 className="h-8 w-8 text-[#FF6B6B] animate-spin" />
+                  <p className="text-sm text-[#FFF8F0]/40 font-mono">Creating entries...</p>
                 </div>
               )}
 
@@ -314,11 +314,11 @@ export function InboxCapture() {
                     <div className="size-12 rounded-full bg-green-500/10 border border-green-500/20 flex items-center justify-center">
                       <Check className="h-6 w-6 text-green-400" />
                     </div>
-                    <p className="text-sm text-white/70 font-mono">Captured successfully!</p>
+                    <p className="text-sm text-[#FFF8F0]/70 font-mono">Captured successfully!</p>
                   </div>
                   <div className="space-y-2">
                     {results.map((r, i) => {
-                      const meta = MODULE_META[r.module] ?? { label: r.module, icon: "📦", color: "text-white/60" };
+                      const meta = MODULE_META[r.module] ?? { label: r.module, icon: "📦", color: "text-[#FFF8F0]/60" };
                       return (
                         <div
                           key={i}
@@ -352,7 +352,7 @@ export function InboxCapture() {
                   <p className="text-sm text-red-400/80 font-mono text-center">{errorMsg}</p>
                   <button
                     onClick={handleRetry}
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl text-[11px] font-mono uppercase tracking-wider bg-white/[0.05] text-white/50 hover:text-white/80 hover:bg-white/[0.08] transition-colors border border-white/[0.06]"
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl text-[11px] font-mono uppercase tracking-wider bg-[#FFF8F0]/[0.05] text-[#FFF8F0]/50 hover:text-[#FFF8F0]/80 hover:bg-[#FFF8F0]/[0.08] transition-colors border border-[#FFF8F0]/[0.06]"
                   >
                     <RotateCcw className="h-3.5 w-3.5" />
                     Try Again
@@ -363,10 +363,10 @@ export function InboxCapture() {
 
             {/* Footer Actions */}
             {phase === "confirm" && (
-              <div className="px-5 py-4 border-t border-white/[0.06] flex items-center justify-between gap-3">
+              <div className="px-5 py-4 border-t border-[#FFF8F0]/[0.06] flex items-center justify-between gap-3">
                 <button
                   onClick={handleDiscard}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[11px] font-mono uppercase tracking-wider text-white/30 hover:text-white/60 hover:bg-white/[0.05] transition-colors"
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[11px] font-mono uppercase tracking-wider text-[#FFF8F0]/30 hover:text-[#FFF8F0]/60 hover:bg-[#FFF8F0]/[0.05] transition-colors"
                 >
                   Discard
                 </button>
@@ -376,8 +376,8 @@ export function InboxCapture() {
                   className={cn(
                     "flex items-center gap-2 px-5 py-2.5 rounded-xl text-[11px] font-mono uppercase tracking-wider transition-all",
                     routes.length > 0
-                      ? "bg-[#C49E45]/10 text-[#C49E45] border border-[#C49E45]/20 hover:bg-[#C49E45]/20"
-                      : "bg-white/[0.03] text-white/20 border border-white/[0.05] cursor-not-allowed"
+                      ? "bg-[#FF6B6B]/10 text-[#FF6B6B] border border-[#FF6B6B]/20 hover:bg-[#FF6B6B]/20"
+                      : "bg-[#FFF8F0]/[0.03] text-[#FFF8F0]/20 border border-[#FFF8F0]/[0.05] cursor-not-allowed"
                   )}
                 >
                   <Check className="h-3.5 w-3.5" />
@@ -387,10 +387,10 @@ export function InboxCapture() {
             )}
 
             {phase === "done" && (
-              <div className="px-5 py-4 border-t border-white/[0.06] flex justify-end">
+              <div className="px-5 py-4 border-t border-[#FFF8F0]/[0.06] flex justify-end">
                 <button
                   onClick={handleClose}
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-[11px] font-mono uppercase tracking-wider bg-[#C49E45]/10 text-[#C49E45] border border-[#C49E45]/20 hover:bg-[#C49E45]/20 transition-all"
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-[11px] font-mono uppercase tracking-wider bg-[#FF6B6B]/10 text-[#FF6B6B] border border-[#FF6B6B]/20 hover:bg-[#FF6B6B]/20 transition-all"
                 >
                   Done
                 </button>

@@ -57,16 +57,16 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <>
       {/* Logo */}
-      <div className="px-6 py-6 border-b border-white/[0.05]">
+      <div className="px-6 py-6 border-b border-[#FFF8F0]/[0.05]">
         <div className="flex items-center gap-3.5">
-          <div className="size-10 rounded-xl bg-gradient-to-b from-[#C49E45]/20 to-transparent border border-[#C49E45]/25 flex items-center justify-center">
-            <span className="text-lg font-serif text-[#C49E45] font-medium">L</span>
+          <div className="size-10 rounded-xl bg-gradient-to-b from-[#FF6B6B]/20 to-transparent border border-[#FF6B6B]/25 flex items-center justify-center">
+            <span className="text-lg font-serif text-[#FF6B6B] font-medium">L</span>
           </div>
           <div>
-            <p className="text-[#C49E45] font-serif text-sm tracking-[0.25em] uppercase font-medium">
+            <p className="text-[#FF6B6B] font-serif text-sm tracking-[0.25em] uppercase font-medium">
               LOS
             </p>
-            <p className="text-white/25 font-mono text-[8px] tracking-[0.35em] uppercase">
+            <p className="text-[#FFF8F0]/25 font-mono text-[8px] tracking-[0.35em] uppercase">
               Operating System
             </p>
           </div>
@@ -77,7 +77,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
       <nav className="flex-1 py-4 px-3 overflow-y-auto space-y-5">
         {NAV_SECTIONS.map((section) => (
           <div key={section.label}>
-            <p className="text-[9px] font-mono uppercase tracking-[0.35em] text-white/20 px-3 mb-2">
+            <p className="text-[9px] font-mono uppercase tracking-[0.35em] text-[#FFF8F0]/20 px-3 mb-2">
               {section.label}
             </p>
             <div className="space-y-0.5">
@@ -92,19 +92,19 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
                     className={cn(
                       "group flex items-center gap-3 px-3 py-2.5 rounded-xl text-[11px] font-mono uppercase tracking-wider transition-all duration-200",
                       active
-                        ? "bg-[#C49E45]/[0.08] text-[#C49E45] border border-[#C49E45]/[0.15] glow-primary-sm"
-                        : "text-white/35 hover:text-white/80 hover:bg-white/[0.03] border border-transparent"
+                        ? "bg-[#FF6B6B]/[0.08] text-[#FF6B6B] border border-[#FF6B6B]/[0.15] glow-primary-sm"
+                        : "text-[#FFF8F0]/35 hover:text-[#FFF8F0]/80 hover:bg-[#FFF8F0]/[0.03] border border-transparent"
                     )}
                   >
                     <Icon
                       className={cn(
                         "h-3.5 w-3.5 shrink-0 transition-colors",
-                        active ? "text-[#C49E45]" : "text-white/25 group-hover:text-white/60"
+                        active ? "text-[#FF6B6B]" : "text-[#FFF8F0]/25 group-hover:text-[#FFF8F0]/60"
                       )}
                     />
                     <span className="truncate">{label}</span>
                     {active && (
-                      <div className="ml-auto size-1.5 rounded-full bg-[#C49E45] animate-pulse" />
+                      <div className="ml-auto size-1.5 rounded-full bg-[#FF6B6B] animate-pulse" />
                     )}
                   </Link>
                 );
@@ -115,11 +115,11 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
       </nav>
 
       {/* Bottom */}
-      <div className="px-3 py-4 border-t border-white/[0.05]">
+      <div className="px-3 py-4 border-t border-[#FFF8F0]/[0.05]">
         <form action="/auth/signout" method="post">
           <button
             type="submit"
-            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-[11px] font-mono uppercase tracking-wider text-white/25 hover:text-white/60 hover:bg-red-500/[0.05] transition-all w-full border border-transparent"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-[11px] font-mono uppercase tracking-wider text-[#FFF8F0]/25 hover:text-[#FFF8F0]/60 hover:bg-red-500/[0.05] transition-all w-full border border-transparent"
           >
             <LogOut className="h-3.5 w-3.5" />
             <span>Sign Out</span>
@@ -156,7 +156,7 @@ export function Sidebar() {
       {/* Mobile hamburger button */}
       <button
         onClick={() => setMobileOpen(true)}
-        className="md:hidden fixed top-4 left-4 z-50 size-11 flex items-center justify-center rounded-xl bg-[rgba(10,10,10,0.9)] backdrop-blur-xl border border-white/[0.08] text-white/60 hover:text-white/90 transition-colors"
+        className="md:hidden fixed top-4 left-4 z-50 size-11 flex items-center justify-center rounded-xl bg-[rgba(10,10,10,0.9)] backdrop-blur-xl border border-[#FFF8F0]/[0.08] text-[#FFF8F0]/60 hover:text-[#FFF8F0]/90 transition-colors"
         aria-label="Open menu"
       >
         <Menu className="h-5 w-5" />
@@ -171,11 +171,11 @@ export function Sidebar() {
             onClick={() => setMobileOpen(false)}
           />
           {/* Slide-in sidebar */}
-          <aside className="absolute left-0 top-0 bottom-0 w-72 flex flex-col bg-[rgba(10,10,10,0.95)] backdrop-blur-xl border-r border-white/[0.05] animate-slide-in-left">
+          <aside className="absolute left-0 top-0 bottom-0 w-72 flex flex-col bg-[rgba(10,10,10,0.95)] backdrop-blur-xl border-r border-[#FFF8F0]/[0.05] animate-slide-in-left">
             {/* Close button */}
             <button
               onClick={() => setMobileOpen(false)}
-              className="absolute top-4 right-4 size-11 flex items-center justify-center rounded-xl text-white/40 hover:text-white/80 transition-colors"
+              className="absolute top-4 right-4 size-11 flex items-center justify-center rounded-xl text-[#FFF8F0]/40 hover:text-[#FFF8F0]/80 transition-colors"
               aria-label="Close menu"
             >
               <X className="h-5 w-5" />
@@ -186,9 +186,9 @@ export function Sidebar() {
       )}
 
       {/* Desktop sidebar — hidden on mobile */}
-      <aside className="hidden md:flex flex-col w-60 shrink-0 border-r border-white/[0.05] bg-[rgba(10,10,10,0.8)] backdrop-blur-xl h-screen sticky top-0 relative">
+      <aside className="hidden md:flex flex-col w-60 shrink-0 border-r border-[#FFF8F0]/[0.05] bg-[rgba(10,10,10,0.8)] backdrop-blur-xl h-screen sticky top-0 relative">
         {/* Subtle right edge glow */}
-        <div className="absolute right-0 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-[#C49E45]/10 to-transparent" />
+        <div className="absolute right-0 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-[#FF6B6B]/10 to-transparent" />
         <SidebarContent />
       </aside>
     </>

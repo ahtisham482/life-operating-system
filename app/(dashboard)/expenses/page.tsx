@@ -62,24 +62,24 @@ export default async function ExpensesPage({
           <h1 className="text-2xl sm:text-3xl font-serif tracking-tight text-gradient-primary">
             Financial Tracking
           </h1>
-          <p className="text-[11px] font-mono text-white/30 tracking-wider">
+          <p className="text-[11px] font-mono text-[#FFF8F0]/30 tracking-wider">
             {allExpenses.length} total expenses
           </p>
         </div>
         <ExpenseForm />
       </div>
 
-      <div className="h-px bg-gradient-to-r from-transparent via-[#C49E45]/20 to-transparent" />
+      <div className="h-px bg-gradient-to-r from-transparent via-[#FF6B6B]/20 to-transparent" />
 
       {/* Quick Entry */}
       <section className="glass-card rounded-2xl p-6 animate-slide-up" style={{ animationDelay: "0.03s", animationFillMode: "both" }}>
-        <p className="text-[9px] font-mono tracking-[0.35em] text-white/40 uppercase mb-4">Quick Entry</p>
+        <p className="text-[9px] font-mono tracking-[0.35em] text-[#FFF8F0]/40 uppercase mb-4">Quick Entry</p>
         <QuickExpense />
       </section>
 
       {/* Filter bar — single dropdown */}
       <div className="flex items-center gap-3 animate-slide-up" style={{ animationDelay: "0.06s", animationFillMode: "both" }}>
-        <label className="text-[9px] font-mono tracking-[0.35em] text-white/40 uppercase shrink-0">
+        <label className="text-[9px] font-mono tracking-[0.35em] text-[#FFF8F0]/40 uppercase shrink-0">
           Filter
         </label>
         <CategoryFilter current={params.category || ""} />
@@ -91,7 +91,7 @@ export default async function ExpensesPage({
         <div className="lg:col-span-3">
           {filtered.length === 0 ? (
             <div className="py-16 text-center glass-card rounded-2xl">
-              <p className="text-[11px] font-mono text-white/25 tracking-widest uppercase">
+              <p className="text-[11px] font-mono text-[#FFF8F0]/25 tracking-widest uppercase">
                 No expenses found. Add your first expense.
               </p>
             </div>
@@ -99,14 +99,14 @@ export default async function ExpensesPage({
             <div className="glass-card rounded-2xl overflow-x-auto">
               <table className="w-full text-sm min-w-[500px]">
                 <thead>
-                  <tr className="bg-white/[0.02] border-b border-white/[0.04]">
-                    <th className="px-5 py-3 text-left text-[9px] font-mono uppercase tracking-[0.25em] text-white/25">
+                  <tr className="bg-[#FFF8F0]/[0.02] border-b border-[#FFF8F0]/[0.04]">
+                    <th className="px-5 py-3 text-left text-[9px] font-mono uppercase tracking-[0.25em] text-[#FFF8F0]/25">
                       Item
                     </th>
-                    <th className="px-5 py-3 text-left text-[9px] font-mono uppercase tracking-[0.25em] text-white/25">
+                    <th className="px-5 py-3 text-left text-[9px] font-mono uppercase tracking-[0.25em] text-[#FFF8F0]/25">
                       Amount
                     </th>
-                    <th className="px-5 py-3 text-left text-[9px] font-mono uppercase tracking-[0.25em] text-white/25">
+                    <th className="px-5 py-3 text-left text-[9px] font-mono uppercase tracking-[0.25em] text-[#FFF8F0]/25">
                       Category
                     </th>
                     <th className="px-5 py-3 w-20"></th>
@@ -125,44 +125,44 @@ export default async function ExpensesPage({
         {/* Right: Monthly Summary (col-span-2) */}
         <div className="lg:col-span-2">
           <div className="glass-card rounded-2xl p-6 space-y-6 sticky top-8">
-            <p className="text-[9px] font-mono tracking-[0.35em] text-white/40 uppercase">
+            <p className="text-[9px] font-mono tracking-[0.35em] text-[#FFF8F0]/40 uppercase">
               Monthly Summary
             </p>
 
             {/* Total Spent */}
             <div className="space-y-1">
-              <p className="text-[10px] font-mono text-white/25 uppercase tracking-wider">Total Spent</p>
-              <p className="text-3xl font-serif text-[#C49E45] stat-number">
+              <p className="text-[10px] font-mono text-[#FFF8F0]/25 uppercase tracking-wider">Total Spent</p>
+              <p className="text-3xl font-serif text-[#FF6B6B] stat-number">
                 PKR {monthTotal.toLocaleString()}
               </p>
-              <p className="text-[10px] font-mono text-white/20">
+              <p className="text-[10px] font-mono text-[#FFF8F0]/20">
                 Today: PKR {todaySpending.toLocaleString()}
               </p>
             </div>
 
             {/* Divider */}
-            <div className="h-px bg-white/[0.06]" />
+            <div className="h-px bg-[#FFF8F0]/[0.06]" />
 
             {/* Need vs Desire */}
             <div className="space-y-3">
-              <p className="text-[10px] font-mono text-white/25 uppercase tracking-wider">Need vs Desire</p>
+              <p className="text-[10px] font-mono text-[#FFF8F0]/25 uppercase tracking-wider">Need vs Desire</p>
               <div className="space-y-2">
                 <div className="space-y-1">
                   <div className="flex justify-between items-center">
-                    <span className="text-[10px] font-mono text-white/50">Need</span>
+                    <span className="text-[10px] font-mono text-[#FFF8F0]/50">Need</span>
                     <span className="text-[10px] font-mono text-primary/70">{needPct}%</span>
                   </div>
-                  <div className="h-2 bg-white/[0.05] rounded-full overflow-hidden">
+                  <div className="h-2 bg-[#FFF8F0]/[0.05] rounded-full overflow-hidden">
                     <div className="h-full bg-primary/60 rounded-full transition-all" style={{ width: `${needPct}%` }} />
                   </div>
                 </div>
                 <div className="space-y-1">
                   <div className="flex justify-between items-center">
-                    <span className="text-[10px] font-mono text-white/50">Desire</span>
-                    <span className="text-[10px] font-mono text-white/40">{desirePct}%</span>
+                    <span className="text-[10px] font-mono text-[#FFF8F0]/50">Desire</span>
+                    <span className="text-[10px] font-mono text-[#FFF8F0]/40">{desirePct}%</span>
                   </div>
-                  <div className="h-2 bg-white/[0.05] rounded-full overflow-hidden">
-                    <div className="h-full bg-white/20 rounded-full transition-all" style={{ width: `${desirePct}%` }} />
+                  <div className="h-2 bg-[#FFF8F0]/[0.05] rounded-full overflow-hidden">
+                    <div className="h-full bg-[#FFF8F0]/20 rounded-full transition-all" style={{ width: `${desirePct}%` }} />
                   </div>
                 </div>
               </div>
@@ -175,17 +175,17 @@ export default async function ExpensesPage({
             </div>
 
             {/* Divider */}
-            <div className="h-px bg-white/[0.06]" />
+            <div className="h-px bg-[#FFF8F0]/[0.06]" />
 
             {/* Quick stats */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <p className="text-[9px] font-mono text-white/20 uppercase">Needs</p>
-                <p className="text-sm font-mono text-white/70 stat-number">PKR {needTotal.toLocaleString()}</p>
+                <p className="text-[9px] font-mono text-[#FFF8F0]/20 uppercase">Needs</p>
+                <p className="text-sm font-mono text-[#FFF8F0]/70 stat-number">PKR {needTotal.toLocaleString()}</p>
               </div>
               <div>
-                <p className="text-[9px] font-mono text-white/20 uppercase">Desires</p>
-                <p className="text-sm font-mono text-white/70 stat-number">PKR {desireTotal.toLocaleString()}</p>
+                <p className="text-[9px] font-mono text-[#FFF8F0]/20 uppercase">Desires</p>
+                <p className="text-sm font-mono text-[#FFF8F0]/70 stat-number">PKR {desireTotal.toLocaleString()}</p>
               </div>
             </div>
           </div>
@@ -197,21 +197,21 @@ export default async function ExpensesPage({
 
 function ExpenseRow({ expense }: { expense: Expense }) {
   return (
-    <tr className="border-t border-white/[0.04] transition-colors hover:bg-white/[0.02]">
+    <tr className="border-t border-[#FFF8F0]/[0.04] transition-colors hover:bg-[#FFF8F0]/[0.02]">
       <td className="px-5 py-3.5">
-        <span className="font-serif text-white/90">{expense.item}</span>
+        <span className="font-serif text-[#FFF8F0]/90">{expense.item}</span>
         {expense.notes && (
-          <p className="text-[10px] text-white/25 mt-0.5 line-clamp-1">
+          <p className="text-[10px] text-[#FFF8F0]/25 mt-0.5 line-clamp-1">
             {expense.notes}
           </p>
         )}
-        <p className="text-[10px] text-white/20 font-mono mt-0.5">{expense.date}</p>
+        <p className="text-[10px] text-[#FFF8F0]/20 font-mono mt-0.5">{expense.date}</p>
       </td>
-      <td className="px-5 py-3.5 font-mono text-white/90 stat-number">
+      <td className="px-5 py-3.5 font-mono text-[#FFF8F0]/90 stat-number">
         {Number(expense.amountPkr).toLocaleString()}
       </td>
       <td className="px-5 py-3.5">
-        <span className="text-[11px] text-white/40 whitespace-nowrap block">{expense.category}</span>
+        <span className="text-[11px] text-[#FFF8F0]/40 whitespace-nowrap block">{expense.category}</span>
         <Badge
           variant={expense.type === "Need" ? "default" : "secondary"}
           className="mt-1"

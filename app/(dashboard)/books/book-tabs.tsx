@@ -16,8 +16,8 @@ export function BookTabs({ activeTab }: { activeTab: string }) {
         onClick={() => handleTab("prescribed")}
         className={`px-5 py-2.5 rounded-xl text-[11px] font-mono uppercase tracking-widest transition-all ${
           activeTab === "prescribed"
-            ? "glass-card border-[#C49E45]/20 bg-[#C49E45]/[0.08] text-[#C49E45]"
-            : "glass-card text-white/40 hover:text-white/70 hover:border-white/[0.08]"
+            ? "glass-card border-[#FF6B6B]/20 bg-[#FF6B6B]/[0.08] text-[#FF6B6B]"
+            : "glass-card text-[#FFF8F0]/40 hover:text-[#FFF8F0]/70 hover:border-[#FFF8F0]/[0.08]"
         }`}
       >
         Prescribed
@@ -27,8 +27,8 @@ export function BookTabs({ activeTab }: { activeTab: string }) {
         onClick={() => handleTab("custom")}
         className={`px-5 py-2.5 rounded-xl text-[11px] font-mono uppercase tracking-widest transition-all ${
           activeTab === "custom"
-            ? "glass-card border-[#C49E45]/20 bg-[#C49E45]/[0.08] text-[#C49E45]"
-            : "glass-card text-white/40 hover:text-white/70 hover:border-white/[0.08]"
+            ? "glass-card border-[#FF6B6B]/20 bg-[#FF6B6B]/[0.08] text-[#FF6B6B]"
+            : "glass-card text-[#FFF8F0]/40 hover:text-[#FFF8F0]/70 hover:border-[#FFF8F0]/[0.08]"
         }`}
       >
         Custom

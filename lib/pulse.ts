@@ -73,8 +73,8 @@ export function getPulseLabel(score: number): string {
  * Returns a color class for the Pulse Score.
  */
 export function getPulseColor(score: number): string {
-  if (score >= 75) return "text-[#C49E45]";
-  if (score >= 50) return "text-[#C49E45]/80";
-  if (score >= 25) return "text-white/50";
-  return "text-white/30";
+  if (score >= 75) return "text-[#FF6B6B]";
+  if (score >= 50) return "text-[#FF6B6B]/80";
+  if (score >= 25) return "text-[#FFF8F0]/50";
+  return "text-[#FFF8F0]/30";
 }
