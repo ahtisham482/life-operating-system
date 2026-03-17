@@ -957,7 +957,7 @@ function KanbanColumn({
     <div className="flex flex-col">
       <div
         ref={setNodeRef}
-        className={`glass-card rounded-2xl flex flex-col min-h-[300px] transition-all duration-200 ${
+        className={`rounded-2xl flex flex-col min-h-[300px] transition-colors duration-200 bg-[rgba(255,200,154,0.05)] border border-[rgba(255,200,154,0.08)] ${
           meta.accent ? "border-t-2 border-t-[#FF6B6B]/60" : ""
         } ${isOver ? "ring-1 ring-[#FF6B6B]/30 bg-[#FF6B6B]/[0.03]" : ""}`}
       >
@@ -1021,7 +1021,7 @@ function KanbanColumn({
         {/* Inline Add */}
         {adding && (
           <div className="px-3 pb-3">
-            <div className="glass-card rounded-lg">
+            <div className="rounded-lg bg-[rgba(255,200,154,0.05)] border border-[rgba(255,200,154,0.08)]">
               <input
                 ref={addInputRef}
                 type="text"
