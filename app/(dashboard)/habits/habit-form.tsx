@@ -24,6 +24,8 @@ const HABIT_LABELS: Record<keyof HabitChecks, string> = {
 
 type HabitGroup = {
   title: string;
+  emoji: string;
+  gradientClass: string;
   keys: (keyof HabitChecks)[];
 };
 
@@ -90,9 +92,9 @@ export function HabitForm({ entry, date, day, streaks }: HabitFormProps) {
     : EVENING_KEYS_BASE;
 
   const groups: HabitGroup[] = [
-    { title: "Morning Routine", keys: MORNING_KEYS },
-    { title: "Daytime Focus", keys: DAYTIME_KEYS },
-    { title: "Evening Wind-Down", keys: eveningKeys },
+    { title: "Morning Ritual", emoji: "\u2600\uFE0F", gradientClass: "bg-gradient-to-r from-[#FF6B6B] via-[#FEC89A] to-[#FFD93D]", keys: MORNING_KEYS },
+    { title: "Daytime Focus", emoji: "\u2600\uFE0F", gradientClass: "bg-gradient-to-r from-[#2DD4BF] to-[#38BDF8]", keys: DAYTIME_KEYS },
+    { title: "Evening Wind-Down", emoji: "\uD83C\uDF19", gradientClass: "bg-gradient-to-r from-[#E2B0FF] to-[#A78BFA]", keys: eveningKeys },
   ];
 
   const allVisibleKeys = [...MORNING_KEYS, ...DAYTIME_KEYS, ...eveningKeys];
@@ -125,19 +127,19 @@ export function HabitForm({ entry, date, day, streaks }: HabitFormProps) {
     <div className="space-y-6">
       {/* Completion counter + progress bar */}
       <div className="flex items-center justify-between">
-        <p className="text-sm font-mono text-muted-foreground tracking-wider">
-          <span className="text-primary font-semibold">{completedCount}</span>{" "}
+        <p className="text-sm font-mono text-[#FFF8F0]/50 tracking-wider">
+          <span className="text-[#34D399] font-semibold">{completedCount}</span>{" "}
           / {totalCount} habits completed
         </p>
         <div className="flex items-center gap-3">
           {savedIndicator && (
-            <span className="text-[10px] font-mono text-[#C49E45] tracking-wider">
+            <span className="text-[10px] font-mono text-[#34D399] tracking-wider">
               Saved
             </span>
           )}
-          <div className="w-32 h-1.5 bg-border/30 rounded-full overflow-hidden">
+          <div className="w-32 h-1.5 bg-[#FFF8F0]/[0.06] rounded-full overflow-hidden">
             <div
-              className="h-full bg-primary rounded-full transition-all duration-300"
+              className="h-full bg-gradient-to-r from-[#34D399] to-[#2DD4BF] rounded-full transition-all duration-300"
               style={{ width: `${(completedCount / totalCount) * 100}%` }}
             />
           </div>
@@ -147,8 +149,10 @@ export function HabitForm({ entry, date, day, streaks }: HabitFormProps) {
       {/* Grouped habit checkboxes */}
       {groups.map((group) => (
         <div key={group.title} className="space-y-3">
-          <p className="text-[9px] font-mono tracking-[0.35em] text-white/40 uppercase">
-            {group.title}
+          {/* Gradient accent line */}
+          <div className={`h-0.5 w-16 rounded-full ${group.gradientClass}`} />
+          <p className="text-sm font-serif italic text-[#FFF8F0]/50">
+            {group.title} {group.emoji}
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {group.keys.map((key) => {
@@ -157,10 +161,10 @@ export function HabitForm({ entry, date, day, streaks }: HabitFormProps) {
               return (
                 <label
                   key={key}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg border cursor-pointer transition-colors ${
+                  className={`flex items-center gap-3 px-4 py-3 rounded-2xl border cursor-pointer transition-colors ${
                     habits[key]
-                      ? "border-primary/50 bg-primary/5"
-                      : "border-border/50 hover:border-border"
+                      ? "border-[#34D399]/40 bg-[#34D399]/5"
+                      : "border-[#F59E0B]/20 hover:border-[#F59E0B]/40"
                   }`}
                 >
                   <Checkbox
@@ -168,15 +172,15 @@ export function HabitForm({ entry, date, day, streaks }: HabitFormProps) {
                     onCheckedChange={(v) => toggleHabit(key, Boolean(v))}
                   />
                   <span
-                    className={`text-sm font-mono flex-1 ${
-                      habits[key] ? "text-primary" : "text-foreground"
+                    className={`text-sm font-serif flex-1 ${
+                      habits[key] ? "text-[#34D399]" : "text-[#FFF8F0]/80"
                     }`}
                   >
                     {HABIT_LABELS[key]}
                   </span>
                   {habitStreak >= 2 && (
-                    <span className="text-[10px] font-mono text-orange-400/80">
-                      🔥{habitStreak}
+                    <span className="text-[10px] font-mono text-[#FF6B6B]/80">
+                      {"\uD83D\uDD25"}{habitStreak}
                     </span>
                   )}
                 </label>
@@ -190,9 +194,9 @@ export function HabitForm({ entry, date, day, streaks }: HabitFormProps) {
       <div>
         <button
           onClick={() => setNotesOpen(!notesOpen)}
-          className="text-[10px] font-mono uppercase tracking-[0.25em] text-muted-foreground hover:text-foreground transition-colors"
+          className="text-[10px] font-mono uppercase tracking-[0.25em] text-[#FFF8F0]/40 hover:text-[#FFF8F0]/70 transition-colors"
         >
-          {notesOpen ? "Hide notes ▾" : "Add notes ▸"}
+          {notesOpen ? "Hide notes \u25BE" : "Add notes \u25B8"}
         </button>
 
         {notesOpen && (
@@ -202,7 +206,7 @@ export function HabitForm({ entry, date, day, streaks }: HabitFormProps) {
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Any reflections on today..."
               rows={3}
-              className="w-full bg-background border border-border text-foreground p-3 text-sm font-serif rounded focus:outline-none focus:ring-1 focus:ring-ring resize-none"
+              className="w-full bg-[#FFF8F0]/[0.03] border border-[#FFF8F0]/[0.08] text-[#FFF8F0]/80 p-3 text-sm font-serif rounded-2xl focus:outline-none focus:ring-1 focus:ring-[#FF6B6B]/30 resize-none placeholder:text-[#FFF8F0]/20"
             />
             <button
               onClick={async () => {
@@ -213,7 +217,7 @@ export function HabitForm({ entry, date, day, streaks }: HabitFormProps) {
                   // Silently fail
                 }
               }}
-              className="px-5 py-2 text-[11px] font-mono uppercase tracking-widest border border-primary text-primary hover:bg-primary/10 rounded transition-colors"
+              className="px-5 py-2 text-[11px] font-mono uppercase tracking-widest bg-gradient-to-r from-[#FF6B6B] to-[#FEC89A] text-white rounded-2xl hover:opacity-90 transition-opacity"
             >
               Save Notes
             </button>

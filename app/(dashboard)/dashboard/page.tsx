@@ -6,64 +6,54 @@ import { DashboardContent } from "./dashboard-content";
 
 function DashboardGridSkeleton() {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 animate-fade-in">
+    <div className="space-y-6 animate-fade-in">
       {/* Pulse Score skeleton */}
-      <div className="glass-card rounded-2xl p-6 flex flex-col items-center justify-center animate-pulse">
-        <div className="h-3 bg-white/[0.04] rounded w-24 mb-4" />
-        <div className="w-20 h-20 rounded-full bg-white/[0.04]" />
-        <div className="h-3 bg-white/[0.04] rounded w-20 mt-3" />
+      <div className="glass-card rounded-3xl p-8 flex flex-col items-center justify-center animate-pulse">
+        <div className="h-20 w-20 rounded-full bg-[#FFF8F0]/[0.04]" />
+        <div className="h-3 bg-[#FFF8F0]/[0.04] rounded w-32 mt-4" />
       </div>
 
-      {/* Today's Focus skeleton */}
-      <div className="glass-card rounded-2xl p-6 animate-pulse">
-        <div className="flex items-center justify-between mb-4">
-          <div className="h-3 bg-white/[0.04] rounded w-24" />
-          <div className="h-3 bg-white/[0.04] rounded w-12" />
-        </div>
-        <div className="space-y-0">
-          {[1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className={`flex items-center gap-3 py-3 ${
-                i > 1 ? "border-t border-white/[0.05]" : ""
-              }`}
-            >
-              <div className="w-5 h-5 rounded bg-white/[0.04]" />
-              <div className="h-4 bg-white/[0.04] rounded flex-1" />
-              <div className="h-3 bg-white/[0.04] rounded w-16" />
-            </div>
-          ))}
-        </div>
+      {/* Status pills skeleton */}
+      <div className="flex flex-wrap gap-3 justify-center">
+        {[1, 2, 3, 4].map((i) => (
+          <div
+            key={i}
+            className="h-8 w-32 rounded-full bg-[#FFF8F0]/[0.04] animate-pulse"
+          />
+        ))}
       </div>
 
-      {/* Quick Stats skeleton */}
-      <div className="glass-card rounded-2xl p-6 animate-pulse">
-        <div className="h-3 bg-white/[0.04] rounded w-20 mb-4" />
-        <div className="space-y-3">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i}>
-              <div className="flex items-center justify-between">
-                <div className="h-4 bg-white/[0.04] rounded w-16" />
-                <div className="h-4 bg-white/[0.04] rounded w-20" />
+      {/* Grid skeleton */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+        {/* Today's Focus skeleton */}
+        <div className="glass-card rounded-3xl p-6 animate-pulse">
+          <div className="h-4 bg-[#FFF8F0]/[0.04] rounded w-36 mb-4" />
+          <div className="space-y-0">
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className={`flex items-center gap-3 py-3 ${
+                  i > 1 ? "border-t border-[#FFF8F0]/[0.05]" : ""
+                }`}
+              >
+                <div className="w-5 h-5 rounded bg-[#FFF8F0]/[0.04]" />
+                <div className="h-4 bg-[#FFF8F0]/[0.04] rounded flex-1" />
               </div>
-              {i < 4 && (
-                <div className="border-t border-white/[0.05] mt-3" />
-              )}
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
 
-      {/* Quick Actions skeleton */}
-      <div className="glass-card rounded-2xl p-6 animate-pulse">
-        <div className="h-3 bg-white/[0.04] rounded w-24 mb-4" />
-        <div className="flex flex-col gap-3">
-          {[1, 2, 3, 4].map((i) => (
-            <div
-              key={i}
-              className="h-11 bg-white/[0.04] rounded-xl border border-white/[0.05]"
-            />
-          ))}
+        {/* Quick Actions skeleton */}
+        <div className="glass-card rounded-3xl p-6 animate-pulse">
+          <div className="h-4 bg-[#FFF8F0]/[0.04] rounded w-28 mb-4" />
+          <div className="flex flex-col gap-3">
+            {[1, 2, 3, 4].map((i) => (
+              <div
+                key={i}
+                className="h-11 bg-[#FFF8F0]/[0.04] rounded-2xl"
+              />
+            ))}
+          </div>
         </div>
       </div>
     </div>
@@ -90,21 +80,34 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="p-4 sm:p-8 max-w-5xl mx-auto space-y-6 sm:space-y-8">
-      {/* Header — renders instantly, no data dependency */}
-      <div className="space-y-1">
-        <h1 className="text-xl sm:text-2xl font-serif tracking-wide text-gradient-primary">
-          {greeting}
-        </h1>
-        <p className="font-mono text-[11px] tracking-widest text-white/30">
-          {dateLabel}
-        </p>
-      </div>
+    <div className="relative min-h-screen">
+      {/* Sunset gradient backdrop */}
+      <div
+        className="absolute top-0 left-0 right-0 h-[400px] pointer-events-none"
+        style={{
+          background:
+            "linear-gradient(135deg, #FF6B6B 0%, #FEC89A 40%, #FFD93D 100%)",
+          opacity: 0.08,
+          maskImage: "linear-gradient(to bottom, black 0%, transparent 100%)",
+          WebkitMaskImage:
+            "linear-gradient(to bottom, black 0%, transparent 100%)",
+        }}
+      />
 
-      {/* Data sections — streamed via Suspense */}
-      <Suspense fallback={<DashboardGridSkeleton />}>
-        <DashboardContent />
-      </Suspense>
+      <div className="relative p-4 sm:p-8 max-w-5xl mx-auto space-y-6 sm:space-y-8">
+        {/* Header — renders instantly, no data dependency */}
+        <div className="space-y-1 text-center pt-4 sm:pt-8">
+          <h1 className="text-2xl sm:text-3xl font-serif tracking-wide text-gradient-primary">
+            {greeting}
+          </h1>
+          <p className="text-sm text-[#FFF8F0]/30">{dateLabel}</p>
+        </div>
+
+        {/* Data sections — streamed via Suspense */}
+        <Suspense fallback={<DashboardGridSkeleton />}>
+          <DashboardContent />
+        </Suspense>
+      </div>
     </div>
   );
 }

@@ -8,7 +8,7 @@ export function TaskCompleteButton({ taskId }: { taskId: string }) {
     <button
       onClick={() => startTransition(() => markTaskDone(taskId))}
       disabled={isPending}
-      className="size-5 rounded border border-white/[0.1] hover:border-[#C49E45]/40 hover:bg-[#C49E45]/10 transition-all flex items-center justify-center text-[10px] text-white/20 hover:text-[#C49E45] disabled:opacity-50"
+      className="size-5 rounded border border-[#FFF8F0]/[0.1] hover:border-[#FF6B6B]/40 hover:bg-[#FF6B6B]/10 transition-all flex items-center justify-center text-[10px] text-[#FFF8F0]/20 hover:text-[#FF6B6B] disabled:opacity-50"
       title="Mark as done"
     >
       {isPending ? "·" : ""}

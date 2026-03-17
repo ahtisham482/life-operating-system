@@ -6,7 +6,7 @@ import type { Task } from "@/lib/db/schema";
 import { updateTask, deleteTask } from "./actions";
 
 const FIELD_CLASS =
-  "w-full h-9 px-3 py-1 bg-transparent border border-white/[0.08] rounded-md text-sm text-white/80 focus:outline-none focus:ring-1 focus:ring-[#C49E45]/30 transition-colors";
+  "w-full h-9 px-3 py-1 bg-transparent border border-[#FFF8F0]/[0.08] rounded-md text-sm text-[#FFF8F0]/80 focus:outline-none focus:ring-1 focus:ring-[#FF6B6B]/30 transition-colors";
 
 export function TaskDetailPanel({
   task,
@@ -34,6 +34,7 @@ export function TaskDetailPanel({
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [showSaved, setShowSaved] = useState(false);
 
   // Reset form when task changes
   useEffect(() => {
@@ -95,6 +96,8 @@ export function TaskDetailPanel({
 
     try {
       await updateTask(task.id, data);
+      setShowSaved(true);
+      setTimeout(() => setShowSaved(false), 2000);
     } catch {
       onUpdate(task); // rollback
     } finally {
@@ -122,15 +125,15 @@ export function TaskDetailPanel({
       />
 
       {/* Panel */}
-      <div className="relative w-full max-w-[480px] bg-zinc-900/95 backdrop-blur-xl border-l border-white/[0.06] flex flex-col animate-in slide-in-from-right duration-200 overflow-hidden">
+      <div className="relative w-full max-w-[480px] bg-zinc-900/95 backdrop-blur-xl border-l border-[#FFF8F0]/[0.06] flex flex-col animate-in slide-in-from-right duration-200 overflow-hidden">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-white/[0.06] flex items-center justify-between flex-shrink-0">
-          <h2 className="text-sm font-serif text-white/80 tracking-wide">
+        <div className="px-6 py-4 border-b border-[#FFF8F0]/[0.06] flex items-center justify-between flex-shrink-0">
+          <h2 className="text-sm font-serif text-[#FFF8F0]/80 tracking-wide">
             Task Details
           </h2>
           <button
             onClick={onClose}
-            className="w-7 h-7 flex items-center justify-center rounded-lg text-white/30 hover:text-white/70 hover:bg-white/[0.06] transition-colors"
+            className="w-7 h-7 flex items-center justify-center rounded-lg text-[#FFF8F0]/30 hover:text-[#FFF8F0]/70 hover:bg-[#FFF8F0]/[0.06] transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
@@ -140,13 +143,13 @@ export function TaskDetailPanel({
         <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
           {/* Task Name */}
           <div className="space-y-1.5">
-            <label className="text-[10px] font-mono text-white/40 tracking-widest uppercase">
+            <label className="text-[10px] font-mono text-[#FFF8F0]/40 tracking-widest uppercase">
               Task Name
             </label>
             <input
               value={form.taskName}
               onChange={(e) => set("taskName", e.target.value)}
-              className="w-full text-lg font-serif bg-transparent text-white/90 outline-none border-b border-white/[0.08] pb-1 focus:border-[#C49E45]/30"
+              className="w-full text-lg font-serif bg-transparent text-[#FFF8F0]/90 outline-none border-b border-[#FFF8F0]/[0.08] pb-1 focus:border-[#FF6B6B]/30"
               placeholder="Task name..."
             />
           </div>
@@ -154,7 +157,7 @@ export function TaskDetailPanel({
           {/* Status + Priority */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <label className="text-[10px] font-mono text-white/40 tracking-widest uppercase">
+              <label className="text-[10px] font-mono text-[#FFF8F0]/40 tracking-widest uppercase">
                 Status
               </label>
               <select
@@ -168,7 +171,7 @@ export function TaskDetailPanel({
               </select>
             </div>
             <div className="space-y-1.5">
-              <label className="text-[10px] font-mono text-white/40 tracking-widest uppercase">
+              <label className="text-[10px] font-mono text-[#FFF8F0]/40 tracking-widest uppercase">
                 Priority
               </label>
               <select
@@ -187,7 +190,7 @@ export function TaskDetailPanel({
           {/* Type + Life Area */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <label className="text-[10px] font-mono text-white/40 tracking-widest uppercase">
+              <label className="text-[10px] font-mono text-[#FFF8F0]/40 tracking-widest uppercase">
                 Type
               </label>
               <select
@@ -203,7 +206,7 @@ export function TaskDetailPanel({
               </select>
             </div>
             <div className="space-y-1.5">
-              <label className="text-[10px] font-mono text-white/40 tracking-widest uppercase">
+              <label className="text-[10px] font-mono text-[#FFF8F0]/40 tracking-widest uppercase">
                 Life Area
               </label>
               <select
@@ -222,7 +225,7 @@ export function TaskDetailPanel({
 
           {/* Due Date */}
           <div className="space-y-1.5">
-            <label className="text-[10px] font-mono text-white/40 tracking-widest uppercase">
+            <label className="text-[10px] font-mono text-[#FFF8F0]/40 tracking-widest uppercase">
               Due Date
             </label>
             <input
@@ -254,8 +257,8 @@ export function TaskDetailPanel({
                     onClick={() => set("dueDate", dateVal)}
                     className={`px-2 py-1 text-[10px] font-mono rounded-md border transition-all ${
                       isActive
-                        ? "border-[#C49E45]/30 bg-[#C49E45]/[0.08] text-[#C49E45]"
-                        : "border-white/[0.06] text-white/30 hover:text-white/60 hover:border-white/[0.1]"
+                        ? "border-[#FF6B6B]/30 bg-[#FF6B6B]/[0.08] text-[#FF6B6B]"
+                        : "border-[#FFF8F0]/[0.06] text-[#FFF8F0]/30 hover:text-[#FFF8F0]/60 hover:border-[#FFF8F0]/[0.1]"
                     }`}
                   >
                     {label}
@@ -271,14 +274,14 @@ export function TaskDetailPanel({
               type="checkbox"
               checked={form.recurring}
               onChange={(e) => set("recurring", e.target.checked)}
-              className="w-4 h-4 rounded border border-white/20 bg-transparent accent-[#C49E45]"
+              className="w-4 h-4 rounded border border-[#FFF8F0]/20 bg-transparent accent-[#FF6B6B]"
             />
-            <span className="text-xs text-white/60">Recurring Task</span>
+            <span className="text-xs text-[#FFF8F0]/60">Recurring Task</span>
           </div>
           {form.recurring && (
             <div className="grid grid-cols-2 gap-3 pl-7">
               <div className="space-y-1.5">
-                <label className="text-[10px] font-mono text-white/40 tracking-widest uppercase">
+                <label className="text-[10px] font-mono text-[#FFF8F0]/40 tracking-widest uppercase">
                   Frequency
                 </label>
                 <select
@@ -295,7 +298,7 @@ export function TaskDetailPanel({
               </div>
               {form.frequency === "Custom" && (
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-mono text-white/40 tracking-widest uppercase">
+                  <label className="text-[10px] font-mono text-[#FFF8F0]/40 tracking-widest uppercase">
                     Every N Days
                   </label>
                   <input
@@ -318,21 +321,21 @@ export function TaskDetailPanel({
 
           {/* Notes */}
           <div className="space-y-1.5">
-            <label className="text-[10px] font-mono text-white/40 tracking-widest uppercase">
+            <label className="text-[10px] font-mono text-[#FFF8F0]/40 tracking-widest uppercase">
               Notes
             </label>
             <textarea
               value={form.notes}
               onChange={(e) => set("notes", e.target.value)}
               rows={4}
-              className="w-full px-3 py-2 bg-transparent border border-white/[0.08] rounded-md text-sm text-white/80 focus:outline-none focus:ring-1 focus:ring-[#C49E45]/30 resize-none transition-colors"
+              className="w-full px-3 py-2 bg-transparent border border-[#FFF8F0]/[0.08] rounded-md text-sm text-[#FFF8F0]/80 focus:outline-none focus:ring-1 focus:ring-[#FF6B6B]/30 resize-none transition-colors"
               placeholder="Any additional context..."
             />
           </div>
         </div>
 
         {/* Footer actions */}
-        <div className="px-6 py-4 border-t border-white/[0.06] flex items-center justify-between flex-shrink-0">
+        <div className="px-6 py-4 border-t border-[#FFF8F0]/[0.06] flex items-center justify-between flex-shrink-0">
           {confirmDelete ? (
             <div className="flex items-center gap-2">
               <button
@@ -344,7 +347,7 @@ export function TaskDetailPanel({
               </button>
               <button
                 onClick={() => setConfirmDelete(false)}
-                className="px-3 py-1.5 text-xs font-mono text-white/40 hover:text-white/60 transition-colors"
+                className="px-3 py-1.5 text-xs font-mono text-[#FFF8F0]/40 hover:text-[#FFF8F0]/60 transition-colors"
               >
                 Cancel
               </button>
@@ -359,20 +362,27 @@ export function TaskDetailPanel({
             </button>
           )}
 
-          <div className="flex items-center gap-2">
-            <button
-              onClick={onClose}
-              className="px-4 py-1.5 text-xs font-mono text-white/40 hover:text-white/60 rounded-lg transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={saving || !form.taskName.trim()}
-              className="px-4 py-1.5 text-xs font-mono text-black bg-[#C49E45] hover:bg-[#D4AF37] rounded-lg transition-colors disabled:opacity-50"
-            >
-              {saving ? "Saving..." : "Save Changes"}
-            </button>
+          <div className="flex flex-col items-end gap-1">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={onClose}
+                className="px-4 py-1.5 text-xs font-mono text-[#FFF8F0]/40 hover:text-[#FFF8F0]/60 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={saving || !form.taskName.trim()}
+                className="px-4 py-1.5 text-xs font-mono text-white bg-gradient-to-r from-[#FF6B6B] to-[#FEC89A] hover:opacity-90 rounded-lg transition-colors disabled:opacity-50"
+              >
+                {saving ? "Saving..." : "Save Changes"}
+              </button>
+            </div>
+            {showSaved && (
+              <span className="text-[10px] font-mono text-emerald-400 transition-opacity">
+                ✓ Saved
+              </span>
+            )}
           </div>
         </div>
       </div>

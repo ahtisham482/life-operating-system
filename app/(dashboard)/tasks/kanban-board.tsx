@@ -58,6 +58,18 @@ export function KanbanBoard({ initialTasks }: { initialTasks: Task[] }) {
   const [focusedTaskId, setFocusedTaskId] = useState<string | null>(null);
   const boardRef = useRef<HTMLDivElement>(null);
 
+  // Undo toast state
+  const [undoState, setUndoState] = useState<{
+    task: Task;
+    timeout: NodeJS.Timeout;
+  } | null>(null);
+
+  // Keyboard shortcut help overlay state
+  const [showShortcutHelp, setShowShortcutHelp] = useState(false);
+
+  // Ref for quick-add ("N" key) — points at the To Do column's add trigger
+  const todoQuickAddRef = useRef<{ triggerAdd: () => void } | null>(null);
+
   // Sync with server data on revalidation
   useEffect(() => {
     setTasks(initialTasks);
@@ -120,6 +132,34 @@ export function KanbanBoard({ initialTasks }: { initialTasks: Task[] }) {
     [tasks, activeId]
   );
 
+  // ─── Undo Handler ─────────────────────────────────────
+  const handleUndo = useCallback(() => {
+    if (!undoState) return;
+    clearTimeout(undoState.timeout);
+    const taskToRestore = undoState.task;
+    setUndoState(null);
+
+    // Restore locally
+    setTasks((prev) => [...prev, taskToRestore]);
+
+    // Re-create on server
+    createTask({
+      taskName: taskToRestore.taskName,
+      status: taskToRestore.status as Status,
+      priority: taskToRestore.priority ?? "🟡 Medium",
+      type: taskToRestore.type ?? "✅ Task",
+      lifeArea: taskToRestore.lifeArea ?? null,
+      dueDate: taskToRestore.dueDate ?? null,
+      notes: taskToRestore.notes ?? null,
+      recurring: taskToRestore.recurring ?? false,
+      frequency: taskToRestore.frequency ?? null,
+      repeatEveryDays: taskToRestore.repeatEveryDays ?? null,
+    }).catch(() => {
+      // If server restore fails, remove the optimistic local add
+      setTasks((prev) => prev.filter((t) => t.id !== taskToRestore.id));
+    });
+  }, [undoState]);
+
   // ─── Keyboard Navigation ─────────────────────────────
   useEffect(() => {
     function handleKeyDown(e: globalThis.KeyboardEvent) {
@@ -127,8 +167,22 @@ export function KanbanBoard({ initialTasks }: { initialTasks: Task[] }) {
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
 
-      // Don't intercept when detail panel or context menu is open
-      if (detailTask || contextMenu) return;
+      // Handle shortcut help overlay toggle
+      if (e.key === "?") {
+        e.preventDefault();
+        setShowShortcutHelp((prev) => !prev);
+        return;
+      }
+
+      // Close shortcut help on Escape
+      if (e.key === "Escape" && showShortcutHelp) {
+        e.preventDefault();
+        setShowShortcutHelp(false);
+        return;
+      }
+
+      // Don't intercept when detail panel, context menu, or help overlay is open
+      if (detailTask || contextMenu || showShortcutHelp) return;
 
       switch (e.key) {
         case "ArrowDown":
@@ -180,6 +234,12 @@ export function KanbanBoard({ initialTasks }: { initialTasks: Task[] }) {
           }
           break;
         }
+        case "n":
+        case "N": {
+          e.preventDefault();
+          todoQuickAddRef.current?.triggerAdd();
+          break;
+        }
         case "Escape": {
           if (focusedTaskId) {
             setFocusedTaskId(null);
@@ -190,7 +250,7 @@ export function KanbanBoard({ initialTasks }: { initialTasks: Task[] }) {
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [focusedTaskId, allTaskIds, tasks, detailTask, contextMenu]);
+  }, [focusedTaskId, allTaskIds, tasks, detailTask, contextMenu, showShortcutHelp]);
 
   // ─── DnD Handlers ──────────────────────────────────
   function onDragStart(event: DragStartEvent) {
@@ -329,19 +389,35 @@ export function KanbanBoard({ initialTasks }: { initialTasks: Task[] }) {
 
   const handleTaskDelete = useCallback(
     async (id: string) => {
+      const taskToDelete = tasks.find((t) => t.id === id);
+
       // Optimistic removal
       setTasks((prev) => prev.filter((t) => t.id !== id));
       if (detailTask?.id === id) setDetailTask(null);
       if (focusedTaskId === id) setFocusedTaskId(null);
       setContextMenu(null);
 
+      // Clear any existing undo toast
+      if (undoState) {
+        clearTimeout(undoState.timeout);
+        setUndoState(null);
+      }
+
       try {
         await deleteTask(id);
+
+        // Set up undo toast if we have the task data
+        if (taskToDelete) {
+          const timeout = setTimeout(() => {
+            setUndoState(null);
+          }, 6000);
+          setUndoState({ task: taskToDelete, timeout });
+        }
       } catch {
         setTasks(initialTasks);
       }
     },
-    [detailTask, focusedTaskId, initialTasks]
+    [detailTask, focusedTaskId, initialTasks, tasks, undoState]
   );
 
   const handleContextMenu = useCallback(
@@ -401,13 +477,13 @@ export function KanbanBoard({ initialTasks }: { initialTasks: Task[] }) {
         onDragEnd={onDragEnd}
       >
         {tasks.length === 0 ? (
-          <div className="py-16 text-center glass-card rounded-2xl">
-            <p className="text-[11px] font-mono text-white/25 tracking-widest uppercase mb-4">
-              No tasks yet
+          <div className="py-20 text-center">
+            <p className="text-4xl mb-4">&#x2728;</p>
+            <p className="text-lg font-serif italic text-[#FFF8F0]/40">
+              A clean slate
             </p>
-            <p className="text-[10px] text-white/15">
-              Click &ldquo;New Task&rdquo; or type in a column below to get
-              started.
+            <p className="text-sm text-[#FFF8F0]/20 mt-2">
+              Add your first task to get started
             </p>
           </div>
         ) : null}
@@ -428,6 +504,7 @@ export function KanbanBoard({ initialTasks }: { initialTasks: Task[] }) {
               onTaskUpdate={handleTaskUpdate}
               onTaskDelete={handleTaskDelete}
               onTaskFocus={setFocusedTaskId}
+              quickAddRef={status === "To Do" ? todoQuickAddRef : undefined}
             />
           ))}
         </div>
@@ -440,12 +517,61 @@ export function KanbanBoard({ initialTasks }: { initialTasks: Task[] }) {
 
       {/* Keyboard hint bar */}
       {focusedTaskId && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 px-4 py-2 rounded-xl glass-card border border-white/[0.08] shadow-xl animate-slide-up-fast">
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 px-4 py-2 rounded-xl glass-card border border-[#FFF8F0]/[0.08] shadow-xl animate-slide-up-fast">
           <KbdHint keys={["↑", "↓"]} label="Navigate" />
           <KbdHint keys={["Enter"]} label="Details" />
           <KbdHint keys={["E"]} label="Edit" />
           <KbdHint keys={["Del"]} label="Delete" />
+          <KbdHint keys={["N"]} label="New" />
+          <KbdHint keys={["?"]} label="Help" />
           <KbdHint keys={["Esc"]} label="Unfocus" />
+        </div>
+      )}
+
+      {/* Undo Toast */}
+      {undoState && (
+        <div className="fixed bottom-16 left-1/2 -translate-x-1/2 z-50 flex items-center gap-4 px-5 py-3 rounded-xl glass-card border border-[#FFF8F0]/[0.08] shadow-2xl animate-slide-up-fast">
+          <span className="text-sm font-serif text-[#FFF8F0]/60">
+            Task deleted
+          </span>
+          <span className="text-[#FFF8F0]/20">·</span>
+          <button
+            onClick={handleUndo}
+            className="text-sm font-mono font-semibold text-[#FF6B6B] hover:text-[#FF6B6B]/80 transition-colors tracking-wide uppercase"
+          >
+            Undo
+          </button>
+        </div>
+      )}
+
+      {/* Keyboard Shortcut Help Overlay */}
+      {showShortcutHelp && (
+        <div
+          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-150"
+          onClick={() => setShowShortcutHelp(false)}
+        >
+          <div
+            className="glass-card rounded-2xl border border-[#FFF8F0]/[0.08] shadow-2xl p-8 max-w-sm w-full mx-4 animate-in zoom-in-95 duration-150"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-base font-serif text-[#FFF8F0]/80 mb-6 tracking-wide">
+              Keyboard Shortcuts
+            </h2>
+            <div className="space-y-3">
+              <ShortcutRow keys={["↑", "↓"]} altKeys={["j", "k"]} label="Navigate tasks" />
+              <ShortcutRow keys={["Enter"]} label="Open details" />
+              <ShortcutRow keys={["E"]} label="Edit title inline" />
+              <ShortcutRow keys={["Del", "⌫"]} label="Delete task" />
+              <ShortcutRow keys={["N"]} label="Quick add (To Do)" />
+              <ShortcutRow keys={["?"]} label="Toggle this help" />
+              <ShortcutRow keys={["Esc"]} label="Close / unfocus" />
+            </div>
+            <div className="mt-6 pt-4 border-t border-[#FFF8F0]/[0.06]">
+              <p className="text-[10px] font-mono text-[#FFF8F0]/20 text-center tracking-widest uppercase">
+                Press ? or Esc to close
+              </p>
+            </div>
+          </div>
         </div>
       )}
 
@@ -478,6 +604,46 @@ export function KanbanBoard({ initialTasks }: { initialTasks: Task[] }) {
   );
 }
 
+// ─── Shortcut Row (for help overlay) ────────────────
+function ShortcutRow({
+  keys,
+  altKeys,
+  label,
+}: {
+  keys: string[];
+  altKeys?: string[];
+  label: string;
+}) {
+  return (
+    <div className="flex items-center justify-between">
+      <div className="flex items-center gap-1">
+        {keys.map((k) => (
+          <kbd
+            key={k}
+            className="px-2 py-1 text-[11px] font-mono bg-[#FFF8F0]/[0.08] text-[#FFF8F0]/50 rounded border border-[#FFF8F0]/[0.06] min-w-[28px] text-center"
+          >
+            {k}
+          </kbd>
+        ))}
+        {altKeys && (
+          <>
+            <span className="text-[10px] text-[#FFF8F0]/20 mx-1">or</span>
+            {altKeys.map((k) => (
+              <kbd
+                key={k}
+                className="px-2 py-1 text-[11px] font-mono bg-[#FFF8F0]/[0.08] text-[#FFF8F0]/50 rounded border border-[#FFF8F0]/[0.06] min-w-[28px] text-center"
+              >
+                {k}
+              </kbd>
+            ))}
+          </>
+        )}
+      </div>
+      <span className="text-xs font-mono text-[#FFF8F0]/30 ml-4">{label}</span>
+    </div>
+  );
+}
+
 // ─── Keyboard Hint Chip ─────────────────────────────
 function KbdHint({ keys, label }: { keys: string[]; label: string }) {
   return (
@@ -485,12 +651,12 @@ function KbdHint({ keys, label }: { keys: string[]; label: string }) {
       {keys.map((k) => (
         <kbd
           key={k}
-          className="px-1.5 py-0.5 text-[10px] font-mono bg-white/[0.08] text-white/50 rounded border border-white/[0.06] min-w-[20px] text-center"
+          className="px-1.5 py-0.5 text-[10px] font-mono bg-[#FFF8F0]/[0.08] text-[#FFF8F0]/50 rounded border border-[#FFF8F0]/[0.06] min-w-[20px] text-center"
         >
           {k}
         </kbd>
       ))}
-      <span className="text-[10px] font-mono text-white/30">{label}</span>
+      <span className="text-[10px] font-mono text-[#FFF8F0]/30">{label}</span>
     </div>
   );
 }
@@ -505,6 +671,7 @@ function KanbanColumn({
   onTaskUpdate,
   onTaskDelete,
   onTaskFocus,
+  quickAddRef,
 }: {
   status: Status;
   tasks: Task[];
@@ -514,6 +681,7 @@ function KanbanColumn({
   onTaskUpdate: (task: Task) => void;
   onTaskDelete: (id: string) => void;
   onTaskFocus: (id: string) => void;
+  quickAddRef?: React.MutableRefObject<{ triggerAdd: () => void } | null>;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
   const meta = COLUMN_META[status];
@@ -526,6 +694,23 @@ function KanbanColumn({
   useEffect(() => {
     if (adding) addInputRef.current?.focus();
   }, [adding]);
+
+  // Expose triggerAdd via ref for "N" key quick-add
+  useEffect(() => {
+    if (quickAddRef) {
+      quickAddRef.current = {
+        triggerAdd: () => {
+          setAdding(true);
+          // Focus will happen via the useEffect above
+        },
+      };
+    }
+    return () => {
+      if (quickAddRef) {
+        quickAddRef.current = null;
+      }
+    };
+  }, [quickAddRef]);
 
   async function handleInlineAdd(e: KeyboardEvent<HTMLInputElement>) {
     if (e.key === "Escape") {
@@ -566,21 +751,21 @@ function KanbanColumn({
       <div
         ref={setNodeRef}
         className={`glass-card rounded-2xl flex flex-col min-h-[300px] transition-all duration-200 ${
-          meta.accent ? "border-t-2 border-t-[#C49E45]/60" : ""
-        } ${isOver ? "ring-1 ring-[#C49E45]/30 bg-[#C49E45]/[0.03]" : ""}`}
+          meta.accent ? "border-t-2 border-t-[#FF6B6B]/60" : ""
+        } ${isOver ? "ring-1 ring-[#FF6B6B]/30 bg-[#FF6B6B]/[0.03]" : ""}`}
       >
         {/* Column header */}
-        <div className="px-5 py-4 border-b border-white/[0.04] flex items-center justify-between">
-          <h3 className="text-sm font-serif text-white/80 tracking-wide">
+        <div className="px-5 py-4 border-b border-[#FFF8F0]/[0.04] flex items-center justify-between">
+          <h3 className="text-sm font-serif text-[#FFF8F0]/80 tracking-wide">
             {meta.label}
           </h3>
           <div className="flex items-center gap-2">
-            <span className="text-[10px] font-mono bg-white/[0.06] text-white/40 px-2 py-0.5 rounded-full min-w-[24px] text-center">
+            <span className="text-[10px] font-mono bg-[#FFF8F0]/[0.06] text-[#FFF8F0]/40 px-2 py-0.5 rounded-full min-w-[24px] text-center">
               {tasks.length}
             </span>
             <button
               onClick={() => setAdding(true)}
-              className="w-5 h-5 flex items-center justify-center rounded text-white/20 hover:text-[#C49E45] hover:bg-[#C49E45]/10 transition-all"
+              className="w-5 h-5 flex items-center justify-center rounded text-[#FFF8F0]/20 hover:text-[#FF6B6B] hover:bg-[#FF6B6B]/10 transition-all"
               title={`Add task to ${meta.label}`}
             >
               <Plus className="w-3.5 h-3.5" />
@@ -597,11 +782,11 @@ function KanbanColumn({
             {tasks.length === 0 && !adding ? (
               <button
                 onClick={() => setAdding(true)}
-                className="flex flex-col items-center justify-center h-full min-h-[100px] w-full rounded-xl border border-dashed border-white/[0.06] hover:border-[#C49E45]/20 transition-colors group cursor-pointer"
+                className="flex flex-col items-center justify-center h-full min-h-[100px] w-full rounded-xl border border-dashed border-[#FFF8F0]/[0.06] hover:border-[#FF6B6B]/20 transition-colors group cursor-pointer"
               >
-                <Plus className="w-4 h-4 text-white/10 group-hover:text-[#C49E45]/40 mb-1 transition-colors" />
-                <p className="text-[10px] font-mono text-white/15 group-hover:text-white/30 tracking-widest uppercase transition-colors">
-                  Add a task
+                <Plus className="w-4 h-4 text-[#FFF8F0]/10 group-hover:text-[#FF6B6B]/40 mb-1 transition-colors" />
+                <p className="text-[10px] font-mono text-[#FFF8F0]/15 group-hover:text-[#FFF8F0]/30 tracking-widest uppercase transition-colors">
+                  Drop tasks here
                 </p>
               </button>
             ) : (
@@ -641,7 +826,7 @@ function KanbanColumn({
                 }}
                 placeholder="Task name — Enter to save, Esc to cancel"
                 disabled={addPending}
-                className="w-full h-10 px-3 bg-transparent text-sm font-serif text-white/90 placeholder:text-white/25 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#C49E45]/30 disabled:opacity-40"
+                className="w-full h-10 px-3 bg-transparent text-sm font-serif text-[#FFF8F0]/90 placeholder:text-[#FFF8F0]/25 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#FF6B6B]/30 disabled:opacity-40"
               />
             </div>
           </div>
@@ -689,13 +874,13 @@ function ContextMenuPopover({
   return (
     <div
       ref={ref}
-      className="fixed z-[100] min-w-[180px] glass-card rounded-xl border border-white/[0.08] shadow-2xl py-1 animate-in fade-in zoom-in-95 duration-100"
+      className="fixed z-[100] min-w-[180px] glass-card rounded-xl border border-[#FFF8F0]/[0.08] shadow-2xl py-1 animate-in fade-in zoom-in-95 duration-100"
       style={style}
       onClick={(e) => e.stopPropagation()}
     >
       <button
         onClick={onEdit}
-        className="w-full px-3 py-2 text-left text-xs font-mono text-white/70 hover:bg-white/[0.06] hover:text-white/90 transition-colors"
+        className="w-full px-3 py-2 text-left text-xs font-mono text-[#FFF8F0]/70 hover:bg-[#FFF8F0]/[0.06] hover:text-[#FFF8F0]/90 transition-colors"
       >
         Edit Details
       </button>
@@ -706,16 +891,16 @@ function ContextMenuPopover({
         onMouseEnter={() => setSubMenu("move")}
         onMouseLeave={() => setSubMenu(null)}
       >
-        <button className="w-full px-3 py-2 text-left text-xs font-mono text-white/70 hover:bg-white/[0.06] hover:text-white/90 transition-colors flex items-center justify-between">
-          Move to <span className="text-white/30">›</span>
+        <button className="w-full px-3 py-2 text-left text-xs font-mono text-[#FFF8F0]/70 hover:bg-[#FFF8F0]/[0.06] hover:text-[#FFF8F0]/90 transition-colors flex items-center justify-between">
+          Move to <span className="text-[#FFF8F0]/30">&rsaquo;</span>
         </button>
         {subMenu === "move" && (
-          <div className="absolute left-full top-0 ml-1 min-w-[140px] glass-card rounded-xl border border-white/[0.08] shadow-2xl py-1">
+          <div className="absolute left-full top-0 ml-1 min-w-[140px] glass-card rounded-xl border border-[#FFF8F0]/[0.08] shadow-2xl py-1">
             {STATUSES.filter((s) => s !== task.status).map((s) => (
               <button
                 key={s}
                 onClick={() => onMoveToColumn(task, s)}
-                className="w-full px-3 py-2 text-left text-xs font-mono text-white/70 hover:bg-white/[0.06] hover:text-white/90 transition-colors"
+                className="w-full px-3 py-2 text-left text-xs font-mono text-[#FFF8F0]/70 hover:bg-[#FFF8F0]/[0.06] hover:text-[#FFF8F0]/90 transition-colors"
               >
                 {s}
               </button>
@@ -730,11 +915,11 @@ function ContextMenuPopover({
         onMouseEnter={() => setSubMenu("priority")}
         onMouseLeave={() => setSubMenu(null)}
       >
-        <button className="w-full px-3 py-2 text-left text-xs font-mono text-white/70 hover:bg-white/[0.06] hover:text-white/90 transition-colors flex items-center justify-between">
-          Set Priority <span className="text-white/30">›</span>
+        <button className="w-full px-3 py-2 text-left text-xs font-mono text-[#FFF8F0]/70 hover:bg-[#FFF8F0]/[0.06] hover:text-[#FFF8F0]/90 transition-colors flex items-center justify-between">
+          Set Priority <span className="text-[#FFF8F0]/30">&rsaquo;</span>
         </button>
         {subMenu === "priority" && (
-          <div className="absolute left-full top-0 ml-1 min-w-[120px] glass-card rounded-xl border border-white/[0.08] shadow-2xl py-1">
+          <div className="absolute left-full top-0 ml-1 min-w-[120px] glass-card rounded-xl border border-[#FFF8F0]/[0.08] shadow-2xl py-1">
             {PRIORITIES.map((p) => (
               <button
                 key={p.value}
@@ -743,7 +928,7 @@ function ContextMenuPopover({
                   const { updateTaskField } = await import("./actions");
                   await updateTaskField(task.id, "priority", p.value);
                 }}
-                className="w-full px-3 py-2 text-left text-xs font-mono text-white/70 hover:bg-white/[0.06] hover:text-white/90 transition-colors flex items-center gap-2"
+                className="w-full px-3 py-2 text-left text-xs font-mono text-[#FFF8F0]/70 hover:bg-[#FFF8F0]/[0.06] hover:text-[#FFF8F0]/90 transition-colors flex items-center gap-2"
               >
                 <span
                   className={`w-2 h-2 rounded-full ${p.dot} flex-shrink-0`}
@@ -755,7 +940,7 @@ function ContextMenuPopover({
         )}
       </div>
 
-      <div className="h-px bg-white/[0.06] my-1" />
+      <div className="h-px bg-[#FFF8F0]/[0.06] my-1" />
 
       {/* Delete */}
       {confirmDelete ? (

@@ -122,6 +122,16 @@ export async function DashboardContent() {
   });
   const pulseLabel = getPulseLabel(pulseScore);
 
+  // Emotional copy based on pulse score
+  let emotionalCopy: string;
+  if (pulseScore >= 70) {
+    emotionalCopy = "you're thriving";
+  } else if (pulseScore >= 50) {
+    emotionalCopy = "building momentum";
+  } else {
+    emotionalCopy = "warming up";
+  }
+
   // Day of week for adaptive quick actions
   const dayOfWeek = new Date().toLocaleString("en-US", {
     timeZone: "Asia/Karachi",
@@ -177,7 +187,7 @@ export async function DashboardContent() {
     <>
       {/* Engine Error Banner */}
       {hasEngineError && (
-        <div className="border border-red-500/30 bg-red-500/[0.05] rounded-2xl p-4 flex items-center justify-between">
+        <div className="border border-red-500/30 bg-red-500/[0.05] rounded-3xl p-4 flex items-center justify-between">
           <p className="text-[11px] font-mono text-red-400/80 tracking-wider">
             Warning: Automation issue with {lastEngine.engineName}
             {lastEngine.summary ? ` — ${lastEngine.summary}` : ""}
@@ -191,110 +201,106 @@ export async function DashboardContent() {
         </div>
       )}
 
-      {/* 2x2 Quadrant Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-        {/* Top-Left: Pulse Score */}
-        <div className="glass-card rounded-2xl p-6 flex flex-col items-center justify-center">
-          <p className="font-mono text-[9px] tracking-[0.35em] text-white/40 uppercase mb-4">
-            Pulse Score
+      {/* Pulse Score — Hero Card */}
+      <div className="glass-card rounded-3xl p-8 sm:p-10 flex flex-col items-center justify-center">
+        <p
+          className="text-7xl font-serif text-[#FFF8F0]"
+          style={{
+            textShadow: "0 0 60px rgba(255,107,107,0.3)",
+          }}
+        >
+          {pulseScore}
+        </p>
+        <p className="font-serif italic text-[#FFF8F0]/60 mt-2 text-lg">
+          {emotionalCopy}
+        </p>
+        <p className="font-mono text-[10px] tracking-[0.25em] text-[#FFF8F0]/30 uppercase mt-1">
+          {pulseLabel}
+        </p>
+        {streak > 0 && (
+          <p className="text-[#FFF8F0]/40 text-xs mt-3">
+            {"\uD83D\uDD25"} {streak} days of momentum
           </p>
-          <p
-            className="text-6xl font-serif"
+        )}
+      </div>
+
+      {/* Status Pills */}
+      <div className="flex flex-wrap gap-3 justify-center">
+        <span className="bg-[#FFF8F0]/10 backdrop-blur rounded-full px-4 py-2 text-xs text-[#FFF8F0]/70">
+          {"\uD83C\uDF31"} {habitsCompleted}/{habitsTotal} Habits
+        </span>
+        <span className="bg-[#FFF8F0]/10 backdrop-blur rounded-full px-4 py-2 text-xs text-[#FFF8F0]/70">
+          {"\uD83D\uDCDD"} {checkinScore} Check-in
+        </span>
+        <span className="bg-[#FFF8F0]/10 backdrop-blur rounded-full px-4 py-2 text-xs text-[#FFF8F0]/70">
+          {"\u2705"} Journal {journalWritten ? "Done" : "Pending"}
+        </span>
+        <span className="bg-[#FFF8F0]/10 backdrop-blur rounded-full px-4 py-2 text-xs text-[#FFF8F0]/70">
+          {"\uD83D\uDCB0"} Expenses {expenseTracked ? "Tracked" : "Pending"}
+        </span>
+      </div>
+
+      {/* Two-column grid: Focus + Actions */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+        {/* Today's Focus */}
+        <div className="glass-card rounded-3xl p-6 relative overflow-hidden">
+          {/* Coral-peach left accent */}
+          <div
+            className="absolute left-0 top-4 bottom-4 w-1 rounded-full"
             style={{
               background:
-                "linear-gradient(135deg, #C49E45 0%, #E8C868 50%, #C49E45 100%)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
+                "linear-gradient(to bottom, #FF6B6B, #FEC89A)",
             }}
-          >
-            {pulseScore}
-          </p>
-          <p className="font-mono text-[10px] tracking-[0.25em] text-white/30 uppercase mt-3">
-            {pulseLabel}
-          </p>
-        </div>
-
-        {/* Top-Right: Today's Focus */}
-        <div className="glass-card rounded-2xl p-6">
-          <div className="flex items-center justify-between mb-4">
-            <p className="font-mono text-[9px] tracking-[0.35em] text-white/40 uppercase">
-              Today&apos;s Focus
-            </p>
-            <Link
-              href="/matrix"
-              className="text-[10px] font-mono uppercase tracking-wider text-white/30 hover:text-[#C49E45] transition-colors"
-            >
-              Matrix
-            </Link>
-          </div>
-          {todayFocus.length === 0 ? (
-            <p className="text-sm font-serif text-white/30 text-center py-8">
-              All clear today
-            </p>
-          ) : (
-            <div className="space-y-0">
-              {todayFocus.slice(0, 3).map((task, i) => (
-                <div
-                  key={task.id}
-                  className={`flex items-center gap-3 py-3 ${
-                    i > 0 ? "border-t border-white/[0.05]" : ""
-                  }`}
-                >
-                  <TaskCompleteButton taskId={task.id} />
-                  <span className="flex-1 text-sm font-serif text-white/80 truncate">
-                    {task.taskName}
-                  </span>
-                  <span className="font-mono text-[9px] tracking-[0.25em] text-white/30 shrink-0 uppercase">
-                    {task.lifeArea}
-                  </span>
-                </div>
-              ))}
+          />
+          <div className="pl-4">
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-lg font-serif italic text-[#FFF8F0]/70">
+                What matters today
+              </p>
+              <Link
+                href="/matrix"
+                className="text-[10px] font-mono uppercase tracking-wider text-[#FFF8F0]/30 hover:text-[#FF6B6B] transition-colors"
+              >
+                Matrix
+              </Link>
             </div>
-          )}
-        </div>
-
-        {/* Bottom-Left: Quick Stats */}
-        <div className="glass-card rounded-2xl p-6">
-          <p className="font-mono text-[9px] tracking-[0.35em] text-white/40 uppercase mb-4">
-            Quick Stats
-          </p>
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-serif text-white/60">Streak</span>
-              <span className="font-mono text-sm text-white/80">
-                {streak > 0 ? `🔥 ${streak} days` : "🔥 0 days"}
-              </span>
-            </div>
-            <div className="border-t border-white/[0.05]" />
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-serif text-white/60">Habits</span>
-              <span className="font-mono text-sm text-white/80">
-                {habitsCompleted}/{habitsTotal} done
-              </span>
-            </div>
-            <div className="border-t border-white/[0.05]" />
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-serif text-white/60">
-                Check-in
-              </span>
-              <span className="font-mono text-sm text-white/80">
-                Score: {checkinScore}
-              </span>
-            </div>
-            <div className="border-t border-white/[0.05]" />
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-serif text-white/60">Journal</span>
-              <span className="font-mono text-sm text-white/80">
-                {journalWritten ? "✓ Written" : "✗ Not yet"}
-              </span>
-            </div>
+            {todayFocus.length === 0 ? (
+              <p className="text-sm font-serif text-[#FFF8F0]/30 text-center py-8">
+                All clear today
+              </p>
+            ) : (
+              <div className="space-y-0">
+                {todayFocus.slice(0, 3).map((task, i) => (
+                  <div
+                    key={task.id}
+                    className={`flex items-center gap-3 py-3 ${
+                      i > 0 ? "border-t border-[#FFF8F0]/[0.05]" : ""
+                    }`}
+                  >
+                    <TaskCompleteButton taskId={task.id} />
+                    <span className="flex-1 text-sm font-serif text-[#FFF8F0]/70 truncate">
+                      {task.taskName}
+                    </span>
+                    <span
+                      className={`w-2 h-2 rounded-full shrink-0 ${
+                        task.priority?.includes("High")
+                          ? "bg-[#FF6B6B]"
+                          : task.priority?.includes("Medium")
+                            ? "bg-amber-400"
+                            : "bg-[#FFF8F0]/20"
+                      }`}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Bottom-Right: Quick Actions */}
-        <div className="glass-card rounded-2xl p-6">
-          <p className="font-mono text-[9px] tracking-[0.35em] text-white/40 uppercase mb-4">
-            Quick Actions
+        {/* Quick Actions */}
+        <div className="glass-card rounded-3xl p-6">
+          <p className="text-lg font-serif italic text-[#FFF8F0]/70 mb-4">
+            Quick actions
           </p>
           <div className="flex flex-col gap-3">
             {quickActions.map(({ href, label, key }) => {
@@ -303,10 +309,10 @@ export async function DashboardContent() {
                 <Link
                   key={href}
                   href={href}
-                  className={`text-center py-3 rounded-xl text-[10px] font-mono uppercase tracking-[0.25em] transition-all ${
+                  className={`text-center py-3 text-[10px] font-mono uppercase tracking-[0.25em] transition-all ${
                     primary
-                      ? "border border-[#C49E45]/20 bg-[#C49E45]/[0.06] text-[#C49E45] hover:bg-[#C49E45]/[0.12] hover:border-[#C49E45]/30"
-                      : "border border-white/[0.05] bg-white/[0.02] text-white/40 hover:text-white/70 hover:border-white/[0.08]"
+                      ? "bg-gradient-to-r from-[#FF6B6B] to-[#FEC89A] text-white rounded-2xl hover:opacity-90"
+                      : "border border-[#FFF8F0]/[0.08] bg-[#FFF8F0]/[0.02] text-[#FFF8F0]/40 rounded-2xl hover:text-[#FFF8F0]/70 hover:border-[#FFF8F0]/[0.15]"
                   }`}
                 >
                   {label}
@@ -316,6 +322,11 @@ export async function DashboardContent() {
           </div>
         </div>
       </div>
+
+      {/* Bottom quote */}
+      <p className="text-center font-serif italic text-[#FFF8F0]/15 text-sm pt-4 pb-8">
+        small steps, big picture
+      </p>
     </>
   );
 }

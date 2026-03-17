@@ -44,11 +44,11 @@ export function QuickAdd() {
         onKeyDown={handleKeyDown}
         placeholder="Quick add task — press Enter"
         disabled={isPending}
-        className="w-full h-12 px-5 bg-transparent text-sm font-serif text-white/90 placeholder:text-white/25 rounded-xl focus:outline-none focus:ring-1 focus:ring-[#C49E45]/30 disabled:opacity-40 transition-opacity"
+        className="w-full h-12 px-5 bg-transparent text-sm font-serif text-[#FFF8F0]/90 placeholder:text-[#FFF8F0]/25 rounded-xl focus:outline-none focus:ring-1 focus:ring-[#FF6B6B]/30 disabled:opacity-40 transition-opacity"
       />
       {isPending && (
         <div className="absolute right-4 top-1/2 -translate-y-1/2">
-          <div className="w-4 h-4 border-2 border-[#C49E45]/30 border-t-[#C49E45] rounded-full animate-spin" />
+          <div className="w-4 h-4 border-2 border-[#FF6B6B]/30 border-t-[#FF6B6B] rounded-full animate-spin" />
         </div>
       )}
     </div>

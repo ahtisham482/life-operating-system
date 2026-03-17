@@ -14,6 +14,14 @@ const PRIORITY_DOT: Record<string, string> = {
   "🟢 Low": "bg-emerald-500",
 };
 
+// ─── Helper: check if a due date is overdue ─────────────
+function isOverdue(dateStr: string): boolean {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const due = new Date(dateStr + "T00:00:00");
+  return due.getTime() < today.getTime();
+}
+
 // ─── Relative Due Date Display ──────────────────────
 function formatDueDate(dateStr: string): { text: string; color: string } {
   const today = new Date();
@@ -29,11 +37,11 @@ function formatDueDate(dateStr: string): { text: string; color: string } {
       color: "text-red-400",
     };
   }
-  if (diffDays === 0) return { text: "Due today", color: "text-[#C49E45]" };
-  if (diffDays === 1) return { text: "Tomorrow", color: "text-yellow-400/70" };
+  if (diffDays === 0) return { text: "Due today", color: "text-[#FF6B6B]" };
+  if (diffDays === 1) return { text: "Tomorrow", color: "text-amber-400/70" };
   if (diffDays <= 7)
-    return { text: `${diffDays}d left`, color: "text-white/30" };
-  return { text: dateStr, color: "text-white/20" };
+    return { text: `${diffDays}d left`, color: "text-[#FFF8F0]/30" };
+  return { text: dateStr, color: "text-[#FFF8F0]/20" };
 }
 
 // ─── Sortable Task Card (used inside SortableContext) ─
@@ -68,6 +76,7 @@ export function TaskCard({
   const [editing, setEditing] = useState(false);
   const [editText, setEditText] = useState(task.taskName);
   const [completing, setCompleting] = useState(false);
+  const [justCompleted, setJustCompleted] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
 
@@ -103,10 +112,11 @@ export function TaskCard({
   };
 
   const dotColor = task.priority
-    ? PRIORITY_DOT[task.priority] ?? "bg-white/20"
+    ? PRIORITY_DOT[task.priority] ?? "bg-[#FFF8F0]/20"
     : null;
 
   const dueInfo = task.dueDate ? formatDueDate(task.dueDate) : null;
+  const taskIsOverdue = task.dueDate ? isOverdue(task.dueDate) : false;
 
   // ─── Inline Title Edit ──────────────────────
   const saveTitle = useCallback(async () => {
@@ -151,7 +161,9 @@ export function TaskCard({
         onTaskUpdate(task);
       }
     } else {
-      // Complete: move to Done
+      // Complete: move to Done — trigger completion animation
+      setJustCompleted(true);
+      setTimeout(() => setJustCompleted(false), 600);
       onTaskUpdate({ ...task, status: "Done" });
       try {
         await markTaskDone(task.id);
@@ -173,13 +185,17 @@ export function TaskCard({
       animate={{ opacity: isDragging ? 0.3 : 1, y: 0 }}
       exit={{ opacity: 0, y: -4 }}
       transition={{ duration: 0.15, ease: "easeOut" }}
-      className={`glass-card rounded-xl p-3 hover:border-white/[0.1] transition-all group cursor-default ${
+      className={`glass-card rounded-xl p-3 hover:border-[#FFF8F0]/[0.1] transition-all group cursor-default ${
         task.status === "Done" ? "opacity-50" : ""
       } ${isDragging ? "shadow-lg shadow-black/30" : ""} ${
         isFocused
-          ? "ring-1 ring-[#C49E45]/40 border-[#C49E45]/20"
+          ? "ring-1 ring-[#FF6B6B]/40 border-[#FF6B6B]/20"
           : ""
-      }`}
+      } ${
+        taskIsOverdue && task.status !== "Done"
+          ? "border-l-2 border-l-red-500/40"
+          : ""
+      } ${justCompleted ? "animate-pulse ring-1 ring-emerald-500/30" : ""}`}
       onContextMenu={(e) => onContextMenu(e, task)}
       onClick={onFocus}
       tabIndex={0}
@@ -201,8 +217,8 @@ export function TaskCard({
           }}
           className={`w-[18px] h-[18px] min-w-[18px] mt-0.5 rounded border flex-shrink-0 flex items-center justify-center transition-all ${
             task.status === "Done"
-              ? "bg-[#C49E45]/80 border-[#C49E45]/60 text-black"
-              : "border-white/20 hover:border-[#C49E45]/50 hover:bg-[#C49E45]/10"
+              ? "bg-[#FF6B6B]/80 border-[#FF6B6B]/60 text-black"
+              : "border-[#FFF8F0]/20 hover:border-[#FF6B6B]/50 hover:bg-[#FF6B6B]/10"
           }`}
           title={
             task.status === "Done" ? "Mark incomplete" : "Mark complete"
@@ -228,7 +244,7 @@ export function TaskCard({
                 }
               }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full text-sm font-serif bg-transparent text-white/90 outline-none border-b border-[#C49E45]/30 pb-0.5"
+              className="w-full text-sm font-serif bg-transparent text-[#FFF8F0]/90 outline-none border-b border-[#FF6B6B]/30 pb-0.5"
             />
           ) : (
             <span
@@ -238,8 +254,8 @@ export function TaskCard({
               }}
               className={`text-sm font-serif leading-snug cursor-text block ${
                 task.status === "Done"
-                  ? "line-through text-white/25"
-                  : "text-white/90 hover:text-white"
+                  ? "line-through text-[#FFF8F0]/25"
+                  : "text-[#FFF8F0]/90 hover:text-[#FFF8F0]"
               }`}
               title="Click to edit title"
             >
@@ -259,7 +275,7 @@ export function TaskCard({
         <button
           {...attributes}
           {...listeners}
-          className="w-5 h-5 flex items-center justify-center rounded text-white/15 hover:text-white/40 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing flex-shrink-0 mt-0.5"
+          className="w-5 h-5 flex items-center justify-center rounded text-[#FFF8F0]/15 hover:text-[#FFF8F0]/40 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing flex-shrink-0 mt-0.5"
           title="Drag to reorder"
           onClick={(e) => e.stopPropagation()}
         >
@@ -269,7 +285,7 @@ export function TaskCard({
 
       {/* Notes preview */}
       {task.notes && (
-        <p className="text-[10px] text-white/20 mt-1.5 line-clamp-2 pl-6">
+        <p className="text-[10px] text-[#FFF8F0]/20 mt-1.5 line-clamp-2 pl-6">
           {task.notes}
         </p>
       )}
@@ -284,17 +300,17 @@ export function TaskCard({
         title="Click to view details"
       >
         {task.lifeArea && (
-          <span className="text-[9px] font-mono text-white/30 bg-white/[0.04] px-2 py-0.5 rounded tracking-wider">
+          <span className="text-[9px] font-mono text-[#FFF8F0]/30 bg-[#FFF8F0]/[0.04] px-2 py-0.5 rounded tracking-wider">
             {task.lifeArea}
           </span>
         )}
         {task.recurring && task.type !== "🔁 Habit" && task.frequency && (
-          <span className="text-[9px] font-mono text-white/20 border border-white/[0.05] px-1.5 py-0.5 rounded">
+          <span className="text-[9px] font-mono text-[#FFF8F0]/20 border border-[#FFF8F0]/[0.05] px-1.5 py-0.5 rounded">
             {task.frequency}
           </span>
         )}
         {task.type === "🔁 Habit" && (
-          <span className="text-[9px] font-mono text-[#C49E45]/50 px-1">
+          <span className="text-[9px] font-mono text-[#FF6B6B]/50 px-1">
             🔁
           </span>
         )}
@@ -313,17 +329,17 @@ export function TaskCard({
 // ─── Drag Overlay Card (non-interactive preview) ──────
 export function TaskCardOverlay({ task }: { task: Task }) {
   const dotColor = task.priority
-    ? PRIORITY_DOT[task.priority] ?? "bg-white/20"
+    ? PRIORITY_DOT[task.priority] ?? "bg-[#FFF8F0]/20"
     : null;
 
   return (
-    <div className="glass-card rounded-xl p-3 shadow-2xl shadow-black/40 border border-[#C49E45]/20 rotate-[2deg] scale-105 w-[300px]">
+    <div className="glass-card rounded-xl p-3 shadow-2xl shadow-black/40 border border-[#FF6B6B]/20 rotate-[2deg] scale-105 w-[300px]">
       <div className="flex items-start gap-2">
         <span
           className={`w-[18px] h-[18px] min-w-[18px] mt-0.5 rounded border flex-shrink-0 flex items-center justify-center ${
             task.status === "Done"
-              ? "bg-[#C49E45]/80 border-[#C49E45]/60 text-black"
-              : "border-white/20"
+              ? "bg-[#FF6B6B]/80 border-[#FF6B6B]/60 text-black"
+              : "border-[#FFF8F0]/20"
           }`}
         >
           {task.status === "Done" && <Check className="w-3 h-3" />}
@@ -331,8 +347,8 @@ export function TaskCardOverlay({ task }: { task: Task }) {
         <span
           className={`text-sm font-serif leading-snug flex-1 ${
             task.status === "Done"
-              ? "line-through text-white/25"
-              : "text-white/90"
+              ? "line-through text-[#FFF8F0]/25"
+              : "text-[#FFF8F0]/90"
           }`}
         >
           {task.taskName}
