@@ -26,9 +26,10 @@ import {
   verticalListSortingStrategy,
   arrayMove,
 } from "@dnd-kit/sortable";
+import { AnimatePresence } from "framer-motion";
 import { Plus } from "lucide-react";
 import type { Task } from "@/lib/db/schema";
-import { createTask, reorderTasks } from "./actions";
+import { createTask, reorderTasks, deleteTask } from "./actions";
 import { TaskCard, TaskCardOverlay } from "./task-card";
 import { TaskDetailPanel } from "./task-detail";
 
@@ -52,6 +53,10 @@ export function KanbanBoard({ initialTasks }: { initialTasks: Task[] }) {
     y: number;
     task: Task;
   } | null>(null);
+
+  // Keyboard navigation state
+  const [focusedTaskId, setFocusedTaskId] = useState<string | null>(null);
+  const boardRef = useRef<HTMLDivElement>(null);
 
   // Sync with server data on revalidation
   useEffect(() => {
@@ -88,6 +93,17 @@ export function KanbanBoard({ initialTasks }: { initialTasks: Task[] }) {
     return map;
   }, [tasks]);
 
+  // Flat ordered list of all task IDs (for keyboard navigation)
+  const allTaskIds = useMemo(() => {
+    const ids: string[] = [];
+    for (const status of STATUSES) {
+      for (const t of tasksByStatus[status]) {
+        ids.push(t.id);
+      }
+    }
+    return ids;
+  }, [tasksByStatus]);
+
   // Find which column a task/container belongs to
   const findContainer = useCallback(
     (id: UniqueIdentifier): Status | undefined => {
@@ -104,10 +120,83 @@ export function KanbanBoard({ initialTasks }: { initialTasks: Task[] }) {
     [tasks, activeId]
   );
 
+  // ─── Keyboard Navigation ─────────────────────────────
+  useEffect(() => {
+    function handleKeyDown(e: globalThis.KeyboardEvent) {
+      // Don't intercept when typing in inputs/textareas
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+
+      // Don't intercept when detail panel or context menu is open
+      if (detailTask || contextMenu) return;
+
+      switch (e.key) {
+        case "ArrowDown":
+        case "j": {
+          e.preventDefault();
+          if (!focusedTaskId) {
+            // Focus first task
+            if (allTaskIds.length > 0) setFocusedTaskId(allTaskIds[0]);
+          } else {
+            const idx = allTaskIds.indexOf(focusedTaskId);
+            if (idx < allTaskIds.length - 1) {
+              setFocusedTaskId(allTaskIds[idx + 1]);
+            }
+          }
+          break;
+        }
+        case "ArrowUp":
+        case "k": {
+          e.preventDefault();
+          if (!focusedTaskId) {
+            if (allTaskIds.length > 0)
+              setFocusedTaskId(allTaskIds[allTaskIds.length - 1]);
+          } else {
+            const idx = allTaskIds.indexOf(focusedTaskId);
+            if (idx > 0) {
+              setFocusedTaskId(allTaskIds[idx - 1]);
+            }
+          }
+          break;
+        }
+        case "Enter": {
+          if (focusedTaskId) {
+            e.preventDefault();
+            const task = tasks.find((t) => t.id === focusedTaskId);
+            if (task) setDetailTask(task);
+          }
+          break;
+        }
+        case "e":
+        case "E": {
+          // Edit is handled by the TaskCard onKeyDown
+          break;
+        }
+        case "Delete":
+        case "Backspace": {
+          if (focusedTaskId) {
+            e.preventDefault();
+            handleTaskDelete(focusedTaskId);
+          }
+          break;
+        }
+        case "Escape": {
+          if (focusedTaskId) {
+            setFocusedTaskId(null);
+          }
+          break;
+        }
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [focusedTaskId, allTaskIds, tasks, detailTask, contextMenu]);
+
   // ─── DnD Handlers ──────────────────────────────────
   function onDragStart(event: DragStartEvent) {
     setActiveId(event.active.id);
     setContextMenu(null);
+    setFocusedTaskId(null);
   }
 
   function onDragOver(event: DragOverEvent) {
@@ -239,12 +328,20 @@ export function KanbanBoard({ initialTasks }: { initialTasks: Task[] }) {
   );
 
   const handleTaskDelete = useCallback(
-    (id: string) => {
+    async (id: string) => {
+      // Optimistic removal
       setTasks((prev) => prev.filter((t) => t.id !== id));
       if (detailTask?.id === id) setDetailTask(null);
+      if (focusedTaskId === id) setFocusedTaskId(null);
       setContextMenu(null);
+
+      try {
+        await deleteTask(id);
+      } catch {
+        setTasks(initialTasks);
+      }
     },
-    [detailTask]
+    [detailTask, focusedTaskId, initialTasks]
   );
 
   const handleContextMenu = useCallback(
@@ -316,6 +413,7 @@ export function KanbanBoard({ initialTasks }: { initialTasks: Task[] }) {
         ) : null}
 
         <div
+          ref={boardRef}
           className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-slide-up"
           style={{ animationDelay: "0.1s", animationFillMode: "both" }}
         >
@@ -324,10 +422,12 @@ export function KanbanBoard({ initialTasks }: { initialTasks: Task[] }) {
               key={status}
               status={status}
               tasks={tasksByStatus[status]}
+              focusedTaskId={focusedTaskId}
               onContextMenu={handleContextMenu}
               onCardClick={setDetailTask}
               onTaskUpdate={handleTaskUpdate}
               onTaskDelete={handleTaskDelete}
+              onTaskFocus={setFocusedTaskId}
             />
           ))}
         </div>
@@ -337,6 +437,17 @@ export function KanbanBoard({ initialTasks }: { initialTasks: Task[] }) {
           {activeTask ? <TaskCardOverlay task={activeTask} /> : null}
         </DragOverlay>
       </DndContext>
+
+      {/* Keyboard hint bar */}
+      {focusedTaskId && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 px-4 py-2 rounded-xl glass-card border border-white/[0.08] shadow-xl animate-slide-up-fast">
+          <KbdHint keys={["↑", "↓"]} label="Navigate" />
+          <KbdHint keys={["Enter"]} label="Details" />
+          <KbdHint keys={["E"]} label="Edit" />
+          <KbdHint keys={["Del"]} label="Delete" />
+          <KbdHint keys={["Esc"]} label="Unfocus" />
+        </div>
+      )}
 
       {/* Context Menu */}
       {contextMenu && (
@@ -367,21 +478,42 @@ export function KanbanBoard({ initialTasks }: { initialTasks: Task[] }) {
   );
 }
 
+// ─── Keyboard Hint Chip ─────────────────────────────
+function KbdHint({ keys, label }: { keys: string[]; label: string }) {
+  return (
+    <div className="flex items-center gap-1.5">
+      {keys.map((k) => (
+        <kbd
+          key={k}
+          className="px-1.5 py-0.5 text-[10px] font-mono bg-white/[0.08] text-white/50 rounded border border-white/[0.06] min-w-[20px] text-center"
+        >
+          {k}
+        </kbd>
+      ))}
+      <span className="text-[10px] font-mono text-white/30">{label}</span>
+    </div>
+  );
+}
+
 // ─── KanbanColumn ────────────────────────────────────
 function KanbanColumn({
   status,
   tasks,
+  focusedTaskId,
   onContextMenu,
   onCardClick,
   onTaskUpdate,
   onTaskDelete,
+  onTaskFocus,
 }: {
   status: Status;
   tasks: Task[];
+  focusedTaskId: string | null;
   onContextMenu: (e: React.MouseEvent, task: Task) => void;
   onCardClick: (task: Task) => void;
   onTaskUpdate: (task: Task) => void;
   onTaskDelete: (id: string) => void;
+  onTaskFocus: (id: string) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
   const meta = COLUMN_META[status];
@@ -473,16 +605,20 @@ function KanbanColumn({
                 </p>
               </button>
             ) : (
-              tasks.map((task) => (
-                <TaskCard
-                  key={task.id}
-                  task={task}
-                  onContextMenu={onContextMenu}
-                  onCardClick={onCardClick}
-                  onTaskUpdate={onTaskUpdate}
-                  onTaskDelete={onTaskDelete}
-                />
-              ))
+              <AnimatePresence initial={false}>
+                {tasks.map((task) => (
+                  <TaskCard
+                    key={task.id}
+                    task={task}
+                    isFocused={focusedTaskId === task.id}
+                    onContextMenu={onContextMenu}
+                    onCardClick={onCardClick}
+                    onTaskUpdate={onTaskUpdate}
+                    onTaskDelete={onTaskDelete}
+                    onFocus={() => onTaskFocus(task.id)}
+                  />
+                ))}
+              </AnimatePresence>
             )}
           </div>
         </SortableContext>
@@ -625,8 +761,6 @@ function ContextMenuPopover({
       {confirmDelete ? (
         <button
           onClick={async () => {
-            const { deleteTask } = await import("./actions");
-            await deleteTask(task.id);
             onDelete();
           }}
           className="w-full px-3 py-2 text-left text-xs font-mono text-red-400 hover:bg-red-500/10 transition-colors"

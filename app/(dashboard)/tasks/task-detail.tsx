@@ -231,6 +231,38 @@ export function TaskDetailPanel({
               onChange={(e) => set("dueDate", e.target.value)}
               className={FIELD_CLASS}
             />
+            {/* Smart date shortcuts */}
+            <div className="flex gap-1.5 flex-wrap pt-1">
+              {[
+                { label: "Today", offset: 0 },
+                { label: "Tomorrow", offset: 1 },
+                { label: "Next Week", offset: 7 },
+                { label: "In 2 Weeks", offset: 14 },
+                { label: "No Date", offset: -1 },
+              ].map(({ label, offset }) => {
+                let dateVal = "";
+                if (offset >= 0) {
+                  const d = new Date();
+                  d.setDate(d.getDate() + offset);
+                  dateVal = d.toISOString().slice(0, 10);
+                }
+                const isActive = form.dueDate === dateVal;
+                return (
+                  <button
+                    key={label}
+                    type="button"
+                    onClick={() => set("dueDate", dateVal)}
+                    className={`px-2 py-1 text-[10px] font-mono rounded-md border transition-all ${
+                      isActive
+                        ? "border-[#C49E45]/30 bg-[#C49E45]/[0.08] text-[#C49E45]"
+                        : "border-white/[0.06] text-white/30 hover:text-white/60 hover:border-white/[0.1]"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {/* Recurring */}

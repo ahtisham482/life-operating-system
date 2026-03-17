@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { motion } from "framer-motion";
 import { Check, GripVertical } from "lucide-react";
 import type { Task } from "@/lib/db/schema";
 import { updateTaskField, markTaskDone, updateTask } from "./actions";
@@ -13,19 +14,47 @@ const PRIORITY_DOT: Record<string, string> = {
   "🟢 Low": "bg-emerald-500",
 };
 
+// ─── Relative Due Date Display ──────────────────────
+function formatDueDate(dateStr: string): { text: string; color: string } {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const due = new Date(dateStr + "T00:00:00");
+  const diffMs = due.getTime() - today.getTime();
+  const diffDays = Math.round(diffMs / 86400000);
+
+  if (diffDays < 0) {
+    const abs = Math.abs(diffDays);
+    return {
+      text: abs === 1 ? "Overdue 1d" : `Overdue ${abs}d`,
+      color: "text-red-400",
+    };
+  }
+  if (diffDays === 0) return { text: "Due today", color: "text-[#C49E45]" };
+  if (diffDays === 1) return { text: "Tomorrow", color: "text-yellow-400/70" };
+  if (diffDays <= 7)
+    return { text: `${diffDays}d left`, color: "text-white/30" };
+  return { text: dateStr, color: "text-white/20" };
+}
+
 // ─── Sortable Task Card (used inside SortableContext) ─
 export function TaskCard({
   task,
+  isFocused,
   onContextMenu,
   onCardClick,
   onTaskUpdate,
   onTaskDelete,
+  onFocus,
+  onTriggerEdit,
 }: {
   task: Task;
+  isFocused?: boolean;
   onContextMenu: (e: React.MouseEvent, task: Task) => void;
   onCardClick: (task: Task) => void;
   onTaskUpdate: (task: Task) => void;
   onTaskDelete: (id: string) => void;
+  onFocus?: () => void;
+  onTriggerEdit?: () => void;
 }) {
   const {
     attributes,
@@ -40,6 +69,7 @@ export function TaskCard({
   const [editText, setEditText] = useState(task.taskName);
   const [completing, setCompleting] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (editing) {
@@ -48,20 +78,35 @@ export function TaskCard({
     }
   }, [editing]);
 
+  // Trigger edit from parent (keyboard shortcut)
+  useEffect(() => {
+    if (onTriggerEdit) {
+      // This is handled via the prop callback pattern
+    }
+  }, [onTriggerEdit]);
+
   // Sync edit text when task name changes externally
   useEffect(() => {
     if (!editing) setEditText(task.taskName);
   }, [task.taskName, editing]);
 
+  // Scroll into view when focused via keyboard
+  useEffect(() => {
+    if (isFocused && cardRef.current) {
+      cardRef.current.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
+  }, [isFocused]);
+
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.3 : 1,
   };
 
   const dotColor = task.priority
     ? PRIORITY_DOT[task.priority] ?? "bg-white/20"
     : null;
+
+  const dueInfo = task.dueDate ? formatDueDate(task.dueDate) : null;
 
   // ─── Inline Title Edit ──────────────────────
   const saveTitle = useCallback(async () => {
@@ -79,6 +124,18 @@ export function TaskCard({
       onTaskUpdate(task); // rollback
     }
   }, [editText, task, onTaskUpdate]);
+
+  // Allow parent to start editing
+  const startEditing = useCallback(() => {
+    setEditing(true);
+  }, []);
+
+  // Expose startEditing via data attribute for parent access
+  useEffect(() => {
+    if (cardRef.current) {
+      (cardRef.current as HTMLDivElement & { _startEdit?: () => void })._startEdit = startEditing;
+    }
+  }, [startEditing]);
 
   // ─── Status Toggle ─────────────────────────
   const toggleComplete = useCallback(async () => {
@@ -106,19 +163,42 @@ export function TaskCard({
   }, [task, completing, onTaskUpdate]);
 
   return (
-    <div
-      ref={setNodeRef}
+    <motion.div
+      ref={(node) => {
+        setNodeRef(node);
+        (cardRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
+      }}
       style={style}
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: isDragging ? 0.3 : 1, y: 0 }}
+      exit={{ opacity: 0, y: -4 }}
+      transition={{ duration: 0.15, ease: "easeOut" }}
       className={`glass-card rounded-xl p-3 hover:border-white/[0.1] transition-all group cursor-default ${
         task.status === "Done" ? "opacity-50" : ""
-      } ${isDragging ? "shadow-lg shadow-black/30" : ""}`}
+      } ${isDragging ? "shadow-lg shadow-black/30" : ""} ${
+        isFocused
+          ? "ring-1 ring-[#C49E45]/40 border-[#C49E45]/20"
+          : ""
+      }`}
       onContextMenu={(e) => onContextMenu(e, task)}
+      onClick={onFocus}
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (editing) return; // don't intercept while editing title
+        if (e.key === "e" || e.key === "E") {
+          e.preventDefault();
+          setEditing(true);
+        }
+      }}
     >
-      {/* Top row: drag handle + checkbox + title + grip */}
+      {/* Top row: checkbox + title + priority + grip */}
       <div className="flex items-start gap-2">
         {/* Status checkbox */}
         <button
-          onClick={toggleComplete}
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleComplete();
+          }}
           className={`w-[18px] h-[18px] min-w-[18px] mt-0.5 rounded border flex-shrink-0 flex items-center justify-center transition-all ${
             task.status === "Done"
               ? "bg-[#C49E45]/80 border-[#C49E45]/60 text-black"
@@ -140,17 +220,22 @@ export function TaskCard({
               onChange={(e) => setEditText(e.target.value)}
               onBlur={saveTitle}
               onKeyDown={(e) => {
+                e.stopPropagation();
                 if (e.key === "Enter") saveTitle();
                 if (e.key === "Escape") {
                   setEditText(task.taskName);
                   setEditing(false);
                 }
               }}
+              onClick={(e) => e.stopPropagation()}
               className="w-full text-sm font-serif bg-transparent text-white/90 outline-none border-b border-[#C49E45]/30 pb-0.5"
             />
           ) : (
             <span
-              onClick={() => setEditing(true)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setEditing(true);
+              }}
               className={`text-sm font-serif leading-snug cursor-text block ${
                 task.status === "Done"
                   ? "line-through text-white/25"
@@ -176,6 +261,7 @@ export function TaskCard({
           {...listeners}
           className="w-5 h-5 flex items-center justify-center rounded text-white/15 hover:text-white/40 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing flex-shrink-0 mt-0.5"
           title="Drag to reorder"
+          onClick={(e) => e.stopPropagation()}
         >
           <GripVertical className="w-3.5 h-3.5" />
         </button>
@@ -191,7 +277,10 @@ export function TaskCard({
       {/* Bottom row: metadata */}
       <div
         className="flex items-center gap-2 mt-2 flex-wrap pl-6 cursor-pointer"
-        onClick={() => onCardClick(task)}
+        onClick={(e) => {
+          e.stopPropagation();
+          onCardClick(task);
+        }}
         title="Click to view details"
       >
         {task.lifeArea && (
@@ -209,13 +298,15 @@ export function TaskCard({
             🔁
           </span>
         )}
-        {task.dueDate && (
-          <span className="text-[9px] font-mono text-white/20 ml-auto">
-            {task.dueDate}
+        {dueInfo && (
+          <span
+            className={`text-[9px] font-mono ml-auto ${dueInfo.color}`}
+          >
+            {dueInfo.text}
           </span>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 }
 
