@@ -25,6 +25,7 @@ export const tasks = pgTable("tasks", {
   recurring: boolean("recurring").default(false).notNull(),
   frequency: text("frequency").$type<"Daily" | "Weekly" | "Monthly" | "Custom">(),
   repeatEveryDays: integer("repeat_every_days"),
+  sortOrder: integer("sort_order").default(0),
   lastGenerated: date("last_generated"),
   parentProjectId: uuid("parent_project_id"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
