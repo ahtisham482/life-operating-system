@@ -155,22 +155,5 @@ alter table engine_logs disable row level security;
 alter table workspace_exclusions disable row level security;
 
 -- ─────────────────────────────────────────────────────────────
--- INBOX CAPTURES (Quick Capture audit trail)
--- ─────────────────────────────────────────────────────────────
-create table if not exists inbox_captures (
-  id uuid primary key default gen_random_uuid(),
-  raw_input text not null,
-  parsed_result jsonb not null default '[]'::jsonb,
-  status text not null default 'pending' check (status in ('pending', 'confirmed', 'edited', 'discarded')),
-  executed_at timestamptz,
-  created_at timestamptz not null default now()
-);
-
-create index if not exists idx_inbox_captures_status on inbox_captures(status);
-create index if not exists idx_inbox_captures_created on inbox_captures(created_at desc);
-
-alter table inbox_captures disable row level security;
-
--- ─────────────────────────────────────────────────────────────
 -- Done! Run `npm run db:studio` to visually inspect the tables.
 -- ─────────────────────────────────────────────────────────────

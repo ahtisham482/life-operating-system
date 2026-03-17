@@ -9,14 +9,15 @@ import type { ParsedRoute } from "@/lib/db/schema";
 export async function parseCapture(rawInput: string) {
   const routes = await parseInboxInput(rawInput);
 
-  // Save to inbox_captures as pending
+  // Save to engine_logs as pending parse
   const supabase = await createClient();
   const { data, error } = await supabase
-    .from("inbox_captures")
+    .from("engine_logs")
     .insert({
-      raw_input: rawInput,
-      parsed_result: routes,
-      status: "pending",
+      engine_name: "inbox_capture",
+      status: "warning", // pending — will update to success on confirm
+      summary: rawInput,
+      details: { parsed_result: routes, capture_status: "pending" },
     })
     .select("id")
     .single();
@@ -29,39 +30,36 @@ export async function parseCapture(rawInput: string) {
 export async function confirmCapture(captureId: string, routes: ParsedRoute[]) {
   const results = await executeRoutes(routes);
 
-  // Update capture status
+  // Update log to confirmed
   const supabase = await createClient();
   const { error } = await supabase
-    .from("inbox_captures")
+    .from("engine_logs")
     .update({
-      parsed_result: routes,
-      status: "confirmed",
-      executed_at: new Date().toISOString(),
+      status: "success",
+      details: {
+        parsed_result: routes,
+        capture_status: "confirmed",
+        execution_results: results,
+        executed_at: new Date().toISOString(),
+      },
     })
     .eq("id", captureId);
   if (error) throw new Error(error.message);
 
   revalidatePath("/inbox");
+  revalidatePath("/engines");
   return results;
 }
 
 export async function discardCapture(captureId: string) {
   const supabase = await createClient();
   const { error } = await supabase
-    .from("inbox_captures")
-    .update({ status: "discarded" })
+    .from("engine_logs")
+    .update({
+      status: "error",
+      details: { capture_status: "discarded" },
+    })
     .eq("id", captureId);
   if (error) throw new Error(error.message);
   revalidatePath("/inbox");
-}
-
-export async function getInboxHistory() {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("inbox_captures")
-    .select("*")
-    .order("created_at", { ascending: false })
-    .limit(50);
-  if (error) throw new Error(error.message);
-  return data ?? [];
 }

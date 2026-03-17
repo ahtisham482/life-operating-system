@@ -171,27 +171,14 @@ export const workspaceExclusions = pgTable("workspace_exclusions", {
 });
 
 // ─────────────────────────────────────────
-// INBOX CAPTURES
+// INBOX TYPES (audit trail uses engine_logs)
 // ─────────────────────────────────────────
-export const inboxCaptures = pgTable("inbox_captures", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  rawInput: text("raw_input").notNull(),
-  parsedResult: jsonb("parsed_result").notNull().$type<ParsedRoute[]>(),
-  status: text("status")
-    .$type<"pending" | "confirmed" | "edited" | "discarded">()
-    .default("pending").notNull(),
-  executedAt: timestamp("executed_at", { withTimezone: true }),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-});
-
 export type ParsedRoute = {
   module: "tasks" | "expenses" | "journal" | "books" | "weekly" | "season" | "checkin" | "habits";
   confidence: number;
   summary: string;
   data: Record<string, unknown>;
 };
-
-export type InboxCapture = typeof inboxCaptures.$inferSelect;
 
 // Type exports
 export type Task = typeof tasks.$inferSelect;
