@@ -180,6 +180,9 @@ export function HabitTracker({
   // Template library state
   const [showTemplates, setShowTemplates] = useState(false);
 
+  // Archive confirmation state
+  const [archiveConfirmId, setArchiveConfirmId] = useState<string | null>(null);
+
   // DnD sensors — require 8px movement before drag starts to avoid conflicting with tap
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -336,11 +339,17 @@ export function HabitTracker({
     });
   }
 
-  async function handleArchive(habitId: string) {
-    if (!confirm("Archive this habit? History will be preserved.")) return;
+  function handleArchive(habitId: string) {
+    setArchiveConfirmId(habitId);
+  }
+
+  function confirmArchive() {
+    if (!archiveConfirmId) return;
+    const id = archiveConfirmId;
+    setArchiveConfirmId(null);
     startTransition(async () => {
       try {
-        await archiveHabit(habitId);
+        await archiveHabit(id);
         showToastMsg("Habit archived");
       } catch {
         showToastMsg("Couldn't archive habit");
@@ -535,6 +544,50 @@ export function HabitTracker({
               setInterviewHabitName("");
             }}
           />
+        )}
+      </AnimatePresence>
+
+      {/* Archive Confirmation Modal */}
+      <AnimatePresence>
+        {archiveConfirmId && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center"
+            onClick={() => setArchiveConfirmId(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ type: "spring", damping: 25 }}
+              className="w-full max-w-sm mx-4 bg-[#0d0d1a] border border-[#FFF8F0]/[0.1] rounded-2xl p-6 space-y-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="text-sm font-serif text-[#FFF8F0]/80">
+                Archive this habit?
+              </h3>
+              <p className="text-xs font-serif text-[#FFF8F0]/40 leading-relaxed">
+                Your history and streaks will be preserved. You can restore it
+                anytime from the archived section.
+              </p>
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => setArchiveConfirmId(null)}
+                  className="flex-1 py-2.5 text-[11px] font-mono uppercase tracking-widest border border-[#FFF8F0]/[0.1] text-[#FFF8F0]/50 rounded-xl hover:bg-[#FFF8F0]/[0.05] transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmArchive}
+                  className="flex-1 py-2.5 text-[11px] font-mono uppercase tracking-widest bg-[#FF6B6B]/20 text-[#FF6B6B] border border-[#FF6B6B]/30 rounded-xl hover:bg-[#FF6B6B]/30 transition-colors"
+                >
+                  Archive
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
         )}
       </AnimatePresence>
 

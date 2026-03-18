@@ -3,6 +3,7 @@ import {
   getGroqClient,
   HABIT_INTERVIEW_MODEL,
   HABIT_INTERVIEW_SYSTEM_PROMPT,
+  HABIT_FINALIZE_PROMPT,
 } from "@/lib/groq";
 
 type ChatMessage = {
@@ -12,21 +13,79 @@ type ChatMessage = {
 
 export async function POST(req: NextRequest) {
   try {
-    const { habitName, messages } = (await req.json()) as {
+    const { habitName, messages, finalize } = (await req.json()) as {
       habitName: string;
       messages: ChatMessage[];
+      finalize?: boolean;
     };
 
     const groq = getGroqClient();
 
     if (!groq) {
       // Fallback: return structured prompts when no API key
+      if (finalize) {
+        return NextResponse.json({
+          fallback: true,
+          finalize: true,
+        });
+      }
       return NextResponse.json({
         fallback: true,
         message: getFallbackPrompt(messages.length),
       });
     }
 
+    if (finalize) {
+      // User pressed "Done" — ask AI to produce the final summary
+      const completion = await groq.chat.completions.create({
+        model: HABIT_INTERVIEW_MODEL,
+        messages: [
+          {
+            role: "system",
+            content: `${HABIT_INTERVIEW_SYSTEM_PROMPT}\n\nThe user wants to build the habit: "${habitName}"`,
+          },
+          ...messages.map((m) => ({
+            role: m.role as "user" | "assistant",
+            content: m.content,
+          })),
+          {
+            role: "system",
+            content: HABIT_FINALIZE_PROMPT,
+          },
+        ],
+        temperature: 0.5,
+        max_tokens: 600,
+      });
+
+      const reply = completion.choices[0]?.message?.content || "";
+      const jsonMatch = reply.match(/```json\s*([\s\S]*?)\s*```/);
+
+      if (jsonMatch) {
+        try {
+          const extracted = JSON.parse(jsonMatch[1]);
+          return NextResponse.json({
+            done: true,
+            extracted: {
+              purpose: extracted.purpose || "",
+              identity: extracted.identity || "",
+              tinyVersion: extracted.tinyVersion || "",
+              anchorText: extracted.anchorText || "",
+            },
+          });
+        } catch {
+          // JSON parse failed
+        }
+      }
+
+      // Fallback: couldn't extract — return error
+      return NextResponse.json({
+        done: false,
+        reply:
+          "I had trouble creating your profile. Let me keep asking — tell me more about why this habit matters to you.",
+      });
+    }
+
+    // Normal conversation mode — just keep chatting
     const systemPrompt = `${HABIT_INTERVIEW_SYSTEM_PROMPT}\n\nThe user wants to build the habit: "${habitName}"`;
 
     const completion = await groq.chat.completions.create({
@@ -44,38 +103,13 @@ export async function POST(req: NextRequest) {
 
     const reply = completion.choices[0]?.message?.content || "";
 
-    // Count how many answers the user has given
-    const userAnswerCount = messages.filter((m) => m.role === "user").length;
+    // Strip any JSON the AI might produce (it shouldn't, but safety net)
+    const cleanReply = reply.replace(/```json[\s\S]*?```/g, "").trim();
 
-    // Check if the reply contains the final JSON summary
-    const jsonMatch = reply.match(/```json\s*([\s\S]*?)\s*```/);
-
-    // Safety net: only accept the profile when the user has answered at least 4 questions
-    if (jsonMatch && userAnswerCount >= 4) {
-      try {
-        const extracted = JSON.parse(jsonMatch[1]);
-        return NextResponse.json({
-          reply,
-          done: true,
-          extracted: {
-            purpose: extracted.purpose || "",
-            identity: extracted.identity || "",
-            tinyVersion: extracted.tinyVersion || "",
-            anchorText: extracted.anchorText || "",
-          },
-        });
-      } catch {
-        // JSON parse failed, treat as normal reply
-      }
-    }
-
-    // If AI produced JSON too early, strip it and return just the text
-    const cleanReply = jsonMatch
-      ? reply.replace(/```json[\s\S]*?```/g, "").trim() ||
-        "Tell me more about this habit."
-      : reply;
-
-    return NextResponse.json({ reply: cleanReply, done: false });
+    return NextResponse.json({
+      reply: cleanReply || "Tell me more about this habit.",
+      done: false,
+    });
   } catch (error) {
     console.error("Habit interview API error:", error);
     return NextResponse.json(

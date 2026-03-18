@@ -28,11 +28,15 @@ export function HabitInterviewModal({ habitId, habitName, onClose }: Props) {
   const [isLoading, setIsLoading] = useState(false);
   const [extracted, setExtracted] = useState<ExtractedData | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isFinalizing, setIsFinalizing] = useState(false);
   const [fallbackMode, setFallbackMode] = useState(false);
   const [fallbackStep, setFallbackStep] = useState(0);
   const [fallbackData, setFallbackData] = useState<Partial<ExtractedData>>({});
   const inputRef = useRef<HTMLInputElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
+
+  // Count user messages to show "Done" button after enough context
+  const userMessageCount = messages.filter((m) => m.role === "user").length;
 
   // Focus input
   useEffect(() => {
@@ -78,23 +82,10 @@ export function HabitInterviewModal({ habitId, habitName, onClose }: Props) {
         return;
       }
 
-      if (data.done && data.extracted) {
-        // AI has finished and extracted structured data
-        setExtracted(data.extracted);
-        // Show the raw reply (which includes the JSON) as a summary
-        const cleanReply = data.reply.replace(/```json[\s\S]*?```/g, "").trim();
-        if (cleanReply) {
-          setMessages((prev) => [
-            ...prev,
-            { role: "assistant", content: cleanReply },
-          ]);
-        }
-      } else {
-        setMessages((prev) => [
-          ...prev,
-          { role: "assistant", content: data.reply },
-        ]);
-      }
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: data.reply },
+      ]);
     } catch {
       setMessages((prev) => [
         ...prev,
@@ -114,7 +105,6 @@ export function HabitInterviewModal({ habitId, habitName, onClose }: Props) {
     setInput("");
 
     if (fallbackMode) {
-      // Fallback: structured form flow
       handleFallbackResponse(userMessage);
       return;
     }
@@ -125,6 +115,60 @@ export function HabitInterviewModal({ habitId, habitName, onClose }: Props) {
     ];
     setMessages(updatedMessages);
     await sendToAI(updatedMessages);
+  }
+
+  async function handleFinalize() {
+    setIsFinalizing(true);
+
+    if (fallbackMode) {
+      // In fallback mode, just build from collected data
+      setExtracted({
+        purpose: fallbackData.purpose || "",
+        identity: fallbackData.identity || "",
+        tinyVersion: fallbackData.tinyVersion || "",
+        anchorText: fallbackData.anchorText || "",
+      });
+      setIsFinalizing(false);
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/habits/interview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          habitName,
+          messages,
+          finalize: true,
+        }),
+      });
+
+      if (!res.ok) throw new Error("API error");
+
+      const data = await res.json();
+
+      if (data.done && data.extracted) {
+        setExtracted(data.extracted);
+      } else {
+        // Finalization failed — show error in chat
+        if (data.reply) {
+          setMessages((prev) => [
+            ...prev,
+            { role: "assistant", content: data.reply },
+          ]);
+        }
+      }
+    } catch {
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content:
+            "I had trouble creating your profile. Keep sharing and try again.",
+        },
+      ]);
+    }
+    setIsFinalizing(false);
   }
 
   function handleFallbackResponse(response: string) {
@@ -161,12 +205,11 @@ export function HabitInterviewModal({ habitId, habitName, onClose }: Props) {
       });
       setFallbackStep(nextStep);
     } else {
-      // Done — extract data
-      setExtracted({
-        purpose: updatedData.purpose || "",
-        identity: updatedData.identity || "",
-        tinyVersion: updatedData.tinyVersion || "",
-        anchorText: updatedData.anchorText || "",
+      // All fallback questions done — show "Done" button naturally
+      newMessages.push({
+        role: "assistant",
+        content:
+          'Great, I have a good understanding now! Press the "Done" button whenever you\'re ready to see your habit profile.',
       });
     }
 
@@ -224,7 +267,7 @@ export function HabitInterviewModal({ habitId, habitName, onClose }: Props) {
           </button>
         </div>
 
-        {/* Chat messages — single scrollable area including profile card */}
+        {/* Chat messages — single scrollable area */}
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4 min-h-[200px]">
           {messages.map((msg, i) => (
             <motion.div
@@ -247,7 +290,7 @@ export function HabitInterviewModal({ habitId, habitName, onClose }: Props) {
           ))}
 
           {/* Typing indicator */}
-          {isLoading && (
+          {(isLoading || isFinalizing) && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -272,7 +315,7 @@ export function HabitInterviewModal({ habitId, habitName, onClose }: Props) {
             </motion.div>
           )}
 
-          {/* Profile card — INSIDE the scrollable area so user can scroll to it */}
+          {/* Profile card — inside scrollable area */}
           <AnimatePresence>
             {extracted && (
               <motion.div
@@ -339,7 +382,7 @@ export function HabitInterviewModal({ habitId, habitName, onClose }: Props) {
           </AnimatePresence>
         </div>
 
-        {/* Input bar — only during Q&A, hidden once profile is ready */}
+        {/* Input bar + Done button — hidden once profile is ready */}
         {!extracted && (
           <div className="px-6 py-4 border-t border-[#FFF8F0]/[0.06] shrink-0">
             <div className="flex gap-2">
@@ -349,26 +392,43 @@ export function HabitInterviewModal({ habitId, habitName, onClose }: Props) {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter" && !isLoading) handleSend();
+                  if (e.key === "Enter" && !isLoading && !isFinalizing)
+                    handleSend();
                 }}
                 placeholder="Type your answer..."
-                disabled={isLoading}
+                disabled={isLoading || isFinalizing}
                 className="flex-1 bg-[#FFF8F0]/[0.03] border border-[#FFF8F0]/[0.08] text-[#FFF8F0]/80 px-4 py-2.5 text-sm font-serif rounded-xl focus:outline-none focus:ring-1 focus:ring-[#FF6B6B]/30 placeholder:text-[#FFF8F0]/20 disabled:opacity-50"
               />
               <button
                 onClick={handleSend}
-                disabled={isLoading || !input.trim()}
+                disabled={isLoading || isFinalizing || !input.trim()}
                 className="px-4 py-2.5 bg-[#FF6B6B] text-white rounded-xl text-sm font-mono disabled:opacity-30 hover:bg-[#FF6B6B]/90 transition-colors"
               >
                 Send
               </button>
             </div>
-            <button
-              onClick={onClose}
-              className="w-full mt-2 text-[10px] font-mono uppercase tracking-wider text-[#FFF8F0]/20 hover:text-[#FFF8F0]/40 transition-colors py-1"
-            >
-              Skip for now
-            </button>
+            <div className="flex items-center justify-between mt-2">
+              <button
+                onClick={onClose}
+                className="text-[10px] font-mono uppercase tracking-wider text-[#FFF8F0]/20 hover:text-[#FFF8F0]/40 transition-colors py-1"
+              >
+                Skip for now
+              </button>
+              {/* "Done" button appears after the user has answered at least 2 questions */}
+              {userMessageCount >= 2 && (
+                <motion.button
+                  initial={{ opacity: 0, x: 8 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  onClick={handleFinalize}
+                  disabled={isLoading || isFinalizing}
+                  className="text-[10px] font-mono uppercase tracking-wider text-[#34D399]/70 hover:text-[#34D399] transition-colors py-1 disabled:opacity-30"
+                >
+                  {isFinalizing
+                    ? "Creating profile..."
+                    : "Done — Create my profile"}
+                </motion.button>
+              )}
+            </div>
           </div>
         )}
       </motion.div>
