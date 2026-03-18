@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { fromDb, getTodayKarachi } from "@/lib/utils";
 import { HabitTracker } from "./habit-tracker";
 import type { Habit, HabitGroup, HabitLog, TimeOfDay } from "@/lib/db/schema";
-import { isHabitScheduledForDay } from "./actions";
+import { isHabitScheduledForDay } from "@/lib/habits";
 
 function getTimeOfDayNudge(): string {
   const now = new Date();
@@ -129,6 +129,35 @@ export default async function HabitsPage() {
     recentLogMap[`${log.habitId}:${log.date}`] = log.status;
   }
 
+  // Weekly Insight: find most missed habit in the last 7 days
+  const missedCounts: Record<string, number> = {};
+  for (const habit of scheduledHabits) {
+    let missed = 0;
+    for (const wd of weekDays) {
+      const logKey = `${habit.id}:${wd.date}`;
+      const status = recentLogMap[logKey];
+      // Count as missed if no log or explicitly missed/pending (but not completed or skipped)
+      if (!status || status === "missed" || status === "pending") {
+        // Only count if the habit was scheduled for that day
+        const dayDow = new Date(wd.date + "T12:00:00").getDay();
+        if (isHabitScheduledForDay(habit.scheduleType, habit.scheduleDays || [], dayDow)) {
+          missed++;
+        }
+      }
+    }
+    if (missed > 0) missedCounts[habit.id] = missed;
+  }
+
+  // Sort by most missed, get top 3
+  const mostMissed = Object.entries(missedCounts)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 3)
+    .map(([id, count]) => ({
+      habit: allHabits.find((h) => h.id === id),
+      count,
+    }))
+    .filter((m) => m.habit);
+
   const timeNudge = getTimeOfDayNudge();
 
   return (
@@ -252,6 +281,30 @@ export default async function HabitsPage() {
               </div>
             </div>
           </div>
+
+          {/* Weekly Insight: Most Missed Habits */}
+          {mostMissed.length > 0 && (
+            <div className="glass-card rounded-3xl p-6 mt-6 hover:border-[#FFF8F0]/[0.08] transition-all">
+              <h2 className="text-[11px] font-mono uppercase tracking-[0.25em] text-[#FF6B6B]/80 font-serif mb-4">
+                Needs Attention
+              </h2>
+              <div className="space-y-3">
+                {mostMissed.map(({ habit, count }) => (
+                  <div key={habit!.id} className="flex items-center justify-between">
+                    <span className="text-sm font-serif text-[#FFF8F0]/60 truncate">
+                      {habit!.emoji && `${habit!.emoji} `}{habit!.name}
+                    </span>
+                    <span className="text-[10px] font-mono text-[#FF6B6B]/60 shrink-0 ml-2">
+                      {count}/7 missed
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <p className="text-[9px] font-mono text-[#FFF8F0]/20 mt-3 italic">
+                These habits need the most love this week
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>

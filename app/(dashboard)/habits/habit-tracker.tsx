@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toggleHabitLog, createHabit, archiveHabit } from "./actions";
 import type { Habit, HabitGroup, HabitLog, HabitLogStatus, ScheduleType } from "@/lib/db/schema";
@@ -47,6 +47,24 @@ export function HabitTracker({ groups, habits, notTodayHabits, todayLogs, date }
   const [newHabitSchedule, setNewHabitSchedule] = useState<ScheduleType>("daily");
   const [newHabitDays, setNewHabitDays] = useState<number[]>([]);
   const [toast, setToast] = useState<{ message: string; habitId?: string; prevStatus?: HabitLogStatus } | null>(null);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const prevAllDoneRef = useRef(false);
+
+  // Celebration: detect when all habits become completed
+  const completedCount = habits.filter((h) => optimisticLogs[h.id] === "completed").length;
+  const allDone = habits.length > 0 && completedCount === habits.length;
+
+  useEffect(() => {
+    if (allDone && !prevAllDoneRef.current) {
+      setShowConfetti(true);
+      // Haptic burst for celebration
+      if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+        navigator.vibrate([50, 30, 50, 30, 100]);
+      }
+      setTimeout(() => setShowConfetti(false), 3000);
+    }
+    prevAllDoneRef.current = allDone;
+  }, [allDone]);
 
   function showToast(message: string, habitId?: string, prevStatus?: HabitLogStatus) {
     setToast({ message, habitId, prevStatus });
@@ -362,6 +380,31 @@ export function HabitTracker({ groups, habits, notTodayHabits, todayLogs, date }
         </div>
       )}
 
+      {/* Celebration confetti */}
+      <AnimatePresence>
+        {showConfetti && <ConfettiBurst />}
+      </AnimatePresence>
+
+      {/* All-done celebration banner */}
+      <AnimatePresence>
+        {allDone && (
+          <motion.div
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="glass-card rounded-3xl p-6 text-center border-[#34D399]/30"
+          >
+            <p className="text-2xl mb-1">{"\uD83C\uDF89"}</p>
+            <p className="text-base font-serif italic text-[#34D399]">
+              All habits completed today!
+            </p>
+            <p className="text-[10px] font-mono text-[#FFF8F0]/30 mt-1 tracking-wider uppercase">
+              Perfect day — keep the streak alive
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Toast notification */}
       <AnimatePresence>
         {toast && (
@@ -509,5 +552,57 @@ function HabitCard({
         )}
       </AnimatePresence>
     </motion.div>
+  );
+}
+
+// ─────────────────────────────────────────
+// Confetti Burst (celebration particles)
+// ─────────────────────────────────────────
+
+const CONFETTI_COLORS = ["#FF6B6B", "#FEC89A", "#34D399", "#FFD93D", "#E2B0FF", "#38BDF8", "#A78BFA"];
+
+function ConfettiBurst() {
+  const particles = Array.from({ length: 40 }, (_, i) => ({
+    id: i,
+    x: Math.random() * 100,      // vw start position
+    delay: Math.random() * 0.5,
+    size: Math.random() * 8 + 4,
+    color: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
+    rotation: Math.random() * 360,
+    drift: (Math.random() - 0.5) * 200,
+  }));
+
+  return (
+    <div className="fixed inset-0 pointer-events-none z-[100] overflow-hidden">
+      {particles.map((p) => (
+        <motion.div
+          key={p.id}
+          initial={{
+            x: `${p.x}vw`,
+            y: "-5vh",
+            rotate: 0,
+            opacity: 1,
+          }}
+          animate={{
+            y: "110vh",
+            x: `calc(${p.x}vw + ${p.drift}px)`,
+            rotate: p.rotation + 720,
+            opacity: [1, 1, 0.8, 0],
+          }}
+          transition={{
+            duration: 2.5 + Math.random(),
+            delay: p.delay,
+            ease: "easeIn",
+          }}
+          style={{
+            position: "absolute",
+            width: p.size,
+            height: p.size * 0.6,
+            backgroundColor: p.color,
+            borderRadius: 1,
+          }}
+        />
+      ))}
+    </div>
   );
 }

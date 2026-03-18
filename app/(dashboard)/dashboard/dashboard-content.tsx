@@ -27,7 +27,10 @@ export async function DashboardContent() {
       .select("*")
       .order("date", { ascending: false })
       .limit(60),
-    supabase.from("habit_completion_summary").select("*").eq("date", today).limit(1),
+    supabase
+      .from("habits")
+      .select("id, schedule_type, schedule_days")
+      .is("archived_at", null),
     supabase.from("journal_entries").select("id").eq("date", today).limit(1),
     supabase.from("expenses").select("id").eq("date", today).limit(1),
     supabase
@@ -89,13 +92,27 @@ export async function DashboardContent() {
     .lte("updated_at", today + "T23:59:59");
   const tasksDoneToday = doneTodayRows?.length ?? 0;
 
-  // Habits (from compatibility view)
-  const habitSummary =
-    habitRows && habitRows.length > 0
-      ? fromDb<{ habitsCompleted: number; habitsTotal: number; completionRate: number }>(habitRows[0])
-      : null;
-  const habitsCompleted = habitSummary?.habitsCompleted ?? 0;
-  const habitsTotal = habitSummary?.habitsTotal ?? 0;
+  // Habits — count scheduled habits for today + completed logs
+  const todayDow = new Date(today + "T12:00:00").getDay();
+  const isScheduled = (st: string, sd: number[], dow: number) => {
+    if (st === "daily") return true;
+    if (st === "weekdays") return dow >= 1 && dow <= 5;
+    if (st === "weekends") return dow === 0 || dow === 6;
+    if (st === "custom") return (sd || []).includes(dow);
+    return true;
+  };
+  const scheduledHabits = (habitRows || []).filter((h: Record<string, unknown>) =>
+    isScheduled(h.schedule_type as string, (h.schedule_days || []) as number[], todayDow)
+  );
+  const habitsTotal = scheduledHabits.length;
+
+  // Count completed logs for today
+  const { data: completedLogRows } = await supabase
+    .from("habit_logs")
+    .select("id")
+    .eq("date", today)
+    .eq("status", "completed");
+  const habitsCompleted = completedLogRows?.length ?? 0;
 
   // Journal & Expenses
   const journalWritten = (journalRows?.length ?? 0) > 0;
@@ -140,7 +157,7 @@ export async function DashboardContent() {
   let primaryAction = "checkin";
   if (!todayCheckedIn) {
     primaryAction = "checkin";
-  } else if (!habitSummary || habitsCompleted < habitsTotal) {
+  } else if (habitsCompleted < habitsTotal) {
     primaryAction = "habits";
   } else if (dayOfWeek === "Sunday") {
     primaryAction = "weekly";

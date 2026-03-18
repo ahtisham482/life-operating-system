@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { logMirrorSignal } from "@/lib/mirror/signals";
 import type { ScheduleType, HabitLogStatus } from "@/lib/db/schema";
+import { getScheduledDaySet } from "@/lib/habits";
 
 // ─────────────────────────────────────────
 // HABIT CRUD
@@ -341,27 +342,4 @@ async function recomputeStreak(habitId: string) {
     .eq("id", habitId);
 }
 
-/** Returns a Set of day-of-week numbers (0=Sun..6=Sat) that this habit is scheduled for */
-function getScheduledDaySet(scheduleType: string, scheduleDays: number[]): Set<number> {
-  switch (scheduleType) {
-    case "daily":
-      return new Set([0, 1, 2, 3, 4, 5, 6]);
-    case "weekdays":
-      return new Set([1, 2, 3, 4, 5]);
-    case "weekends":
-      return new Set([0, 6]);
-    case "custom":
-      return new Set(scheduleDays);
-    default:
-      return new Set([0, 1, 2, 3, 4, 5, 6]);
-  }
-}
-
-/** Check if a habit is scheduled for a given day of week (0=Sun..6=Sat) */
-export function isHabitScheduledForDay(
-  scheduleType: string,
-  scheduleDays: number[],
-  dayOfWeek: number
-): boolean {
-  return getScheduledDaySet(scheduleType, scheduleDays).has(dayOfWeek);
-}
+// isHabitScheduledForDay and getScheduledDaySet are in @/lib/habits
