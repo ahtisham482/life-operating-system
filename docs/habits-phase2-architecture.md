@@ -438,11 +438,11 @@ function computeStreak(habitId, scheduledDays):
 
 ## Streak Logic: Confirmed Design Decisions
 
-1. **Skip is safe** — tapping "Skip" preserves streak AND doesn't use grace period (expert consensus from Atomic Habits, Tiny Habits, all top-rated apps)
-2. **Completion rate excludes skips** — skips removed from denominator entirely (honest metric)
-3. **Nudge only, no skip cap** — after 3+ skips of same habit in one week, gentle nudge: "Want to adjust schedule or archive?" (no hard limit)
-4. **Grace period** — 1 missed scheduled day forgiven if user completes the next scheduled day; 2 consecutive misses = reset
-5. **Unscheduled habits** — shown in collapsed "Not Today" section at bottom, dimmed, expandable, completable for bonus
+1. **Skip is ALWAYS safe** — tapping "Skip" preserves streak AND doesn't use grace period, even when consecutive. 2 skips in a row ≠ streak break. Rationale: if we punish skips, users mark "Done" falsely to protect streaks → data corruption. (Expert consensus: Atomic Habits, Tiny Habits, all top-rated apps — Atoms, Loop, Streaks, Way of Life.)
+2. **Completion rate excludes skips** — skips removed from denominator entirely. Formula: `completed / (completed + missed)`. Skips are invisible to this metric. This is the honest number.
+3. **Nudge only, no skip cap** — after 3+ skips of same habit in one week, gentle nudge: "You've skipped [habit] 3 times this week. Want to adjust schedule or archive?" No hard limit, no streak penalty. This catches drift without punishing honesty.
+4. **Grace period (misses only)** — 1 missed scheduled day (no action taken, forgot) is forgiven if user completes the next scheduled day. 2 consecutive misses = streak resets. Skips never count toward misses.
+5. **Unscheduled habits** — shown in collapsed "Not Today" section at bottom, dimmed at 40% opacity, expandable, completable for bonus credit
 
 ---
 
