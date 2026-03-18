@@ -32,11 +32,19 @@ export function HabitInterviewModal({ habitId, habitName, onClose }: Props) {
   const [fallbackStep, setFallbackStep] = useState(0);
   const [fallbackData, setFallbackData] = useState<Partial<ExtractedData>>({});
   const inputRef = useRef<HTMLInputElement>(null);
+  const profileRef = useRef<HTMLDivElement>(null);
 
   // Focus input
   useEffect(() => {
     inputRef.current?.focus();
   }, [isLoading]);
+
+  // Scroll to profile card when it first appears
+  useEffect(() => {
+    if (extracted && profileRef.current) {
+      profileRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [extracted]);
 
   // Send initial greeting
   useEffect(() => {
@@ -216,7 +224,7 @@ export function HabitInterviewModal({ habitId, habitName, onClose }: Props) {
           </button>
         </div>
 
-        {/* Chat messages */}
+        {/* Chat messages — single scrollable area including profile card */}
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4 min-h-[200px]">
           {messages.map((msg, i) => (
             <motion.div
@@ -263,74 +271,75 @@ export function HabitInterviewModal({ habitId, habitName, onClose }: Props) {
               </div>
             </motion.div>
           )}
+
+          {/* Profile card — INSIDE the scrollable area so user can scroll to it */}
+          <AnimatePresence>
+            {extracted && (
+              <motion.div
+                ref={profileRef}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                transition={{ delay: 0.1 }}
+              >
+                <div className="p-4 rounded-2xl bg-[#34D399]/[0.08] border border-[#34D399]/20 space-y-3">
+                  <h4 className="text-[10px] font-mono uppercase tracking-[0.25em] text-[#34D399]/80">
+                    Your Habit Profile
+                  </h4>
+                  {extracted.purpose && (
+                    <div>
+                      <span className="text-[9px] font-mono text-[#FFF8F0]/30 uppercase">
+                        Why
+                      </span>
+                      <p className="text-xs font-serif text-[#FFF8F0]/70 italic">
+                        {extracted.purpose}
+                      </p>
+                    </div>
+                  )}
+                  {extracted.identity && (
+                    <div>
+                      <span className="text-[9px] font-mono text-[#FFF8F0]/30 uppercase">
+                        Identity
+                      </span>
+                      <p className="text-xs font-serif text-[#FFF8F0]/70 italic">
+                        {extracted.identity}
+                      </p>
+                    </div>
+                  )}
+                  {extracted.tinyVersion && (
+                    <div>
+                      <span className="text-[9px] font-mono text-[#FFF8F0]/30 uppercase">
+                        2-Min Version
+                      </span>
+                      <p className="text-xs font-serif text-[#FFF8F0]/70">
+                        {extracted.tinyVersion}
+                      </p>
+                    </div>
+                  )}
+                  {extracted.anchorText && (
+                    <div>
+                      <span className="text-[9px] font-mono text-[#FFF8F0]/30 uppercase">
+                        Anchor
+                      </span>
+                      <p className="text-xs font-serif text-[#FFF8F0]/70">
+                        {extracted.anchorText}
+                      </p>
+                    </div>
+                  )}
+                  <button
+                    onClick={handleSaveExtracted}
+                    disabled={isSaving}
+                    className="w-full py-2.5 text-[11px] font-mono uppercase tracking-widest bg-gradient-to-r from-[#34D399] to-[#2DD4BF] text-white rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50"
+                  >
+                    {isSaving ? "Saving..." : "Save & Finish"}
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
-        {/* Extracted summary card */}
-        <AnimatePresence>
-          {extracted && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="overflow-hidden"
-            >
-              <div className="mx-6 mb-4 p-4 rounded-2xl bg-[#34D399]/[0.08] border border-[#34D399]/20 space-y-3">
-                <h4 className="text-[10px] font-mono uppercase tracking-[0.25em] text-[#34D399]/80">
-                  Your Habit Profile
-                </h4>
-                {extracted.purpose && (
-                  <div>
-                    <span className="text-[9px] font-mono text-[#FFF8F0]/30 uppercase">
-                      Why
-                    </span>
-                    <p className="text-xs font-serif text-[#FFF8F0]/70 italic">
-                      {extracted.purpose}
-                    </p>
-                  </div>
-                )}
-                {extracted.identity && (
-                  <div>
-                    <span className="text-[9px] font-mono text-[#FFF8F0]/30 uppercase">
-                      Identity
-                    </span>
-                    <p className="text-xs font-serif text-[#FFF8F0]/70 italic">
-                      {extracted.identity}
-                    </p>
-                  </div>
-                )}
-                {extracted.tinyVersion && (
-                  <div>
-                    <span className="text-[9px] font-mono text-[#FFF8F0]/30 uppercase">
-                      2-Min Version
-                    </span>
-                    <p className="text-xs font-serif text-[#FFF8F0]/70">
-                      {extracted.tinyVersion}
-                    </p>
-                  </div>
-                )}
-                {extracted.anchorText && (
-                  <div>
-                    <span className="text-[9px] font-mono text-[#FFF8F0]/30 uppercase">
-                      Anchor
-                    </span>
-                    <p className="text-xs font-serif text-[#FFF8F0]/70">
-                      {extracted.anchorText}
-                    </p>
-                  </div>
-                )}
-                <button
-                  onClick={handleSaveExtracted}
-                  disabled={isSaving}
-                  className="w-full py-2.5 text-[11px] font-mono uppercase tracking-widest bg-gradient-to-r from-[#34D399] to-[#2DD4BF] text-white rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50"
-                >
-                  {isSaving ? "Saving..." : "Save & Finish"}
-                </button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Input bar */}
+        {/* Input bar — only during Q&A, hidden once profile is ready */}
         {!extracted && (
           <div className="px-6 py-4 border-t border-[#FFF8F0]/[0.06] shrink-0">
             <div className="flex gap-2">
