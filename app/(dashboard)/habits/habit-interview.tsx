@@ -31,13 +31,7 @@ export function HabitInterviewModal({ habitId, habitName, onClose }: Props) {
   const [fallbackMode, setFallbackMode] = useState(false);
   const [fallbackStep, setFallbackStep] = useState(0);
   const [fallbackData, setFallbackData] = useState<Partial<ExtractedData>>({});
-  const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-
-  // Auto-scroll to bottom
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
 
   // Focus input
   useEffect(() => {
@@ -269,8 +263,6 @@ export function HabitInterviewModal({ habitId, habitName, onClose }: Props) {
               </div>
             </motion.div>
           )}
-
-          <div ref={messagesEndRef} />
         </div>
 
         {/* Extracted summary card */}

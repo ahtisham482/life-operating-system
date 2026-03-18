@@ -44,9 +44,14 @@ export async function POST(req: NextRequest) {
 
     const reply = completion.choices[0]?.message?.content || "";
 
+    // Count how many answers the user has given
+    const userAnswerCount = messages.filter((m) => m.role === "user").length;
+
     // Check if the reply contains the final JSON summary
     const jsonMatch = reply.match(/```json\s*([\s\S]*?)\s*```/);
-    if (jsonMatch) {
+
+    // Safety net: only accept the profile when the user has answered at least 4 questions
+    if (jsonMatch && userAnswerCount >= 4) {
       try {
         const extracted = JSON.parse(jsonMatch[1]);
         return NextResponse.json({
@@ -64,7 +69,13 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    return NextResponse.json({ reply, done: false });
+    // If AI produced JSON too early, strip it and return just the text
+    const cleanReply = jsonMatch
+      ? reply.replace(/```json[\s\S]*?```/g, "").trim() ||
+        "Tell me more about this habit."
+      : reply;
+
+    return NextResponse.json({ reply: cleanReply, done: false });
   } catch (error) {
     console.error("Habit interview API error:", error);
     return NextResponse.json(
