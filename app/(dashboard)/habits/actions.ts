@@ -198,8 +198,9 @@ export async function reorderHabitGroups(orderedIds: string[]) {
 export async function toggleHabitLog(
   habitId: string,
   date: string,
-  newStatus: HabitLogStatus
-) {
+  newStatus: HabitLogStatus,
+  note?: string | null
+): Promise<{ currentStreak: number; bestStreak: number }> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
@@ -211,14 +212,24 @@ export async function toggleHabitLog(
       user_id: user.id,
       date,
       status: newStatus,
+      note: note ?? null,
     },
     { onConflict: "habit_id,date" }
   );
   if (error) throw new Error(error.message);
 
   // Step 2: Post-save operations (non-blocking — failures here don't affect the save)
+  let currentStreak = 0;
+  let bestStreak = 0;
   try {
     await recomputeStreak(supabase, habitId);
+    const { data: updatedHabit } = await supabase
+      .from("habits")
+      .select("current_streak, best_streak")
+      .eq("id", habitId)
+      .single();
+    currentStreak = updatedHabit?.current_streak ?? 0;
+    bestStreak = updatedHabit?.best_streak ?? 0;
   } catch {
     // Streak recomputation failed — not critical, log silently
     console.error("Streak recomputation failed for habit", habitId);
@@ -248,6 +259,7 @@ export async function toggleHabitLog(
 
   revalidatePath("/habits");
   revalidatePath("/dashboard");
+  return { currentStreak, bestStreak };
 }
 
 // ─────────────────────────────────────────

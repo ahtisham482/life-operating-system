@@ -1,18 +1,51 @@
 "use client";
 
-import { useState, useTransition, useEffect, useRef } from "react";
+import { useState, useTransition, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import type { DragEndEvent } from "@dnd-kit/core";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable,
+  arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import {
   toggleHabitLog,
   createHabit,
   updateHabit,
   archiveHabit,
   unarchiveHabit,
+  reorderHabits,
   createHabitGroup,
   updateHabitGroup,
   deleteHabitGroup,
 } from "./actions";
 import type { Habit, HabitGroup, HabitLog, HabitLogStatus, ScheduleType } from "@/lib/db/schema";
+
+// ─────────────────────────────────────────
+// Constants
+// ─────────────────────────────────────────
+
+const STREAK_MILESTONES = [7, 14, 21, 30, 50, 66, 100];
+const MILESTONE_MESSAGES: Record<number, string> = {
+  7: "🔥 1 week streak! Building momentum!",
+  14: "💪 2 weeks strong! Habit forming!",
+  21: "⚡ 21 days! Science says it's a habit now!",
+  30: "🏆 30-day streak! Incredible discipline!",
+  50: "🌟 50 days! You're unstoppable!",
+  66: "🧠 66 days! Neurologically automatic!",
+  100: "👑 100-day streak! Legendary!",
+};
+
+const SKIP_REASONS = ["Traveling", "Sick", "Rest day", "Chose to skip"];
 
 type Props = {
   groups: HabitGroup[];
@@ -38,13 +71,17 @@ const SCHEDULE_OPTIONS: { value: ScheduleType; label: string }[] = [
 ];
 
 const TIME_OF_DAY_OPTIONS = [
-  { value: "morning" as const, label: "Morning", emoji: "\u2600\uFE0F" },
-  { value: "afternoon" as const, label: "Afternoon", emoji: "\uD83C\uDF3F" },
-  { value: "evening" as const, label: "Evening", emoji: "\uD83C\uDF19" },
-  { value: "anytime" as const, label: "Anytime", emoji: "\u2B50" },
+  { value: "morning" as const, label: "Morning", emoji: "☀️" },
+  { value: "afternoon" as const, label: "Afternoon", emoji: "🌿" },
+  { value: "evening" as const, label: "Evening", emoji: "🌙" },
+  { value: "anytime" as const, label: "Anytime", emoji: "⭐" },
 ];
 
 const DAY_LABELS = ["S", "M", "T", "W", "T", "F", "S"];
+
+// ─────────────────────────────────────────
+// Main HabitTracker Component
+// ─────────────────────────────────────────
 
 export function HabitTracker({ groups, habits, notTodayHabits, archivedHabits, todayLogs, date }: Props) {
   const [optimisticLogs, setOptimisticLogs] = useState<Record<string, HabitLogStatus>>(
@@ -64,9 +101,14 @@ export function HabitTracker({ groups, habits, notTodayHabits, archivedHabits, t
   const [newHabitEmoji, setNewHabitEmoji] = useState("");
   const [newHabitSchedule, setNewHabitSchedule] = useState<ScheduleType>("daily");
   const [newHabitDays, setNewHabitDays] = useState<number[]>([]);
-  const [toast, setToast] = useState<{ message: string; habitId?: string; prevStatus?: HabitLogStatus } | null>(null);
+  const [toast, setToast] = useState<{ message: string; habitId?: string; prevStatus?: HabitLogStatus; milestone?: boolean } | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
   const prevAllDoneRef = useRef(false);
+
+  // Skip-note state
+  const [skipNoteHabitId, setSkipNoteHabitId] = useState<string | null>(null);
+  const [skipNoteText, setSkipNoteText] = useState("");
+
   // Group management state
   const [showAddGroup, setShowAddGroup] = useState(false);
   const [newGroupName, setNewGroupName] = useState("");
@@ -75,6 +117,11 @@ export function HabitTracker({ groups, habits, notTodayHabits, archivedHabits, t
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
   const [editGroupName, setEditGroupName] = useState("");
   const [editGroupEmoji, setEditGroupEmoji] = useState("");
+
+  // DnD sensors — require 8px movement before drag starts to avoid conflicting with tap
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
+  );
 
   // Celebration: detect when all habits become completed
   const completedCount = habits.filter((h) => optimisticLogs[h.id] === "completed").length;
@@ -91,11 +138,12 @@ export function HabitTracker({ groups, habits, notTodayHabits, archivedHabits, t
     prevAllDoneRef.current = allDone;
   }, [allDone]);
 
-  function showToastMsg(message: string, habitId?: string, prevStatus?: HabitLogStatus) {
-    setToast({ message, habitId, prevStatus });
-    setTimeout(() => setToast(null), 3000);
+  function showToastMsg(message: string, habitId?: string, prevStatus?: HabitLogStatus, milestone?: boolean) {
+    setToast({ message, habitId, prevStatus, milestone });
+    setTimeout(() => setToast(null), milestone ? 4000 : 3000);
   }
 
+  // ─── Toggle handler ───
   async function handleToggle(habitId: string) {
     const currentStatus = optimisticLogs[habitId];
     const newStatus: HabitLogStatus = currentStatus === "completed" ? "pending" : "completed";
@@ -109,7 +157,23 @@ export function HabitTracker({ groups, habits, notTodayHabits, archivedHabits, t
 
     startTransition(async () => {
       try {
-        await toggleHabitLog(habitId, date, newStatus);
+        const result = await toggleHabitLog(habitId, date, newStatus);
+
+        // Check for streak milestones
+        if (newStatus === "completed" && result.currentStreak > 0) {
+          const milestone = STREAK_MILESTONES.find((m) => m === result.currentStreak);
+          if (milestone) {
+            const msg = MILESTONE_MESSAGES[milestone] || `🔥 ${milestone}-day streak!`;
+            showToastMsg(msg, undefined, undefined, true);
+            // Confetti for bigger milestones
+            if (milestone >= 21) {
+              setShowConfetti(true);
+              setTimeout(() => setShowConfetti(false), 3000);
+            }
+            return; // Don't show the normal "completed" toast
+          }
+        }
+
         if (newStatus === "completed") {
           showToastMsg("Habit completed!", habitId, prevStatus);
         }
@@ -120,13 +184,21 @@ export function HabitTracker({ groups, habits, notTodayHabits, archivedHabits, t
     });
   }
 
-  async function handleSkip(habitId: string) {
+  // ─── Skip handler (with optional note) ───
+  const handleSkipWithNote = useCallback((habitId: string) => {
+    setSkipNoteHabitId(habitId);
+    setSkipNoteText("");
+  }, []);
+
+  async function handleSubmitSkip(habitId: string, note: string | null) {
     const prevStatus = optimisticLogs[habitId] || "pending";
     setOptimisticLogs((prev) => ({ ...prev, [habitId]: "skipped" }));
+    setSkipNoteHabitId(null);
+    setSkipNoteText("");
 
     startTransition(async () => {
       try {
-        await toggleHabitLog(habitId, date, "skipped");
+        await toggleHabitLog(habitId, date, "skipped", note);
         showToastMsg("Marked as skipped", habitId, prevStatus);
       } catch {
         setOptimisticLogs((prev) => ({ ...prev, [habitId]: prevStatus }));
@@ -149,6 +221,7 @@ export function HabitTracker({ groups, habits, notTodayHabits, archivedHabits, t
     });
   }
 
+  // ─── CRUD handlers ───
   async function handleAddHabit(groupId: string) {
     if (!newHabitName.trim()) return;
 
@@ -211,7 +284,7 @@ export function HabitTracker({ groups, habits, notTodayHabits, archivedHabits, t
     });
   }
 
-  // Group management handlers
+  // ─── Group handlers ───
   async function handleAddGroup() {
     if (!newGroupName.trim()) return;
     startTransition(async () => {
@@ -255,6 +328,28 @@ export function HabitTracker({ groups, habits, notTodayHabits, archivedHabits, t
     });
   }
 
+  // ─── DnD handler ───
+  function handleDragEnd(groupId: string, event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const groupHabits = getHabitsForGroup(groupId);
+    const oldIndex = groupHabits.findIndex((h) => h.id === active.id);
+    const newIndex = groupHabits.findIndex((h) => h.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const reordered = arrayMove(groupHabits, oldIndex, newIndex);
+    const orderedIds = reordered.map((h) => h.id);
+
+    startTransition(async () => {
+      try {
+        await reorderHabits(orderedIds);
+      } catch {
+        showToastMsg("Couldn't reorder habits");
+      }
+    });
+  }
+
   function getHabitsForGroup(groupId: string) {
     return habits.filter((h) => h.groupId === groupId);
   }
@@ -263,6 +358,19 @@ export function HabitTracker({ groups, habits, notTodayHabits, archivedHabits, t
 
   return (
     <div className="space-y-6">
+      {/* Skip-note modal overlay */}
+      <AnimatePresence>
+        {skipNoteHabitId && (
+          <SkipNoteModal
+            habitId={skipNoteHabitId}
+            onSubmit={handleSubmitSkip}
+            onCancel={() => { setSkipNoteHabitId(null); setSkipNoteText(""); }}
+            noteText={skipNoteText}
+            setNoteText={setSkipNoteText}
+          />
+        )}
+      </AnimatePresence>
+
       {/* Grouped habits */}
       {groups.map((group) => {
         const groupHabits = getHabitsForGroup(group.id);
@@ -280,187 +388,77 @@ export function HabitTracker({ groups, habits, notTodayHabits, archivedHabits, t
             <div className="p-6 space-y-4">
               {/* Group header */}
               {isEditing ? (
-                <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={editGroupEmoji}
-                    onChange={(e) => setEditGroupEmoji(e.target.value)}
-                    placeholder="\uD83D\uDCCC"
-                    className="w-10 bg-[#FFF8F0]/[0.03] border border-[#FFF8F0]/[0.08] text-[#FFF8F0]/80 px-1.5 py-1.5 text-sm rounded-lg focus:outline-none focus:ring-1 focus:ring-[#FF6B6B]/30 text-center"
-                    maxLength={2}
-                  />
-                  <input
-                    type="text"
-                    value={editGroupName}
-                    onChange={(e) => setEditGroupName(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && handleSaveGroupEdit(group.id)}
-                    className="flex-1 bg-[#FFF8F0]/[0.03] border border-[#FFF8F0]/[0.08] text-[#FFF8F0]/80 px-3 py-1.5 text-sm font-serif rounded-lg focus:outline-none focus:ring-1 focus:ring-[#FF6B6B]/30"
-                    autoFocus
-                  />
-                  <button
-                    onClick={() => handleSaveGroupEdit(group.id)}
-                    className="text-[10px] font-mono uppercase tracking-wider text-[#34D399] hover:text-[#34D399]/80 px-2"
-                  >
-                    Save
-                  </button>
-                  <button
-                    onClick={() => setEditingGroupId(null)}
-                    className="text-[10px] font-mono uppercase tracking-wider text-[#FFF8F0]/30 hover:text-[#FFF8F0]/50 px-2"
-                  >
-                    Cancel
-                  </button>
-                </div>
+                <GroupEditForm
+                  emoji={editGroupEmoji}
+                  name={editGroupName}
+                  setEmoji={setEditGroupEmoji}
+                  setName={setEditGroupName}
+                  onSave={() => handleSaveGroupEdit(group.id)}
+                  onCancel={() => setEditingGroupId(null)}
+                />
               ) : (
-                <div className="flex items-center justify-between">
-                  <div
-                    className="space-y-1 cursor-pointer group"
-                    onClick={() => {
-                      setEditingGroupId(group.id);
-                      setEditGroupName(group.name);
-                      setEditGroupEmoji(group.emoji || "");
-                    }}
-                  >
-                    <h2 className="text-base font-serif italic text-[#FEC89A] group-hover:text-[#FEC89A]/80 transition-colors">
-                      {group.emoji && `${group.emoji} `}{group.name}
-                      <span className="text-[8px] font-mono text-[#FFF8F0]/0 group-hover:text-[#FFF8F0]/20 transition-colors ml-2">
-                        edit
-                      </span>
-                    </h2>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-[10px] font-mono text-[#FFF8F0]/30 tracking-wider">
-                      {groupCompleted}/{groupHabits.length}
-                    </span>
-                    <button
-                      onClick={() => handleDeleteGroup(group.id)}
-                      className="text-[#FFF8F0]/10 hover:text-[#FF6B6B]/50 transition-colors text-xs"
-                      title="Delete group"
-                    >
-                      {"\u00D7"}
-                    </button>
-                  </div>
-                </div>
+                <GroupHeader
+                  group={group}
+                  completed={groupCompleted}
+                  total={groupHabits.length}
+                  onEdit={() => {
+                    setEditingGroupId(group.id);
+                    setEditGroupName(group.name);
+                    setEditGroupEmoji(group.emoji || "");
+                  }}
+                  onDelete={() => handleDeleteGroup(group.id)}
+                />
               )}
 
-              {/* Habit cards */}
-              <div className="space-y-2">
-                {groupHabits.map((habit) => (
-                  <HabitCard
-                    key={habit.id}
-                    habit={habit}
-                    status={optimisticLogs[habit.id] || "pending"}
-                    onToggle={() => handleToggle(habit.id)}
-                    onSkip={() => handleSkip(habit.id)}
-                    onArchive={() => handleArchive(habit.id)}
-                    onEdit={handleEditHabit}
-                  />
-                ))}
-              </div>
+              {/* Habit cards with DnD */}
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={(event) => handleDragEnd(group.id, event)}
+              >
+                <SortableContext
+                  items={groupHabits.map((h) => h.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <div className="space-y-2">
+                    {groupHabits.map((habit) => (
+                      <SortableHabitCard
+                        key={habit.id}
+                        habit={habit}
+                        status={optimisticLogs[habit.id] || "pending"}
+                        note={todayLogs[habit.id]?.note || null}
+                        onToggle={() => handleToggle(habit.id)}
+                        onSkip={() => handleSkipWithNote(habit.id)}
+                        onArchive={() => handleArchive(habit.id)}
+                        onEdit={handleEditHabit}
+                      />
+                    ))}
+                  </div>
+                </SortableContext>
+              </DndContext>
 
               {/* Add habit inline */}
               <AnimatePresence>
                 {addingInGroup === group.id && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    className="overflow-hidden"
-                  >
-                    <div className="space-y-3 pt-2 border-t border-[#FFF8F0]/[0.06]">
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          placeholder="Emoji"
-                          value={newHabitEmoji}
-                          onChange={(e) => setNewHabitEmoji(e.target.value)}
-                          className="w-14 bg-[#FFF8F0]/[0.03] border border-[#FFF8F0]/[0.08] text-[#FFF8F0]/80 px-2 py-2.5 text-sm rounded-xl focus:outline-none focus:ring-1 focus:ring-[#FF6B6B]/30 text-center"
-                          maxLength={2}
-                        />
-                        <input
-                          type="text"
-                          placeholder="Habit name..."
-                          value={newHabitName}
-                          onChange={(e) => setNewHabitName(e.target.value)}
-                          onKeyDown={(e) => e.key === "Enter" && handleAddHabit(group.id)}
-                          className="flex-1 bg-[#FFF8F0]/[0.03] border border-[#FFF8F0]/[0.08] text-[#FFF8F0]/80 px-3 py-2.5 text-sm font-serif rounded-xl focus:outline-none focus:ring-1 focus:ring-[#FF6B6B]/30 placeholder:text-[#FFF8F0]/20"
-                          autoFocus
-                        />
-                      </div>
-
-                      {/* Schedule selector */}
-                      <div className="flex gap-1">
-                        {SCHEDULE_OPTIONS.map((opt) => (
-                          <button
-                            key={opt.value}
-                            onClick={() => setNewHabitSchedule(opt.value)}
-                            className={`flex-1 py-2 text-[10px] font-mono uppercase tracking-wider rounded-lg transition-colors ${
-                              newHabitSchedule === opt.value
-                                ? "bg-[#FF6B6B] text-white"
-                                : "bg-[#FFF8F0]/[0.04] text-[#FFF8F0]/40 hover:text-[#FFF8F0]/60"
-                            }`}
-                          >
-                            {opt.label}
-                          </button>
-                        ))}
-                      </div>
-
-                      {/* Custom days picker */}
-                      <AnimatePresence>
-                        {newHabitSchedule === "custom" && (
-                          <motion.div
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: "auto", opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
-                            className="overflow-hidden"
-                          >
-                            <div className="flex gap-2 justify-center">
-                              {DAY_LABELS.map((label, i) => (
-                                <button
-                                  key={i}
-                                  onClick={() => {
-                                    setNewHabitDays((prev) =>
-                                      prev.includes(i)
-                                        ? prev.filter((d) => d !== i)
-                                        : [...prev, i]
-                                    );
-                                  }}
-                                  className={`w-9 h-9 rounded-full text-xs font-mono transition-colors ${
-                                    newHabitDays.includes(i)
-                                      ? "bg-[#FF6B6B] text-white"
-                                      : "border border-[#FFF8F0]/[0.1] text-[#FFF8F0]/40 hover:border-[#FF6B6B]/50"
-                                  }`}
-                                >
-                                  {label}
-                                </button>
-                              ))}
-                            </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleAddHabit(group.id)}
-                          disabled={!newHabitName.trim() || isPending}
-                          className="flex-1 py-2.5 text-[11px] font-mono uppercase tracking-widest bg-gradient-to-r from-[#FF6B6B] to-[#FEC89A] text-white rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50"
-                        >
-                          Add Habit
-                        </button>
-                        <button
-                          onClick={() => {
-                            setAddingInGroup(null);
-                            setNewHabitName("");
-                            setNewHabitEmoji("");
-                            setNewHabitSchedule("daily");
-                            setNewHabitDays([]);
-                          }}
-                          className="px-4 py-2.5 text-[11px] font-mono uppercase tracking-widest text-[#FFF8F0]/40 hover:text-[#FFF8F0]/70 transition-colors"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  </motion.div>
+                  <AddHabitForm
+                    emoji={newHabitEmoji}
+                    name={newHabitName}
+                    schedule={newHabitSchedule}
+                    days={newHabitDays}
+                    isPending={isPending}
+                    setEmoji={setNewHabitEmoji}
+                    setName={setNewHabitName}
+                    setSchedule={setNewHabitSchedule}
+                    setDays={setNewHabitDays}
+                    onSubmit={() => handleAddHabit(group.id)}
+                    onCancel={() => {
+                      setAddingInGroup(null);
+                      setNewHabitName("");
+                      setNewHabitEmoji("");
+                      setNewHabitSchedule("daily");
+                      setNewHabitDays([]);
+                    }}
+                  />
                 )}
               </AnimatePresence>
 
@@ -492,8 +490,9 @@ export function HabitTracker({ groups, habits, notTodayHabits, archivedHabits, t
                   key={habit.id}
                   habit={habit}
                   status={optimisticLogs[habit.id] || "pending"}
+                  note={todayLogs[habit.id]?.note || null}
                   onToggle={() => handleToggle(habit.id)}
-                  onSkip={() => handleSkip(habit.id)}
+                  onSkip={() => handleSkipWithNote(habit.id)}
                   onArchive={() => handleArchive(habit.id)}
                   onEdit={handleEditHabit}
                 />
@@ -591,7 +590,7 @@ export function HabitTracker({ groups, habits, notTodayHabits, archivedHabits, t
             className="w-full flex items-center justify-between py-3 text-[10px] font-mono uppercase tracking-[0.25em] text-[#FFF8F0]/25 hover:text-[#FFF8F0]/40 transition-colors"
           >
             <span>Not scheduled today ({notTodayHabits.length})</span>
-            <span>{showNotToday ? "\u25BE" : "\u25B8"}</span>
+            <span>{showNotToday ? "▾" : "▸"}</span>
           </button>
           <AnimatePresence>
             {showNotToday && (
@@ -607,8 +606,9 @@ export function HabitTracker({ groups, habits, notTodayHabits, archivedHabits, t
                       key={habit.id}
                       habit={habit}
                       status={optimisticLogs[habit.id] || "pending"}
+                      note={null}
                       onToggle={() => handleToggle(habit.id)}
-                      onSkip={() => handleSkip(habit.id)}
+                      onSkip={() => handleSkipWithNote(habit.id)}
                       onArchive={() => handleArchive(habit.id)}
                       onEdit={handleEditHabit}
                       dimmed
@@ -629,7 +629,7 @@ export function HabitTracker({ groups, habits, notTodayHabits, archivedHabits, t
             className="w-full flex items-center justify-between py-3 text-[10px] font-mono uppercase tracking-[0.25em] text-[#FFF8F0]/20 hover:text-[#FFF8F0]/35 transition-colors"
           >
             <span>Archived ({archivedHabits.length})</span>
-            <span>{showArchived ? "\u25BE" : "\u25B8"}</span>
+            <span>{showArchived ? "▾" : "▸"}</span>
           </button>
           <AnimatePresence>
             {showArchived && (
@@ -677,7 +677,7 @@ export function HabitTracker({ groups, habits, notTodayHabits, archivedHabits, t
             exit={{ opacity: 0, y: -10 }}
             className="glass-card rounded-3xl p-6 text-center border-[#34D399]/30"
           >
-            <p className="text-2xl mb-1">{"\uD83C\uDF89"}</p>
+            <p className="text-2xl mb-1">🎉</p>
             <p className="text-base font-serif italic text-[#34D399]">
               All habits completed today!
             </p>
@@ -695,10 +695,16 @@ export function HabitTracker({ groups, habits, notTodayHabits, archivedHabits, t
             initial={{ y: 50, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 50, opacity: 0 }}
-            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-5 py-3 bg-[#1a1a2e]/95 backdrop-blur border border-[#FFF8F0]/[0.1] rounded-2xl shadow-xl"
+            className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-5 py-3 bg-[#1a1a2e]/95 backdrop-blur border rounded-2xl shadow-xl ${
+              toast.milestone
+                ? "border-[#FFD93D]/30 shadow-[0_0_20px_rgba(255,217,61,0.15)]"
+                : "border-[#FFF8F0]/[0.1]"
+            }`}
           >
-            <span className="text-sm font-serif text-[#FFF8F0]/80">{toast.message}</span>
-            {toast.habitId && toast.prevStatus && (
+            <span className={`text-sm font-serif ${toast.milestone ? "text-[#FFD93D]" : "text-[#FFF8F0]/80"}`}>
+              {toast.message}
+            </span>
+            {toast.habitId && toast.prevStatus && !toast.milestone && (
               <button
                 onClick={handleUndo}
                 className="text-[10px] font-mono uppercase tracking-wider text-[#FF6B6B] hover:text-[#FF6B6B]/80"
@@ -714,25 +720,378 @@ export function HabitTracker({ groups, habits, notTodayHabits, archivedHabits, t
 }
 
 // ─────────────────────────────────────────
-// Individual Habit Card with edit + skip
+// Skip Note Modal
+// ─────────────────────────────────────────
+
+function SkipNoteModal({
+  habitId,
+  onSubmit,
+  onCancel,
+  noteText,
+  setNoteText,
+}: {
+  habitId: string;
+  onSubmit: (habitId: string, note: string | null) => void;
+  onCancel: () => void;
+  noteText: string;
+  setNoteText: (text: string) => void;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+      onClick={onCancel}
+    >
+      <motion.div
+        initial={{ scale: 0.95, y: 10 }}
+        animate={{ scale: 1, y: 0 }}
+        exit={{ scale: 0.95, y: 10 }}
+        className="glass-card rounded-3xl p-6 w-full max-w-sm space-y-4"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h3 className="text-[11px] font-mono uppercase tracking-[0.25em] text-[#60A5FA]/80">
+          Why are you skipping?
+        </h3>
+
+        {/* Quick-select reasons */}
+        <div className="flex flex-wrap gap-2">
+          {SKIP_REASONS.map((reason) => (
+            <button
+              key={reason}
+              onClick={() => setNoteText(reason)}
+              className={`px-3 py-1.5 text-[10px] font-mono uppercase tracking-wider rounded-lg transition-colors ${
+                noteText === reason
+                  ? "bg-[#60A5FA]/20 text-[#60A5FA] border border-[#60A5FA]/30"
+                  : "bg-[#FFF8F0]/[0.04] text-[#FFF8F0]/40 hover:text-[#FFF8F0]/60 border border-transparent"
+              }`}
+            >
+              {reason}
+            </button>
+          ))}
+        </div>
+
+        {/* Free text input */}
+        <input
+          type="text"
+          value={noteText}
+          onChange={(e) => setNoteText(e.target.value)}
+          placeholder="Or type a reason..."
+          className="w-full bg-[#FFF8F0]/[0.03] border border-[#FFF8F0]/[0.08] text-[#FFF8F0]/80 px-3 py-2.5 text-sm font-serif rounded-xl focus:outline-none focus:ring-1 focus:ring-[#60A5FA]/30 placeholder:text-[#FFF8F0]/20"
+          autoFocus
+          onKeyDown={(e) => {
+            if (e.key === "Enter") onSubmit(habitId, noteText || null);
+          }}
+        />
+
+        <div className="flex gap-2">
+          <button
+            onClick={() => onSubmit(habitId, noteText || null)}
+            className="flex-1 py-2.5 text-[11px] font-mono uppercase tracking-widest bg-[#60A5FA]/20 text-[#60A5FA] border border-[#60A5FA]/30 rounded-xl hover:bg-[#60A5FA]/30 transition-colors"
+          >
+            {noteText ? "Skip with note" : "Skip"}
+          </button>
+          <button
+            onClick={onCancel}
+            className="px-4 py-2.5 text-[11px] font-mono uppercase tracking-widest text-[#FFF8F0]/40 hover:text-[#FFF8F0]/70 transition-colors"
+          >
+            Cancel
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+// ─────────────────────────────────────────
+// Group Header (non-editing state)
+// ─────────────────────────────────────────
+
+function GroupHeader({
+  group,
+  completed,
+  total,
+  onEdit,
+  onDelete,
+}: {
+  group: HabitGroup;
+  completed: number;
+  total: number;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <div className="flex items-center justify-between">
+      <div
+        className="space-y-1 cursor-pointer group"
+        onClick={onEdit}
+      >
+        <h2 className="text-base font-serif italic text-[#FEC89A] group-hover:text-[#FEC89A]/80 transition-colors">
+          {group.emoji && `${group.emoji} `}{group.name}
+          <span className="text-[8px] font-mono text-[#FFF8F0]/0 group-hover:text-[#FFF8F0]/20 transition-colors ml-2">
+            edit
+          </span>
+        </h2>
+      </div>
+      <div className="flex items-center gap-3">
+        <span className="text-[10px] font-mono text-[#FFF8F0]/30 tracking-wider">
+          {completed}/{total}
+        </span>
+        <button
+          onClick={onDelete}
+          className="text-[#FFF8F0]/10 hover:text-[#FF6B6B]/50 transition-colors text-xs"
+          title="Delete group"
+        >
+          ×
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────
+// Group Edit Form
+// ─────────────────────────────────────────
+
+function GroupEditForm({
+  emoji,
+  name,
+  setEmoji,
+  setName,
+  onSave,
+  onCancel,
+}: {
+  emoji: string;
+  name: string;
+  setEmoji: (v: string) => void;
+  setName: (v: string) => void;
+  onSave: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      <input
+        type="text"
+        value={emoji}
+        onChange={(e) => setEmoji(e.target.value)}
+        placeholder="📌"
+        className="w-10 bg-[#FFF8F0]/[0.03] border border-[#FFF8F0]/[0.08] text-[#FFF8F0]/80 px-1.5 py-1.5 text-sm rounded-lg focus:outline-none focus:ring-1 focus:ring-[#FF6B6B]/30 text-center"
+        maxLength={2}
+      />
+      <input
+        type="text"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        onKeyDown={(e) => e.key === "Enter" && onSave()}
+        className="flex-1 bg-[#FFF8F0]/[0.03] border border-[#FFF8F0]/[0.08] text-[#FFF8F0]/80 px-3 py-1.5 text-sm font-serif rounded-lg focus:outline-none focus:ring-1 focus:ring-[#FF6B6B]/30"
+        autoFocus
+      />
+      <button
+        onClick={onSave}
+        className="text-[10px] font-mono uppercase tracking-wider text-[#34D399] hover:text-[#34D399]/80 px-2"
+      >
+        Save
+      </button>
+      <button
+        onClick={onCancel}
+        className="text-[10px] font-mono uppercase tracking-wider text-[#FFF8F0]/30 hover:text-[#FFF8F0]/50 px-2"
+      >
+        Cancel
+      </button>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────
+// Add Habit Form
+// ─────────────────────────────────────────
+
+function AddHabitForm({
+  emoji,
+  name,
+  schedule,
+  days,
+  isPending,
+  setEmoji,
+  setName,
+  setSchedule,
+  setDays,
+  onSubmit,
+  onCancel,
+}: {
+  emoji: string;
+  name: string;
+  schedule: ScheduleType;
+  days: number[];
+  isPending: boolean;
+  setEmoji: (v: string) => void;
+  setName: (v: string) => void;
+  setSchedule: (v: ScheduleType) => void;
+  setDays: (v: number[] | ((prev: number[]) => number[])) => void;
+  onSubmit: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <motion.div
+      initial={{ height: 0, opacity: 0 }}
+      animate={{ height: "auto", opacity: 1 }}
+      exit={{ height: 0, opacity: 0 }}
+      className="overflow-hidden"
+    >
+      <div className="space-y-3 pt-2 border-t border-[#FFF8F0]/[0.06]">
+        <div className="flex gap-2">
+          <input
+            type="text"
+            placeholder="Emoji"
+            value={emoji}
+            onChange={(e) => setEmoji(e.target.value)}
+            className="w-14 bg-[#FFF8F0]/[0.03] border border-[#FFF8F0]/[0.08] text-[#FFF8F0]/80 px-2 py-2.5 text-sm rounded-xl focus:outline-none focus:ring-1 focus:ring-[#FF6B6B]/30 text-center"
+            maxLength={2}
+          />
+          <input
+            type="text"
+            placeholder="Habit name..."
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && onSubmit()}
+            className="flex-1 bg-[#FFF8F0]/[0.03] border border-[#FFF8F0]/[0.08] text-[#FFF8F0]/80 px-3 py-2.5 text-sm font-serif rounded-xl focus:outline-none focus:ring-1 focus:ring-[#FF6B6B]/30 placeholder:text-[#FFF8F0]/20"
+            autoFocus
+          />
+        </div>
+
+        {/* Schedule selector */}
+        <div className="flex gap-1">
+          {SCHEDULE_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => setSchedule(opt.value)}
+              className={`flex-1 py-2 text-[10px] font-mono uppercase tracking-wider rounded-lg transition-colors ${
+                schedule === opt.value
+                  ? "bg-[#FF6B6B] text-white"
+                  : "bg-[#FFF8F0]/[0.04] text-[#FFF8F0]/40 hover:text-[#FFF8F0]/60"
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Custom days picker */}
+        <AnimatePresence>
+          {schedule === "custom" && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="overflow-hidden"
+            >
+              <div className="flex gap-2 justify-center">
+                {DAY_LABELS.map((label, i) => (
+                  <button
+                    key={i}
+                    onClick={() => {
+                      setDays((prev: number[]) =>
+                        prev.includes(i) ? prev.filter((d: number) => d !== i) : [...prev, i]
+                      );
+                    }}
+                    className={`w-9 h-9 rounded-full text-xs font-mono transition-colors ${
+                      days.includes(i)
+                        ? "bg-[#FF6B6B] text-white"
+                        : "border border-[#FFF8F0]/[0.1] text-[#FFF8F0]/40 hover:border-[#FF6B6B]/50"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <div className="flex gap-2">
+          <button
+            onClick={onSubmit}
+            disabled={!name.trim() || isPending}
+            className="flex-1 py-2.5 text-[11px] font-mono uppercase tracking-widest bg-gradient-to-r from-[#FF6B6B] to-[#FEC89A] text-white rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50"
+          >
+            Add Habit
+          </button>
+          <button
+            onClick={onCancel}
+            className="px-4 py-2.5 text-[11px] font-mono uppercase tracking-widest text-[#FFF8F0]/40 hover:text-[#FFF8F0]/70 transition-colors"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+// ─────────────────────────────────────────
+// Sortable Habit Card (DnD wrapper)
+// ─────────────────────────────────────────
+
+function SortableHabitCard(props: {
+  habit: Habit;
+  status: HabitLogStatus;
+  note: string | null;
+  onToggle: () => void;
+  onSkip: () => void;
+  onArchive: () => void;
+  onEdit: (id: string, fields: { name?: string; emoji?: string | null; scheduleType?: ScheduleType; scheduleDays?: number[] }) => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: props.habit.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 10 : undefined,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style}>
+      <HabitCard
+        {...props}
+        dragHandleProps={{ ...attributes, ...listeners }}
+      />
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────
+// Individual Habit Card with edit + skip + notes + drag handle
 // ─────────────────────────────────────────
 
 function HabitCard({
   habit,
   status,
+  note,
   onToggle,
   onSkip,
   onArchive,
   onEdit,
   dimmed,
+  dragHandleProps,
 }: {
   habit: Habit;
   status: HabitLogStatus;
+  note: string | null;
   onToggle: () => void;
   onSkip: () => void;
   onArchive: () => void;
   onEdit: (id: string, fields: { name?: string; emoji?: string | null; scheduleType?: ScheduleType; scheduleDays?: number[] }) => void;
   dimmed?: boolean;
+  dragHandleProps?: Record<string, unknown>;
 }) {
   const isCompleted = status === "completed";
   const isSkipped = status === "skipped";
@@ -857,7 +1216,6 @@ function HabitCard({
       whileTap={{ scale: 0.98 }}
       animate={isCompleted ? { scale: [1, 1.02, 1] } : {}}
       transition={{ type: "spring", stiffness: 400, damping: 25 }}
-      onClick={onToggle}
       className={`relative flex items-center gap-3 px-4 py-3.5 rounded-2xl border cursor-pointer transition-all select-none ${
         isCompleted
           ? "border-[#34D399]/40 bg-[#34D399]/5 shadow-[inset_4px_0_0_#34D399]"
@@ -868,8 +1226,27 @@ function HabitCard({
           : "border-[#FFF8F0]/[0.08] hover:border-[#FFF8F0]/[0.15] bg-[#FFF8F0]/[0.02]"
       }`}
     >
+      {/* Drag handle */}
+      {dragHandleProps && (
+        <div
+          {...dragHandleProps}
+          className="text-[#FFF8F0]/15 hover:text-[#FFF8F0]/40 transition-colors cursor-grab active:cursor-grabbing shrink-0 touch-none"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <svg width="12" height="16" viewBox="0 0 12 16" fill="currentColor">
+            <circle cx="3" cy="2" r="1.5" />
+            <circle cx="9" cy="2" r="1.5" />
+            <circle cx="3" cy="8" r="1.5" />
+            <circle cx="9" cy="8" r="1.5" />
+            <circle cx="3" cy="14" r="1.5" />
+            <circle cx="9" cy="14" r="1.5" />
+          </svg>
+        </div>
+      )}
+
       {/* Checkbox indicator */}
       <div
+        onClick={onToggle}
         className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all shrink-0 ${
           isCompleted
             ? "border-[#34D399] bg-[#34D399]"
@@ -914,7 +1291,7 @@ function HabitCard({
       </div>
 
       {/* Habit info */}
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0" onClick={onToggle}>
         <span
           className={`text-sm font-serif block truncate ${
             isCompleted
@@ -928,7 +1305,12 @@ function HabitCard({
         </span>
         {isSkipped && (
           <span className="text-[9px] font-mono text-[#60A5FA]/40 uppercase tracking-wider">
-            Skipped
+            Skipped{note ? ` — ${note}` : ""}
+          </span>
+        )}
+        {!isSkipped && note && (
+          <span className="text-[9px] font-mono text-[#FFF8F0]/20 italic block truncate">
+            {note}
           </span>
         )}
       </div>
@@ -937,7 +1319,7 @@ function HabitCard({
       {habit.currentStreak >= 2 && (
         <div className="flex flex-col items-end shrink-0" onClick={(e) => e.stopPropagation()}>
           <span className="text-[11px] font-mono text-[#FF6B6B]/80 font-semibold">
-            {"\uD83D\uDD25"}{habit.currentStreak}
+            🔥{habit.currentStreak}
           </span>
           {habit.bestStreak > habit.currentStreak && (
             <span className="text-[8px] font-mono text-[#FFF8F0]/20">
@@ -955,7 +1337,7 @@ function HabitCard({
         }}
         className="text-[#FFF8F0]/20 hover:text-[#FFF8F0]/50 transition-colors shrink-0 px-1"
       >
-        {"\u22EF"}
+        ⋯
       </button>
 
       {/* Context actions dropdown */}
