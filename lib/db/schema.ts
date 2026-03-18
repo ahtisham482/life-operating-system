@@ -96,6 +96,7 @@ export type HabitLogStatus = "completed" | "skipped" | "missed" | "pending";
 
 export const habitGroups = pgTable("habit_groups", {
   id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").notNull(),
   name: text("name").notNull(),
   emoji: text("emoji"),
   timeOfDay: text("time_of_day").$type<TimeOfDay>().default("anytime").notNull(),
@@ -106,6 +107,7 @@ export const habitGroups = pgTable("habit_groups", {
 
 export const habits = pgTable("habits", {
   id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").notNull(),
   name: text("name").notNull(),
   emoji: text("emoji"),
   description: text("description"),
@@ -123,6 +125,7 @@ export const habits = pgTable("habits", {
 export const habitLogs = pgTable("habit_logs", {
   id: uuid("id").defaultRandom().primaryKey(),
   habitId: uuid("habit_id").notNull().references(() => habits.id, { onDelete: "cascade" }),
+  userId: uuid("user_id").notNull(),
   date: date("date").notNull(),
   status: text("status").$type<HabitLogStatus>().default("pending").notNull(),
   note: text("note"),

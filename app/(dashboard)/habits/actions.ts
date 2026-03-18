@@ -6,14 +6,6 @@ import { logMirrorSignal } from "@/lib/mirror/signals";
 import type { ScheduleType, HabitLogStatus } from "@/lib/db/schema";
 import { getScheduledDaySet } from "@/lib/habits";
 
-/** Get the authenticated user's ID, or throw */
-async function getUserId() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not authenticated");
-  return user.id;
-}
-
 // ─────────────────────────────────────────
 // HABIT CRUD
 // ─────────────────────────────────────────
@@ -26,19 +18,31 @@ export async function createHabit(
   scheduleDays: number[]
 ) {
   const supabase = await createClient();
-  const userId = await getUserId();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
 
   // Get next sort_order for this group
-  const { data: existing } = await supabase
-    .from("habits")
-    .select("sort_order")
-    .eq("group_id", groupId ?? "")
-    .order("sort_order", { ascending: false })
-    .limit(1);
-  const nextSort = existing && existing.length > 0 ? existing[0].sort_order + 1 : 0;
+  let nextSort = 0;
+  if (groupId) {
+    const { data: existing } = await supabase
+      .from("habits")
+      .select("sort_order")
+      .eq("group_id", groupId)
+      .order("sort_order", { ascending: false })
+      .limit(1);
+    nextSort = existing && existing.length > 0 ? existing[0].sort_order + 1 : 0;
+  } else {
+    const { data: existing } = await supabase
+      .from("habits")
+      .select("sort_order")
+      .is("group_id", null)
+      .order("sort_order", { ascending: false })
+      .limit(1);
+    nextSort = existing && existing.length > 0 ? existing[0].sort_order + 1 : 0;
+  }
 
   const { error } = await supabase.from("habits").insert({
-    user_id: userId,
+    user_id: user.id,
     name,
     emoji: emoji || null,
     group_id: groupId,
@@ -125,7 +129,8 @@ export async function createHabitGroup(
   timeOfDay: "morning" | "afternoon" | "evening" | "anytime"
 ) {
   const supabase = await createClient();
-  const userId = await getUserId();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
 
   const { data: existing } = await supabase
     .from("habit_groups")
@@ -135,7 +140,7 @@ export async function createHabitGroup(
   const nextSort = existing && existing.length > 0 ? existing[0].sort_order + 1 : 0;
 
   const { error } = await supabase.from("habit_groups").insert({
-    user_id: userId,
+    user_id: user.id,
     name,
     emoji: emoji || null,
     time_of_day: timeOfDay,
@@ -196,13 +201,14 @@ export async function toggleHabitLog(
   newStatus: HabitLogStatus
 ) {
   const supabase = await createClient();
-  const userId = await getUserId();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
 
-  // Upsert the log entry
+  // Step 1: Upsert the log entry — THIS is the critical save
   const { error } = await supabase.from("habit_logs").upsert(
     {
       habit_id: habitId,
-      user_id: userId,
+      user_id: user.id,
       date,
       status: newStatus,
     },
@@ -210,25 +216,35 @@ export async function toggleHabitLog(
   );
   if (error) throw new Error(error.message);
 
-  // Recompute streak for this habit
-  await recomputeStreak(habitId);
+  // Step 2: Post-save operations (non-blocking — failures here don't affect the save)
+  try {
+    await recomputeStreak(supabase, habitId);
+  } catch {
+    // Streak recomputation failed — not critical, log silently
+    console.error("Streak recomputation failed for habit", habitId);
+  }
 
-  // Fire Mirror AI signal with today's summary
-  const { data: summary } = await supabase
-    .from("habit_completion_summary")
-    .select("*")
-    .eq("date", date)
-    .limit(1);
+  // Step 3: Fire Mirror AI signal (non-blocking)
+  try {
+    const { data: summary } = await supabase
+      .from("habit_completion_summary")
+      .select("*")
+      .eq("date", date)
+      .limit(1);
 
-  const row = summary?.[0];
-  logMirrorSignal({
-    type: "habit",
-    context: {
-      completion_rate: row?.completion_rate ?? 0,
-      habits_done: row?.habits_completed ?? 0,
-      total_habits: row?.habits_total ?? 0,
-    },
-  });
+    const row = summary?.[0];
+    logMirrorSignal({
+      type: "habit",
+      context: {
+        completion_rate: row?.completion_rate ?? 0,
+        habits_done: row?.habits_completed ?? 0,
+        total_habits: row?.habits_total ?? 0,
+      },
+    });
+  } catch {
+    // Mirror signal failed — not critical
+    console.error("Mirror signal failed for habit log");
+  }
 
   revalidatePath("/habits");
   revalidatePath("/dashboard");
@@ -241,16 +257,17 @@ export async function toggleHabitLog(
 /**
  * Recompute current_streak and best_streak for a habit.
  *
- * Algorithm (from plan):
+ * Algorithm:
  * - Walk backwards through scheduled days from today
  * - completed → streak++, reset grace
  * - skipped → ignore (safe, doesn't affect streak)
  * - missed/no-log → if grace not used, use grace; else break
  * - Grace resets after each completion
  */
-async function recomputeStreak(habitId: string) {
-  const supabase = await createClient();
-
+async function recomputeStreak(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  habitId: string
+) {
   // Get the habit's schedule
   const { data: habitRow } = await supabase
     .from("habits")
@@ -259,7 +276,7 @@ async function recomputeStreak(habitId: string) {
     .single();
   if (!habitRow) return;
 
-  // Get logs for this habit, most recent first (up to 120 days for best streak)
+  // Get logs for this habit, most recent first
   const { data: logs } = await supabase
     .from("habit_logs")
     .select("date, status")
@@ -282,10 +299,9 @@ async function recomputeStreak(habitId: string) {
   for (let i = 0; i < 400; i++) {
     const d = new Date(today);
     d.setDate(d.getDate() - i);
-    const dayOfWeek = d.getDay(); // 0=Sun..6=Sat
+    const dayOfWeek = d.getDay();
     const dateStr = d.toISOString().slice(0, 10);
 
-    // Skip non-scheduled days
     if (!scheduledDays.has(dayOfWeek)) continue;
 
     const status = logMap.get(dateStr);
@@ -294,10 +310,8 @@ async function recomputeStreak(habitId: string) {
       currentStreak++;
       gracePeriodUsed = false;
     } else if (status === "skipped") {
-      // Skip is SAFE — doesn't count, doesn't use grace
       continue;
     } else {
-      // missed, pending, or no log
       if (!gracePeriodUsed) {
         gracePeriodUsed = true;
         continue;
@@ -312,7 +326,6 @@ async function recomputeStreak(habitId: string) {
   let runStreak = 0;
   let runGraceUsed = false;
 
-  // Walk from oldest to newest for best streak
   const sortedDates: string[] = [];
   for (let i = 399; i >= 0; i--) {
     const d = new Date(today);
@@ -341,7 +354,7 @@ async function recomputeStreak(habitId: string) {
     }
   }
 
-  // Also consider existing best_streak (may be from before our 400-day window)
+  // Preserve existing best_streak if higher
   const { data: existingHabit } = await supabase
     .from("habits")
     .select("best_streak")
@@ -355,5 +368,3 @@ async function recomputeStreak(habitId: string) {
     .update({ current_streak: currentStreak, best_streak: finalBest })
     .eq("id", habitId);
 }
-
-// isHabitScheduledForDay and getScheduledDaySet are in @/lib/habits
