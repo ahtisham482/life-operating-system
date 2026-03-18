@@ -27,8 +27,21 @@ import {
   createHabitGroup,
   updateHabitGroup,
   deleteHabitGroup,
+  adoptTemplate,
+  submitDiagnosis,
+  dismissDiagnosis,
+  bulkCompleteToday,
 } from "./actions";
-import type { Habit, HabitGroup, HabitLog, HabitLogStatus, ScheduleType } from "@/lib/db/schema";
+import { HabitInterviewModal } from "./habit-interview";
+import type {
+  Habit,
+  HabitGroup,
+  HabitLog,
+  HabitLogStatus,
+  ScheduleType,
+  HabitTemplate,
+  DiagnosisType,
+} from "@/lib/db/schema";
 
 // ─────────────────────────────────────────
 // Constants
@@ -47,6 +60,12 @@ const MILESTONE_MESSAGES: Record<number, string> = {
 
 const SKIP_REASONS = ["Traveling", "Sick", "Rest day", "Chose to skip"];
 
+type DiagnosisFlag = {
+  habitId: string;
+  missCount: number;
+  diagnosisId?: string;
+};
+
 type Props = {
   groups: HabitGroup[];
   habits: Habit[];
@@ -54,6 +73,12 @@ type Props = {
   archivedHabits: Habit[];
   todayLogs: Record<string, HabitLog>;
   date: string;
+  templates?: HabitTemplate[];
+  diagnosisFlags?: DiagnosisFlag[];
+  keystoneHabitIds?: string[];
+  recoveryMessage?: string | null;
+  perfectDayCount?: number;
+  daysOfData?: number;
 };
 
 const GROUP_GRADIENTS: Record<string, string> = {
@@ -79,29 +104,57 @@ const TIME_OF_DAY_OPTIONS = [
 
 const DAY_LABELS = ["S", "M", "T", "W", "T", "F", "S"];
 
+const TEMPLATE_CATEGORIES = [
+  "Health & Fitness",
+  "Mindfulness",
+  "Productivity",
+  "Learning",
+  "Finance",
+  "Self-Care",
+];
+
 // ─────────────────────────────────────────
 // Main HabitTracker Component
 // ─────────────────────────────────────────
 
-export function HabitTracker({ groups, habits, notTodayHabits, archivedHabits, todayLogs, date }: Props) {
-  const [optimisticLogs, setOptimisticLogs] = useState<Record<string, HabitLogStatus>>(
-    () => {
-      const map: Record<string, HabitLogStatus> = {};
-      for (const [habitId, log] of Object.entries(todayLogs)) {
-        map[habitId] = log.status;
-      }
-      return map;
+export function HabitTracker({
+  groups,
+  habits,
+  notTodayHabits,
+  archivedHabits,
+  todayLogs,
+  date,
+  templates = [],
+  diagnosisFlags = [],
+  keystoneHabitIds = [],
+  recoveryMessage,
+  perfectDayCount = 0,
+  daysOfData = 0,
+}: Props) {
+  const [optimisticLogs, setOptimisticLogs] = useState<
+    Record<string, HabitLogStatus>
+  >(() => {
+    const map: Record<string, HabitLogStatus> = {};
+    for (const [habitId, log] of Object.entries(todayLogs)) {
+      map[habitId] = log.status;
     }
-  );
+    return map;
+  });
   const [isPending, startTransition] = useTransition();
   const [showNotToday, setShowNotToday] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
   const [addingInGroup, setAddingInGroup] = useState<string | null>(null);
   const [newHabitName, setNewHabitName] = useState("");
   const [newHabitEmoji, setNewHabitEmoji] = useState("");
-  const [newHabitSchedule, setNewHabitSchedule] = useState<ScheduleType>("daily");
+  const [newHabitSchedule, setNewHabitSchedule] =
+    useState<ScheduleType>("daily");
   const [newHabitDays, setNewHabitDays] = useState<number[]>([]);
-  const [toast, setToast] = useState<{ message: string; habitId?: string; prevStatus?: HabitLogStatus; milestone?: boolean } | null>(null);
+  const [toast, setToast] = useState<{
+    message: string;
+    habitId?: string;
+    prevStatus?: HabitLogStatus;
+    milestone?: boolean;
+  } | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
   const prevAllDoneRef = useRef(false);
 
@@ -113,18 +166,29 @@ export function HabitTracker({ groups, habits, notTodayHabits, archivedHabits, t
   const [showAddGroup, setShowAddGroup] = useState(false);
   const [newGroupName, setNewGroupName] = useState("");
   const [newGroupEmoji, setNewGroupEmoji] = useState("");
-  const [newGroupTimeOfDay, setNewGroupTimeOfDay] = useState<"morning" | "afternoon" | "evening" | "anytime">("anytime");
+  const [newGroupTimeOfDay, setNewGroupTimeOfDay] = useState<
+    "morning" | "afternoon" | "evening" | "anytime"
+  >("anytime");
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
   const [editGroupName, setEditGroupName] = useState("");
   const [editGroupEmoji, setEditGroupEmoji] = useState("");
 
+  // AI Interview state
+  const [interviewHabitId, setInterviewHabitId] = useState<string | null>(null);
+  const [interviewHabitName, setInterviewHabitName] = useState("");
+
+  // Template library state
+  const [showTemplates, setShowTemplates] = useState(false);
+
   // DnD sensors — require 8px movement before drag starts to avoid conflicting with tap
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
   );
 
   // Celebration: detect when all habits become completed
-  const completedCount = habits.filter((h) => optimisticLogs[h.id] === "completed").length;
+  const completedCount = habits.filter(
+    (h) => optimisticLogs[h.id] === "completed",
+  ).length;
   const allDone = habits.length > 0 && completedCount === habits.length;
 
   useEffect(() => {
@@ -138,7 +202,12 @@ export function HabitTracker({ groups, habits, notTodayHabits, archivedHabits, t
     prevAllDoneRef.current = allDone;
   }, [allDone]);
 
-  function showToastMsg(message: string, habitId?: string, prevStatus?: HabitLogStatus, milestone?: boolean) {
+  function showToastMsg(
+    message: string,
+    habitId?: string,
+    prevStatus?: HabitLogStatus,
+    milestone?: boolean,
+  ) {
     setToast({ message, habitId, prevStatus, milestone });
     setTimeout(() => setToast(null), milestone ? 4000 : 3000);
   }
@@ -146,12 +215,17 @@ export function HabitTracker({ groups, habits, notTodayHabits, archivedHabits, t
   // ─── Toggle handler ───
   async function handleToggle(habitId: string) {
     const currentStatus = optimisticLogs[habitId];
-    const newStatus: HabitLogStatus = currentStatus === "completed" ? "pending" : "completed";
+    const newStatus: HabitLogStatus =
+      currentStatus === "completed" ? "pending" : "completed";
     const prevStatus = currentStatus || "pending";
 
     setOptimisticLogs((prev) => ({ ...prev, [habitId]: newStatus }));
 
-    if (newStatus === "completed" && typeof navigator !== "undefined" && "vibrate" in navigator) {
+    if (
+      newStatus === "completed" &&
+      typeof navigator !== "undefined" &&
+      "vibrate" in navigator
+    ) {
       navigator.vibrate(50);
     }
 
@@ -161,16 +235,18 @@ export function HabitTracker({ groups, habits, notTodayHabits, archivedHabits, t
 
         // Check for streak milestones
         if (newStatus === "completed" && result.currentStreak > 0) {
-          const milestone = STREAK_MILESTONES.find((m) => m === result.currentStreak);
+          const milestone = STREAK_MILESTONES.find(
+            (m) => m === result.currentStreak,
+          );
           if (milestone) {
-            const msg = MILESTONE_MESSAGES[milestone] || `🔥 ${milestone}-day streak!`;
+            const msg =
+              MILESTONE_MESSAGES[milestone] || `🔥 ${milestone}-day streak!`;
             showToastMsg(msg, undefined, undefined, true);
-            // Confetti for bigger milestones
             if (milestone >= 21) {
               setShowConfetti(true);
               setTimeout(() => setShowConfetti(false), 3000);
             }
-            return; // Don't show the normal "completed" toast
+            return;
           }
         }
 
@@ -225,22 +301,35 @@ export function HabitTracker({ groups, habits, notTodayHabits, archivedHabits, t
   async function handleAddHabit(groupId: string) {
     if (!newHabitName.trim()) return;
 
-    const scheduleDays = newHabitSchedule === "weekdays"
-      ? [1, 2, 3, 4, 5]
-      : newHabitSchedule === "weekends"
-      ? [0, 6]
-      : newHabitSchedule === "custom"
-      ? newHabitDays
-      : [];
+    const scheduleDays =
+      newHabitSchedule === "weekdays"
+        ? [1, 2, 3, 4, 5]
+        : newHabitSchedule === "weekends"
+          ? [0, 6]
+          : newHabitSchedule === "custom"
+            ? newHabitDays
+            : [];
+
+    const habitNameForInterview = newHabitName.trim();
 
     startTransition(async () => {
       try {
-        await createHabit(newHabitName.trim(), newHabitEmoji || null, groupId, newHabitSchedule, scheduleDays);
+        const newId = await createHabit(
+          newHabitName.trim(),
+          newHabitEmoji || null,
+          groupId,
+          newHabitSchedule,
+          scheduleDays,
+        );
         setNewHabitName("");
         setNewHabitEmoji("");
         setNewHabitSchedule("daily");
         setNewHabitDays([]);
         setAddingInGroup(null);
+
+        // Open AI interview after creation
+        setInterviewHabitId(newId);
+        setInterviewHabitName(habitNameForInterview);
       } catch {
         showToastMsg("Couldn't create habit");
       }
@@ -272,7 +361,16 @@ export function HabitTracker({ groups, habits, notTodayHabits, archivedHabits, t
 
   async function handleEditHabit(
     id: string,
-    fields: { name?: string; emoji?: string | null; scheduleType?: ScheduleType; scheduleDays?: number[] }
+    fields: {
+      name?: string;
+      emoji?: string | null;
+      scheduleType?: ScheduleType;
+      scheduleDays?: number[];
+      purpose?: string | null;
+      identity?: string | null;
+      tinyVersion?: string | null;
+      anchorText?: string | null;
+    },
   ) {
     startTransition(async () => {
       try {
@@ -284,12 +382,76 @@ export function HabitTracker({ groups, habits, notTodayHabits, archivedHabits, t
     });
   }
 
+  // ─── Template adopt handler ───
+  async function handleAdoptTemplate(
+    templateId: string,
+    groupId: string | null,
+  ) {
+    startTransition(async () => {
+      try {
+        await adoptTemplate(templateId, groupId);
+        showToastMsg("Habit added from template!");
+        setShowTemplates(false);
+      } catch {
+        showToastMsg("Couldn't add template");
+      }
+    });
+  }
+
+  // ─── Diagnosis handler ───
+  async function handleDiagnosis(habitId: string, diagnosis: DiagnosisType) {
+    startTransition(async () => {
+      try {
+        await submitDiagnosis(habitId, diagnosis);
+        showToastMsg("Thanks for the feedback");
+      } catch {
+        showToastMsg("Couldn't save diagnosis");
+      }
+    });
+  }
+
+  async function handleDismissDiagnosis(diagnosisId: string) {
+    startTransition(async () => {
+      try {
+        await dismissDiagnosis(diagnosisId);
+      } catch {
+        // Silent
+      }
+    });
+  }
+
+  // ─── Bulk complete (recovery) ───
+  async function handleBulkComplete() {
+    const pendingIds = habits
+      .filter((h) => optimisticLogs[h.id] !== "completed")
+      .map((h) => h.id);
+    if (pendingIds.length === 0) return;
+
+    // Optimistic update
+    const updates: Record<string, HabitLogStatus> = {};
+    for (const id of pendingIds) updates[id] = "completed";
+    setOptimisticLogs((prev) => ({ ...prev, ...updates }));
+
+    startTransition(async () => {
+      try {
+        await bulkCompleteToday(pendingIds, date);
+        showToastMsg("All habits marked complete!");
+      } catch {
+        showToastMsg("Couldn't complete all habits");
+      }
+    });
+  }
+
   // ─── Group handlers ───
   async function handleAddGroup() {
     if (!newGroupName.trim()) return;
     startTransition(async () => {
       try {
-        await createHabitGroup(newGroupName.trim(), newGroupEmoji || null, newGroupTimeOfDay);
+        await createHabitGroup(
+          newGroupName.trim(),
+          newGroupEmoji || null,
+          newGroupTimeOfDay,
+        );
         setNewGroupName("");
         setNewGroupEmoji("");
         setNewGroupTimeOfDay("anytime");
@@ -317,7 +479,8 @@ export function HabitTracker({ groups, habits, notTodayHabits, archivedHabits, t
   }
 
   async function handleDeleteGroup(groupId: string) {
-    if (!confirm("Delete this group? Habits inside will become ungrouped.")) return;
+    if (!confirm("Delete this group? Habits inside will become ungrouped."))
+      return;
     startTransition(async () => {
       try {
         await deleteHabitGroup(groupId);
@@ -356,151 +519,288 @@ export function HabitTracker({ groups, habits, notTodayHabits, archivedHabits, t
 
   const ungroupedHabits = habits.filter((h) => !h.groupId);
 
+  // Check if this is a new user with 0 habits (show templates)
+  const hasNoHabits = habits.length === 0 && notTodayHabits.length === 0;
+
   return (
     <div className="space-y-6">
+      {/* AI Interview Modal */}
+      <AnimatePresence>
+        {interviewHabitId && (
+          <HabitInterviewModal
+            habitId={interviewHabitId}
+            habitName={interviewHabitName}
+            onClose={() => {
+              setInterviewHabitId(null);
+              setInterviewHabitName("");
+            }}
+          />
+        )}
+      </AnimatePresence>
+
       {/* Skip-note modal overlay */}
       <AnimatePresence>
         {skipNoteHabitId && (
           <SkipNoteModal
             habitId={skipNoteHabitId}
             onSubmit={handleSubmitSkip}
-            onCancel={() => { setSkipNoteHabitId(null); setSkipNoteText(""); }}
+            onCancel={() => {
+              setSkipNoteHabitId(null);
+              setSkipNoteText("");
+            }}
             noteText={skipNoteText}
             setNoteText={setSkipNoteText}
           />
         )}
       </AnimatePresence>
 
-      {/* Grouped habits */}
-      {groups.map((group) => {
-        const groupHabits = getHabitsForGroup(group.id);
-        if (groupHabits.length === 0 && addingInGroup !== group.id) return null;
-
-        const groupCompleted = groupHabits.filter(
-          (h) => optimisticLogs[h.id] === "completed"
-        ).length;
-
-        const isEditing = editingGroupId === group.id;
-
-        return (
-          <div key={group.id} className="glass-card rounded-3xl overflow-hidden hover:border-[#FFF8F0]/[0.08] transition-all">
-            <div className={`h-1 ${GROUP_GRADIENTS[group.timeOfDay] || GROUP_GRADIENTS.anytime}`} />
-            <div className="p-6 space-y-4">
-              {/* Group header */}
-              {isEditing ? (
-                <GroupEditForm
-                  emoji={editGroupEmoji}
-                  name={editGroupName}
-                  setEmoji={setEditGroupEmoji}
-                  setName={setEditGroupName}
-                  onSave={() => handleSaveGroupEdit(group.id)}
-                  onCancel={() => setEditingGroupId(null)}
-                />
-              ) : (
-                <GroupHeader
-                  group={group}
-                  completed={groupCompleted}
-                  total={groupHabits.length}
-                  onEdit={() => {
-                    setEditingGroupId(group.id);
-                    setEditGroupName(group.name);
-                    setEditGroupEmoji(group.emoji || "");
-                  }}
-                  onDelete={() => handleDeleteGroup(group.id)}
-                />
-              )}
-
-              {/* Habit cards with DnD */}
-              <DndContext
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragEnd={(event) => handleDragEnd(group.id, event)}
-              >
-                <SortableContext
-                  items={groupHabits.map((h) => h.id)}
-                  strategy={verticalListSortingStrategy}
-                >
-                  <div className="space-y-2">
-                    {groupHabits.map((habit) => (
-                      <SortableHabitCard
-                        key={habit.id}
-                        habit={habit}
-                        status={optimisticLogs[habit.id] || "pending"}
-                        note={todayLogs[habit.id]?.note || null}
-                        onToggle={() => handleToggle(habit.id)}
-                        onSkip={() => handleSkipWithNote(habit.id)}
-                        onArchive={() => handleArchive(habit.id)}
-                        onEdit={handleEditHabit}
-                      />
-                    ))}
-                  </div>
-                </SortableContext>
-              </DndContext>
-
-              {/* Add habit inline */}
-              <AnimatePresence>
-                {addingInGroup === group.id && (
-                  <AddHabitForm
-                    emoji={newHabitEmoji}
-                    name={newHabitName}
-                    schedule={newHabitSchedule}
-                    days={newHabitDays}
-                    isPending={isPending}
-                    setEmoji={setNewHabitEmoji}
-                    setName={setNewHabitName}
-                    setSchedule={setNewHabitSchedule}
-                    setDays={setNewHabitDays}
-                    onSubmit={() => handleAddHabit(group.id)}
-                    onCancel={() => {
-                      setAddingInGroup(null);
-                      setNewHabitName("");
-                      setNewHabitEmoji("");
-                      setNewHabitSchedule("daily");
-                      setNewHabitDays([]);
-                    }}
-                  />
-                )}
-              </AnimatePresence>
-
-              {/* Add button */}
-              {addingInGroup !== group.id && (
-                <button
-                  onClick={() => setAddingInGroup(group.id)}
-                  className="w-full py-2 text-[10px] font-mono uppercase tracking-[0.25em] text-[#FFF8F0]/25 hover:text-[#FFF8F0]/50 transition-colors border border-dashed border-[#FFF8F0]/[0.06] rounded-xl hover:border-[#FFF8F0]/[0.15]"
-                >
-                  + Add habit
-                </button>
-              )}
-            </div>
-          </div>
-        );
-      })}
-
-      {/* Ungrouped habits */}
-      {ungroupedHabits.length > 0 && (
-        <div className="glass-card rounded-3xl overflow-hidden hover:border-[#FFF8F0]/[0.08] transition-all">
-          <div className="h-1 bg-gradient-to-r from-[#FFF8F0]/10 to-[#FFF8F0]/5" />
-          <div className="p-6 space-y-4">
-            <h2 className="text-base font-serif italic text-[#FFF8F0]/50">
-              Ungrouped
-            </h2>
-            <div className="space-y-2">
-              {ungroupedHabits.map((habit) => (
-                <HabitCard
-                  key={habit.id}
-                  habit={habit}
-                  status={optimisticLogs[habit.id] || "pending"}
-                  note={todayLogs[habit.id]?.note || null}
-                  onToggle={() => handleToggle(habit.id)}
-                  onSkip={() => handleSkipWithNote(habit.id)}
-                  onArchive={() => handleArchive(habit.id)}
-                  onEdit={handleEditHabit}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
+      {/* Recovery Banner */}
+      {recoveryMessage && !allDone && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="glass-card rounded-3xl p-5 border-[#FEC89A]/20 space-y-3"
+        >
+          <p className="text-sm font-serif italic text-[#FEC89A]">
+            {recoveryMessage}
+          </p>
+          <button
+            onClick={handleBulkComplete}
+            disabled={isPending}
+            className="px-4 py-2 text-[10px] font-mono uppercase tracking-widest bg-[#34D399]/20 text-[#34D399] border border-[#34D399]/30 rounded-xl hover:bg-[#34D399]/30 transition-colors disabled:opacity-50"
+          >
+            I&apos;m back — complete all
+          </button>
+        </motion.div>
       )}
+
+      {/* Empty state — Template suggestions */}
+      {hasNoHabits && templates.length > 0 ? (
+        <TemplateLibrary
+          templates={templates}
+          groups={groups}
+          onAdopt={handleAdoptTemplate}
+          isPending={isPending}
+          fullPage
+        />
+      ) : (
+        <>
+          {/* Grouped habits */}
+          {groups.map((group) => {
+            const groupHabits = getHabitsForGroup(group.id);
+            if (groupHabits.length === 0 && addingInGroup !== group.id)
+              return null;
+
+            const groupCompleted = groupHabits.filter(
+              (h) => optimisticLogs[h.id] === "completed",
+            ).length;
+
+            const isEditing = editingGroupId === group.id;
+
+            return (
+              <div
+                key={group.id}
+                className="glass-card rounded-3xl overflow-hidden hover:border-[#FFF8F0]/[0.08] transition-all"
+              >
+                <div
+                  className={`h-1 ${GROUP_GRADIENTS[group.timeOfDay] || GROUP_GRADIENTS.anytime}`}
+                />
+                <div className="p-6 space-y-4">
+                  {/* Group header */}
+                  {isEditing ? (
+                    <GroupEditForm
+                      emoji={editGroupEmoji}
+                      name={editGroupName}
+                      setEmoji={setEditGroupEmoji}
+                      setName={setEditGroupName}
+                      onSave={() => handleSaveGroupEdit(group.id)}
+                      onCancel={() => setEditingGroupId(null)}
+                    />
+                  ) : (
+                    <GroupHeader
+                      group={group}
+                      completed={groupCompleted}
+                      total={groupHabits.length}
+                      onEdit={() => {
+                        setEditingGroupId(group.id);
+                        setEditGroupName(group.name);
+                        setEditGroupEmoji(group.emoji || "");
+                      }}
+                      onDelete={() => handleDeleteGroup(group.id)}
+                    />
+                  )}
+
+                  {/* Habit cards with DnD */}
+                  <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={(event) => handleDragEnd(group.id, event)}
+                  >
+                    <SortableContext
+                      items={groupHabits.map((h) => h.id)}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      <div className="space-y-2">
+                        {groupHabits.map((habit) => {
+                          const diagFlag = diagnosisFlags.find(
+                            (d) => d.habitId === habit.id,
+                          );
+                          return (
+                            <div key={habit.id} className="space-y-1">
+                              <SortableHabitCard
+                                habit={habit}
+                                status={optimisticLogs[habit.id] || "pending"}
+                                note={todayLogs[habit.id]?.note || null}
+                                onToggle={() => handleToggle(habit.id)}
+                                onSkip={() => handleSkipWithNote(habit.id)}
+                                onArchive={() => handleArchive(habit.id)}
+                                onEdit={handleEditHabit}
+                                isKeystone={keystoneHabitIds.includes(habit.id)}
+                                onOpenInterview={(id, name) => {
+                                  setInterviewHabitId(id);
+                                  setInterviewHabitName(name);
+                                }}
+                              />
+                              {/* Diagnosis card */}
+                              {diagFlag && (
+                                <DiagnosisCard
+                                  habit={habit}
+                                  missCount={diagFlag.missCount}
+                                  diagnosisId={diagFlag.diagnosisId}
+                                  onDiagnose={handleDiagnosis}
+                                  onDismiss={
+                                    diagFlag.diagnosisId
+                                      ? () =>
+                                          handleDismissDiagnosis(
+                                            diagFlag.diagnosisId!,
+                                          )
+                                      : undefined
+                                  }
+                                />
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </SortableContext>
+                  </DndContext>
+
+                  {/* Add habit inline */}
+                  <AnimatePresence>
+                    {addingInGroup === group.id && (
+                      <AddHabitForm
+                        emoji={newHabitEmoji}
+                        name={newHabitName}
+                        schedule={newHabitSchedule}
+                        days={newHabitDays}
+                        isPending={isPending}
+                        setEmoji={setNewHabitEmoji}
+                        setName={setNewHabitName}
+                        setSchedule={setNewHabitSchedule}
+                        setDays={setNewHabitDays}
+                        onSubmit={() => handleAddHabit(group.id)}
+                        onCancel={() => {
+                          setAddingInGroup(null);
+                          setNewHabitName("");
+                          setNewHabitEmoji("");
+                          setNewHabitSchedule("daily");
+                          setNewHabitDays([]);
+                        }}
+                      />
+                    )}
+                  </AnimatePresence>
+
+                  {/* Add button row */}
+                  {addingInGroup !== group.id && (
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setAddingInGroup(group.id)}
+                        className="flex-1 py-2 text-[10px] font-mono uppercase tracking-[0.25em] text-[#FFF8F0]/25 hover:text-[#FFF8F0]/50 transition-colors border border-dashed border-[#FFF8F0]/[0.06] rounded-xl hover:border-[#FFF8F0]/[0.15]"
+                      >
+                        + Add habit
+                      </button>
+                      {templates.length > 0 && (
+                        <button
+                          onClick={() => setShowTemplates(true)}
+                          className="px-3 py-2 text-[10px] font-mono uppercase tracking-[0.15em] text-[#FEC89A]/40 hover:text-[#FEC89A]/70 transition-colors border border-dashed border-[#FEC89A]/[0.1] rounded-xl hover:border-[#FEC89A]/[0.25]"
+                        >
+                          Templates
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+
+          {/* Ungrouped habits */}
+          {ungroupedHabits.length > 0 && (
+            <div className="glass-card rounded-3xl overflow-hidden hover:border-[#FFF8F0]/[0.08] transition-all">
+              <div className="h-1 bg-gradient-to-r from-[#FFF8F0]/10 to-[#FFF8F0]/5" />
+              <div className="p-6 space-y-4">
+                <h2 className="text-base font-serif italic text-[#FFF8F0]/50">
+                  Ungrouped
+                </h2>
+                <div className="space-y-2">
+                  {ungroupedHabits.map((habit) => {
+                    const diagFlag = diagnosisFlags.find(
+                      (d) => d.habitId === habit.id,
+                    );
+                    return (
+                      <div key={habit.id} className="space-y-1">
+                        <HabitCard
+                          habit={habit}
+                          status={optimisticLogs[habit.id] || "pending"}
+                          note={todayLogs[habit.id]?.note || null}
+                          onToggle={() => handleToggle(habit.id)}
+                          onSkip={() => handleSkipWithNote(habit.id)}
+                          onArchive={() => handleArchive(habit.id)}
+                          onEdit={handleEditHabit}
+                          isKeystone={keystoneHabitIds.includes(habit.id)}
+                          onOpenInterview={(id, name) => {
+                            setInterviewHabitId(id);
+                            setInterviewHabitName(name);
+                          }}
+                        />
+                        {diagFlag && (
+                          <DiagnosisCard
+                            habit={habit}
+                            missCount={diagFlag.missCount}
+                            diagnosisId={diagFlag.diagnosisId}
+                            onDiagnose={handleDiagnosis}
+                            onDismiss={
+                              diagFlag.diagnosisId
+                                ? () =>
+                                    handleDismissDiagnosis(
+                                      diagFlag.diagnosisId!,
+                                    )
+                                : undefined
+                            }
+                          />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Template Library Modal */}
+      <AnimatePresence>
+        {showTemplates && templates.length > 0 && (
+          <TemplateModal
+            templates={templates}
+            groups={groups}
+            onAdopt={handleAdoptTemplate}
+            onClose={() => setShowTemplates(false)}
+            isPending={isPending}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Add Group */}
       <AnimatePresence>
@@ -584,7 +884,10 @@ export function HabitTracker({ groups, habits, notTodayHabits, archivedHabits, t
 
       {/* Not Today section */}
       {notTodayHabits.length > 0 && (
-        <div className="animate-slide-up" style={{ animationDelay: "0.16s", animationFillMode: "both" }}>
+        <div
+          className="animate-slide-up"
+          style={{ animationDelay: "0.16s", animationFillMode: "both" }}
+        >
           <button
             onClick={() => setShowNotToday(!showNotToday)}
             className="w-full flex items-center justify-between py-3 text-[10px] font-mono uppercase tracking-[0.25em] text-[#FFF8F0]/25 hover:text-[#FFF8F0]/40 transition-colors"
@@ -612,6 +915,11 @@ export function HabitTracker({ groups, habits, notTodayHabits, archivedHabits, t
                       onArchive={() => handleArchive(habit.id)}
                       onEdit={handleEditHabit}
                       dimmed
+                      isKeystone={false}
+                      onOpenInterview={(id, name) => {
+                        setInterviewHabitId(id);
+                        setInterviewHabitName(name);
+                      }}
                     />
                   ))}
                 </div>
@@ -646,7 +954,8 @@ export function HabitTracker({ groups, habits, notTodayHabits, archivedHabits, t
                       className="flex items-center justify-between px-4 py-3 rounded-2xl border border-[#FFF8F0]/[0.04] bg-[#FFF8F0]/[0.01] opacity-50"
                     >
                       <span className="text-sm font-serif text-[#FFF8F0]/40 truncate">
-                        {habit.emoji && `${habit.emoji} `}{habit.name}
+                        {habit.emoji && `${habit.emoji} `}
+                        {habit.name}
                       </span>
                       <button
                         onClick={() => handleUnarchive(habit.id)}
@@ -664,9 +973,7 @@ export function HabitTracker({ groups, habits, notTodayHabits, archivedHabits, t
       )}
 
       {/* Celebration confetti */}
-      <AnimatePresence>
-        {showConfetti && <ConfettiBurst />}
-      </AnimatePresence>
+      <AnimatePresence>{showConfetti && <ConfettiBurst />}</AnimatePresence>
 
       {/* All-done celebration banner */}
       <AnimatePresence>
@@ -681,8 +988,13 @@ export function HabitTracker({ groups, habits, notTodayHabits, archivedHabits, t
             <p className="text-base font-serif italic text-[#34D399]">
               All habits completed today!
             </p>
+            {perfectDayCount > 0 && (
+              <p className="text-[10px] font-mono text-[#34D399]/60 mt-1 tracking-wider uppercase">
+                🌟 Perfect day #{perfectDayCount} this month
+              </p>
+            )}
             <p className="text-[10px] font-mono text-[#FFF8F0]/30 mt-1 tracking-wider uppercase">
-              Perfect day — keep the streak alive
+              Keep the streak alive
             </p>
           </motion.div>
         )}
@@ -701,7 +1013,9 @@ export function HabitTracker({ groups, habits, notTodayHabits, archivedHabits, t
                 : "border-[#FFF8F0]/[0.1]"
             }`}
           >
-            <span className={`text-sm font-serif ${toast.milestone ? "text-[#FFD93D]" : "text-[#FFF8F0]/80"}`}>
+            <span
+              className={`text-sm font-serif ${toast.milestone ? "text-[#FFD93D]" : "text-[#FFF8F0]/80"}`}
+            >
               {toast.message}
             </span>
             {toast.habitId && toast.prevStatus && !toast.milestone && (
@@ -754,8 +1068,6 @@ function SkipNoteModal({
         <h3 className="text-[11px] font-mono uppercase tracking-[0.25em] text-[#60A5FA]/80">
           Why are you skipping?
         </h3>
-
-        {/* Quick-select reasons */}
         <div className="flex flex-wrap gap-2">
           {SKIP_REASONS.map((reason) => (
             <button
@@ -771,8 +1083,6 @@ function SkipNoteModal({
             </button>
           ))}
         </div>
-
-        {/* Free text input */}
         <input
           type="text"
           value={noteText}
@@ -784,7 +1094,6 @@ function SkipNoteModal({
             if (e.key === "Enter") onSubmit(habitId, noteText || null);
           }}
         />
-
         <div className="flex gap-2">
           <button
             onClick={() => onSubmit(habitId, noteText || null)}
@@ -823,12 +1132,10 @@ function GroupHeader({
 }) {
   return (
     <div className="flex items-center justify-between">
-      <div
-        className="space-y-1 cursor-pointer group"
-        onClick={onEdit}
-      >
+      <div className="space-y-1 cursor-pointer group" onClick={onEdit}>
         <h2 className="text-base font-serif italic text-[#FEC89A] group-hover:text-[#FEC89A]/80 transition-colors">
-          {group.emoji && `${group.emoji} `}{group.name}
+          {group.emoji && `${group.emoji} `}
+          {group.name}
           <span className="text-[8px] font-mono text-[#FFF8F0]/0 group-hover:text-[#FFF8F0]/20 transition-colors ml-2">
             edit
           </span>
@@ -959,8 +1266,6 @@ function AddHabitForm({
             autoFocus
           />
         </div>
-
-        {/* Schedule selector */}
         <div className="flex gap-1">
           {SCHEDULE_OPTIONS.map((opt) => (
             <button
@@ -976,8 +1281,6 @@ function AddHabitForm({
             </button>
           ))}
         </div>
-
-        {/* Custom days picker */}
         <AnimatePresence>
           {schedule === "custom" && (
             <motion.div
@@ -990,11 +1293,13 @@ function AddHabitForm({
                 {DAY_LABELS.map((label, i) => (
                   <button
                     key={i}
-                    onClick={() => {
+                    onClick={() =>
                       setDays((prev: number[]) =>
-                        prev.includes(i) ? prev.filter((d: number) => d !== i) : [...prev, i]
-                      );
-                    }}
+                        prev.includes(i)
+                          ? prev.filter((d: number) => d !== i)
+                          : [...prev, i],
+                      )
+                    }
                     className={`w-9 h-9 rounded-full text-xs font-mono transition-colors ${
                       days.includes(i)
                         ? "bg-[#FF6B6B] text-white"
@@ -1008,7 +1313,6 @@ function AddHabitForm({
             </motion.div>
           )}
         </AnimatePresence>
-
         <div className="flex gap-2">
           <button
             onClick={onSubmit}
@@ -1040,7 +1344,9 @@ function SortableHabitCard(props: {
   onToggle: () => void;
   onSkip: () => void;
   onArchive: () => void;
-  onEdit: (id: string, fields: { name?: string; emoji?: string | null; scheduleType?: ScheduleType; scheduleDays?: number[] }) => void;
+  onEdit: (id: string, fields: Record<string, unknown>) => void;
+  isKeystone: boolean;
+  onOpenInterview: (id: string, name: string) => void;
 }) {
   const {
     attributes,
@@ -1050,26 +1356,21 @@ function SortableHabitCard(props: {
     transition,
     isDragging,
   } = useSortable({ id: props.habit.id });
-
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
     zIndex: isDragging ? 10 : undefined,
   };
-
   return (
     <div ref={setNodeRef} style={style}>
-      <HabitCard
-        {...props}
-        dragHandleProps={{ ...attributes, ...listeners }}
-      />
+      <HabitCard {...props} dragHandleProps={{ ...attributes, ...listeners }} />
     </div>
   );
 }
 
 // ─────────────────────────────────────────
-// Individual Habit Card with edit + skip + notes + drag handle
+// Individual Habit Card — Enhanced with purpose, anchor, tiny version
 // ─────────────────────────────────────────
 
 function HabitCard({
@@ -1082,6 +1383,8 @@ function HabitCard({
   onEdit,
   dimmed,
   dragHandleProps,
+  isKeystone,
+  onOpenInterview,
 }: {
   habit: Habit;
   status: HabitLogStatus;
@@ -1089,9 +1392,11 @@ function HabitCard({
   onToggle: () => void;
   onSkip: () => void;
   onArchive: () => void;
-  onEdit: (id: string, fields: { name?: string; emoji?: string | null; scheduleType?: ScheduleType; scheduleDays?: number[] }) => void;
+  onEdit: (id: string, fields: Record<string, unknown>) => void;
   dimmed?: boolean;
   dragHandleProps?: Record<string, unknown>;
+  isKeystone: boolean;
+  onOpenInterview: (id: string, name: string) => void;
 }) {
   const isCompleted = status === "completed";
   const isSkipped = status === "skipped";
@@ -1099,17 +1404,31 @@ function HabitCard({
   const [editing, setEditing] = useState(false);
   const [editName, setEditName] = useState(habit.name);
   const [editEmoji, setEditEmoji] = useState(habit.emoji || "");
-  const [editSchedule, setEditSchedule] = useState<ScheduleType>(habit.scheduleType as ScheduleType);
+  const [editSchedule, setEditSchedule] = useState<ScheduleType>(
+    habit.scheduleType as ScheduleType,
+  );
   const [editDays, setEditDays] = useState<number[]>(habit.scheduleDays || []);
+  const [showPurpose, setShowPurpose] = useState(false);
+
+  // Type-safe access to advanced fields
+  const purpose = (habit as Record<string, unknown>).purpose as string | null;
+  const identity = (habit as Record<string, unknown>).identity as string | null;
+  const tinyVersion = (habit as Record<string, unknown>).tinyVersion as
+    | string
+    | null;
+  const anchorText = (habit as Record<string, unknown>).anchorText as
+    | string
+    | null;
 
   function handleSaveEdit() {
-    const scheduleDays = editSchedule === "weekdays"
-      ? [1, 2, 3, 4, 5]
-      : editSchedule === "weekends"
-      ? [0, 6]
-      : editSchedule === "custom"
-      ? editDays
-      : [];
+    const scheduleDays =
+      editSchedule === "weekdays"
+        ? [1, 2, 3, 4, 5]
+        : editSchedule === "weekends"
+          ? [0, 6]
+          : editSchedule === "custom"
+            ? editDays
+            : [];
 
     onEdit(habit.id, {
       name: editName.trim() || habit.name,
@@ -1122,7 +1441,10 @@ function HabitCard({
 
   if (editing) {
     return (
-      <motion.div layout className="px-4 py-3 rounded-2xl border border-[#FFF8F0]/[0.15] bg-[#FFF8F0]/[0.03] space-y-3">
+      <motion.div
+        layout
+        className="px-4 py-3 rounded-2xl border border-[#FFF8F0]/[0.15] bg-[#FFF8F0]/[0.03] space-y-3"
+      >
         <div className="flex gap-2">
           <input
             type="text"
@@ -1170,7 +1492,9 @@ function HabitCard({
                     key={i}
                     onClick={() =>
                       setEditDays((prev) =>
-                        prev.includes(i) ? prev.filter((d) => d !== i) : [...prev, i]
+                        prev.includes(i)
+                          ? prev.filter((d) => d !== i)
+                          : [...prev, i],
                       )
                     }
                     className={`w-8 h-8 rounded-full text-[10px] font-mono transition-colors ${
@@ -1216,21 +1540,21 @@ function HabitCard({
       whileTap={{ scale: 0.98 }}
       animate={isCompleted ? { scale: [1, 1.02, 1] } : {}}
       transition={{ type: "spring", stiffness: 400, damping: 25 }}
-      className={`relative flex items-center gap-3 px-4 py-3.5 rounded-2xl border cursor-pointer transition-all select-none ${
+      className={`relative flex items-start gap-3 px-4 py-3.5 rounded-2xl border cursor-pointer transition-all select-none ${
         isCompleted
           ? "border-[#34D399]/40 bg-[#34D399]/5 shadow-[inset_4px_0_0_#34D399]"
           : isSkipped
-          ? "border-[#60A5FA]/30 bg-[#60A5FA]/5 shadow-[inset_4px_0_0_#60A5FA]"
-          : dimmed
-          ? "border-[#FFF8F0]/[0.04] bg-[#FFF8F0]/[0.01]"
-          : "border-[#FFF8F0]/[0.08] hover:border-[#FFF8F0]/[0.15] bg-[#FFF8F0]/[0.02]"
+            ? "border-[#60A5FA]/30 bg-[#60A5FA]/5 shadow-[inset_4px_0_0_#60A5FA]"
+            : dimmed
+              ? "border-[#FFF8F0]/[0.04] bg-[#FFF8F0]/[0.01]"
+              : "border-[#FFF8F0]/[0.08] hover:border-[#FFF8F0]/[0.15] bg-[#FFF8F0]/[0.02]"
       }`}
     >
       {/* Drag handle */}
       {dragHandleProps && (
         <div
           {...dragHandleProps}
-          className="text-[#FFF8F0]/15 hover:text-[#FFF8F0]/40 transition-colors cursor-grab active:cursor-grabbing shrink-0 touch-none"
+          className="text-[#FFF8F0]/15 hover:text-[#FFF8F0]/40 transition-colors cursor-grab active:cursor-grabbing shrink-0 touch-none mt-1"
           onClick={(e) => e.stopPropagation()}
         >
           <svg width="12" height="16" viewBox="0 0 12 16" fill="currentColor">
@@ -1247,12 +1571,12 @@ function HabitCard({
       {/* Checkbox indicator */}
       <div
         onClick={onToggle}
-        className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all shrink-0 ${
+        className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all shrink-0 mt-0.5 ${
           isCompleted
             ? "border-[#34D399] bg-[#34D399]"
             : isSkipped
-            ? "border-[#60A5FA] bg-[#60A5FA]/30"
-            : "border-[#FFF8F0]/20"
+              ? "border-[#60A5FA] bg-[#60A5FA]/30"
+              : "border-[#FFF8F0]/20"
         }`}
       >
         <AnimatePresence>
@@ -1292,17 +1616,64 @@ function HabitCard({
 
       {/* Habit info */}
       <div className="flex-1 min-w-0" onClick={onToggle}>
-        <span
-          className={`text-sm font-serif block truncate ${
-            isCompleted
-              ? "text-[#34D399] line-through decoration-[#34D399]/30"
-              : isSkipped
-              ? "text-[#60A5FA]/60 line-through decoration-[#60A5FA]/20"
-              : "text-[#FFF8F0]/80"
-          }`}
-        >
-          {habit.emoji && `${habit.emoji} `}{habit.name}
-        </span>
+        <div className="flex items-center gap-1.5">
+          <span
+            className={`text-sm font-serif block truncate ${
+              isCompleted
+                ? "text-[#34D399] line-through decoration-[#34D399]/30"
+                : isSkipped
+                  ? "text-[#60A5FA]/60 line-through decoration-[#60A5FA]/20"
+                  : "text-[#FFF8F0]/80"
+            }`}
+          >
+            {habit.emoji && `${habit.emoji} `}
+            {habit.name}
+          </span>
+          {isKeystone && (
+            <span
+              className="text-[10px] shrink-0"
+              title="Keystone habit — when you do this, everything else follows"
+            >
+              ⭐
+            </span>
+          )}
+        </div>
+
+        {/* Purpose display */}
+        {purpose && !isCompleted && !isSkipped && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowPurpose(!showPurpose);
+            }}
+            className="text-[9px] font-serif italic text-[#FFF8F0]/25 hover:text-[#FFF8F0]/40 transition-colors truncate block max-w-full text-left"
+          >
+            {showPurpose ? purpose : "why?"}
+          </button>
+        )}
+
+        {/* Identity tooltip on purpose expand */}
+        <AnimatePresence>
+          {showPurpose && identity && (
+            <motion.p
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="text-[9px] font-mono text-[#FEC89A]/40 mt-0.5"
+            >
+              {identity}
+            </motion.p>
+          )}
+        </AnimatePresence>
+
+        {/* Anchor text */}
+        {anchorText && !isCompleted && !isSkipped && !showPurpose && (
+          <span className="text-[9px] font-mono text-[#FFF8F0]/15 block truncate">
+            {anchorText}
+          </span>
+        )}
+
+        {/* Skip note */}
         {isSkipped && (
           <span className="text-[9px] font-mono text-[#60A5FA]/40 uppercase tracking-wider">
             Skipped{note ? ` — ${note}` : ""}
@@ -1313,11 +1684,27 @@ function HabitCard({
             {note}
           </span>
         )}
+
+        {/* Tiny version prompt */}
+        {tinyVersion && !isCompleted && !isSkipped && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggle();
+            }}
+            className="mt-1 px-2 py-0.5 text-[8px] font-mono uppercase tracking-wider text-[#34D399]/50 bg-[#34D399]/[0.06] rounded-md hover:bg-[#34D399]/[0.12] transition-colors"
+          >
+            Just 2 min: {tinyVersion}
+          </button>
+        )}
       </div>
 
       {/* Streak badge */}
       {habit.currentStreak >= 2 && (
-        <div className="flex flex-col items-end shrink-0" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="flex flex-col items-end shrink-0"
+          onClick={(e) => e.stopPropagation()}
+        >
           <span className="text-[11px] font-mono text-[#FF6B6B]/80 font-semibold">
             🔥{habit.currentStreak}
           </span>
@@ -1335,7 +1722,7 @@ function HabitCard({
           e.stopPropagation();
           setShowActions(!showActions);
         }}
-        className="text-[#FFF8F0]/20 hover:text-[#FFF8F0]/50 transition-colors shrink-0 px-1"
+        className="text-[#FFF8F0]/20 hover:text-[#FFF8F0]/50 transition-colors shrink-0 px-1 mt-0.5"
       >
         ⋯
       </button>
@@ -1370,6 +1757,17 @@ function HabitCard({
             >
               Edit habit
             </button>
+            {!purpose && (
+              <button
+                onClick={() => {
+                  onOpenInterview(habit.id, habit.name);
+                  setShowActions(false);
+                }}
+                className="w-full px-4 py-2 text-left text-xs font-mono text-[#FEC89A]/70 hover:bg-[#FEC89A]/10 transition-colors"
+              >
+                Build your why
+              </button>
+            )}
             <button
               onClick={() => {
                 onArchive();
@@ -1387,10 +1785,204 @@ function HabitCard({
 }
 
 // ─────────────────────────────────────────
+// Diagnosis Card (B=MAP inline)
+// ─────────────────────────────────────────
+
+function DiagnosisCard({
+  habit,
+  missCount,
+  diagnosisId,
+  onDiagnose,
+  onDismiss,
+}: {
+  habit: Habit;
+  missCount: number;
+  diagnosisId?: string;
+  onDiagnose: (habitId: string, diagnosis: DiagnosisType) => void;
+  onDismiss?: () => void;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, height: 0 }}
+      animate={{ opacity: 1, height: "auto" }}
+      exit={{ opacity: 0, height: 0 }}
+      className="overflow-hidden"
+    >
+      <div className="ml-8 px-4 py-3 rounded-xl bg-[#FF6B6B]/[0.05] border border-[#FF6B6B]/[0.15] space-y-2">
+        <div className="flex items-center justify-between">
+          <span className="text-[9px] font-mono uppercase tracking-wider text-[#FF6B6B]/60">
+            Missed {missCount}/7 days — what&apos;s happening?
+          </span>
+          {onDismiss && (
+            <button
+              onClick={onDismiss}
+              className="text-[#FFF8F0]/20 hover:text-[#FFF8F0]/40 text-xs"
+            >
+              ×
+            </button>
+          )}
+        </div>
+        <div className="flex gap-1.5 flex-wrap">
+          <button
+            onClick={() => onDiagnose(habit.id, "forgot")}
+            className="px-3 py-1.5 text-[9px] font-mono uppercase tracking-wider rounded-lg bg-[#FFF8F0]/[0.04] text-[#FFF8F0]/40 hover:text-[#FFF8F0]/60 hover:bg-[#FFF8F0]/[0.08] transition-colors border border-transparent hover:border-[#FFF8F0]/[0.1]"
+          >
+            I keep forgetting
+          </button>
+          <button
+            onClick={() => onDiagnose(habit.id, "too_hard")}
+            className="px-3 py-1.5 text-[9px] font-mono uppercase tracking-wider rounded-lg bg-[#FFF8F0]/[0.04] text-[#FFF8F0]/40 hover:text-[#FFF8F0]/60 hover:bg-[#FFF8F0]/[0.08] transition-colors border border-transparent hover:border-[#FFF8F0]/[0.1]"
+          >
+            It&apos;s too hard
+          </button>
+          <button
+            onClick={() => onDiagnose(habit.id, "no_motivation")}
+            className="px-3 py-1.5 text-[9px] font-mono uppercase tracking-wider rounded-lg bg-[#FFF8F0]/[0.04] text-[#FFF8F0]/40 hover:text-[#FFF8F0]/60 hover:bg-[#FFF8F0]/[0.08] transition-colors border border-transparent hover:border-[#FFF8F0]/[0.1]"
+          >
+            Don&apos;t want to
+          </button>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+// ─────────────────────────────────────────
+// Template Library (full page or modal)
+// ─────────────────────────────────────────
+
+function TemplateLibrary({
+  templates,
+  groups,
+  onAdopt,
+  isPending,
+  fullPage,
+}: {
+  templates: HabitTemplate[];
+  groups: HabitGroup[];
+  onAdopt: (templateId: string, groupId: string | null) => void;
+  isPending: boolean;
+  fullPage?: boolean;
+}) {
+  const defaultGroupId = groups.length > 0 ? groups[0].id : null;
+
+  return (
+    <div className={`space-y-6 ${fullPage ? "" : ""}`}>
+      {fullPage && (
+        <div className="text-center space-y-2 mb-6">
+          <p className="text-3xl">🌱</p>
+          <h2 className="text-xl font-serif italic text-[#FFF8F0]/80">
+            Start building your routine
+          </h2>
+          <p className="text-xs font-mono text-[#FFF8F0]/30">
+            Choose habits that matter to you — you can customize everything
+            later
+          </p>
+        </div>
+      )}
+      {TEMPLATE_CATEGORIES.map((category) => {
+        const catTemplates = templates.filter((t) => t.category === category);
+        if (catTemplates.length === 0) return null;
+        return (
+          <div key={category} className="space-y-2">
+            <h3 className="text-[10px] font-mono uppercase tracking-[0.25em] text-[#FEC89A]/50">
+              {category}
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {catTemplates.map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => onAdopt(t.id, defaultGroupId)}
+                  disabled={isPending}
+                  className="flex items-start gap-3 px-4 py-3 rounded-2xl border border-[#FFF8F0]/[0.06] bg-[#FFF8F0]/[0.02] hover:border-[#FFF8F0]/[0.15] hover:bg-[#FFF8F0]/[0.04] transition-all text-left group disabled:opacity-50"
+                >
+                  <span className="text-lg shrink-0">{t.emoji}</span>
+                  <div className="flex-1 min-w-0">
+                    <span className="text-sm font-serif text-[#FFF8F0]/70 block">
+                      {t.name}
+                    </span>
+                    {t.purpose && (
+                      <span className="text-[9px] font-mono text-[#FFF8F0]/25 block truncate mt-0.5">
+                        {t.purpose}
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-[9px] font-mono text-[#34D399]/0 group-hover:text-[#34D399]/60 transition-colors shrink-0 mt-1">
+                    + Add
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function TemplateModal({
+  templates,
+  groups,
+  onAdopt,
+  onClose,
+  isPending,
+}: {
+  templates: HabitTemplate[];
+  groups: HabitGroup[];
+  onAdopt: (templateId: string, groupId: string | null) => void;
+  onClose: () => void;
+  isPending: boolean;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ scale: 0.95, y: 10 }}
+        animate={{ scale: 1, y: 0 }}
+        exit={{ scale: 0.95, y: 10 }}
+        className="bg-[#0d0d1a] border border-[#FFF8F0]/[0.1] rounded-3xl p-6 w-full max-w-lg max-h-[80vh] overflow-y-auto space-y-4"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between">
+          <h2 className="text-[11px] font-mono uppercase tracking-[0.25em] text-[#FEC89A]/80">
+            Habit Templates
+          </h2>
+          <button
+            onClick={onClose}
+            className="text-[#FFF8F0]/20 hover:text-[#FFF8F0]/50 text-lg"
+          >
+            ×
+          </button>
+        </div>
+        <TemplateLibrary
+          templates={templates}
+          groups={groups}
+          onAdopt={onAdopt}
+          isPending={isPending}
+        />
+      </motion.div>
+    </motion.div>
+  );
+}
+
+// ─────────────────────────────────────────
 // Confetti Burst (celebration particles)
 // ─────────────────────────────────────────
 
-const CONFETTI_COLORS = ["#FF6B6B", "#FEC89A", "#34D399", "#FFD93D", "#E2B0FF", "#38BDF8", "#A78BFA"];
+const CONFETTI_COLORS = [
+  "#FF6B6B",
+  "#FEC89A",
+  "#34D399",
+  "#FFD93D",
+  "#E2B0FF",
+  "#38BDF8",
+  "#A78BFA",
+];
 
 function ConfettiBurst() {
   const particles = Array.from({ length: 40 }, (_, i) => ({
@@ -1408,12 +2000,7 @@ function ConfettiBurst() {
       {particles.map((p) => (
         <motion.div
           key={p.id}
-          initial={{
-            x: `${p.x}vw`,
-            y: "-5vh",
-            rotate: 0,
-            opacity: 1,
-          }}
+          initial={{ x: `${p.x}vw`, y: "-5vh", rotate: 0, opacity: 1 }}
           animate={{
             y: "110vh",
             x: `calc(${p.x}vw + ${p.drift}px)`,

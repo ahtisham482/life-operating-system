@@ -4,13 +4,19 @@ import { createClient } from "@/lib/supabase/server";
 import { fromDb, getTodayKarachi } from "@/lib/utils";
 import { HabitTracker } from "./habit-tracker";
 import { HabitInsights } from "./habit-insights";
-import type { Habit, HabitGroup, HabitLog, TimeOfDay } from "@/lib/db/schema";
+import type {
+  Habit,
+  HabitGroup,
+  HabitLog,
+  HabitTemplate,
+  TimeOfDay,
+} from "@/lib/db/schema";
 import { isHabitScheduledForDay } from "@/lib/habits";
 
 function getTimeOfDayNudge(): string {
   const now = new Date();
   const hour = new Date(
-    now.toLocaleString("en-US", { timeZone: "Asia/Karachi" })
+    now.toLocaleString("en-US", { timeZone: "Asia/Karachi" }),
   ).getHours();
 
   if (hour < 12) return "morning routines await ☀️";
@@ -22,7 +28,7 @@ function getTimeOfDayNudge(): string {
 function getCurrentTimeOfDay(): TimeOfDay {
   const now = new Date();
   const hour = new Date(
-    now.toLocaleString("en-US", { timeZone: "Asia/Karachi" })
+    now.toLocaleString("en-US", { timeZone: "Asia/Karachi" }),
   ).getHours();
 
   if (hour < 12) return "morning";
@@ -47,13 +53,15 @@ export default async function HabitsPage() {
     .toISOString()
     .slice(0, 10);
 
-  // Fetch groups, active habits, archived habits, today's logs, and 90 days of history
+  // Fetch groups, habits, logs, templates, and diagnoses in parallel
   const [
     { data: groupRows },
     { data: habitRows },
     { data: archivedHabitRows },
     { data: logRows },
     { data: historyLogRows },
+    { data: templateRows },
+    { data: diagnosisRows },
   ] = await Promise.all([
     supabase
       .from("habit_groups")
@@ -69,17 +77,28 @@ export default async function HabitsPage() {
       .select("*")
       .not("archived_at", "is", null)
       .order("updated_at", { ascending: false }),
-    supabase
-      .from("habit_logs")
-      .select("*")
-      .eq("date", today),
-    // 90 days of logs for heatmap + trends
+    supabase.from("habit_logs").select("*").eq("date", today),
+    // 90 days of logs for heatmap + trends + keystone
     supabase
       .from("habit_logs")
       .select("*")
       .gte("date", ninetyDaysAgo)
       .lte("date", today)
       .order("date", { ascending: false }),
+    // Templates for template library
+    supabase
+      .from("habit_templates")
+      .select("*")
+      .order("sort_order", { ascending: true }),
+    // Active (undismissed) diagnoses from the last 7 days
+    supabase
+      .from("habit_diagnoses")
+      .select("*")
+      .is("dismissed_at", null)
+      .gte(
+        "created_at",
+        new Date(todayDate.getTime() - 7 * 86400000).toISOString(),
+      ),
   ]);
 
   const groups = (groupRows || []).map((r) => fromDb<HabitGroup>(r));
@@ -87,13 +106,23 @@ export default async function HabitsPage() {
   const archivedHabits = (archivedHabitRows || []).map((r) => fromDb<Habit>(r));
   const todayLogs = (logRows || []).map((r) => fromDb<HabitLog>(r));
   const historyLogs = (historyLogRows || []).map((r) => fromDb<HabitLog>(r));
+  const templates = (templateRows || []).map((r) => fromDb<HabitTemplate>(r));
+
+  // Build a set of habit IDs that have active diagnoses (undismissed, within 7 days)
+  const activeDiagnosisHabitIds = new Set<string>();
+  const activeDiagnosisMap: Record<string, string> = {}; // habitId → diagnosisId
+  for (const d of diagnosisRows || []) {
+    activeDiagnosisHabitIds.add(d.habit_id);
+    activeDiagnosisMap[d.habit_id] = d.id;
+  }
 
   // Split habits into scheduled-today vs not-today
   const scheduledHabits = allHabits.filter((h) =>
-    isHabitScheduledForDay(h.scheduleType, h.scheduleDays || [], dayOfWeek)
+    isHabitScheduledForDay(h.scheduleType, h.scheduleDays || [], dayOfWeek),
   );
   const notTodayHabits = allHabits.filter(
-    (h) => !isHabitScheduledForDay(h.scheduleType, h.scheduleDays || [], dayOfWeek)
+    (h) =>
+      !isHabitScheduledForDay(h.scheduleType, h.scheduleDays || [], dayOfWeek),
   );
 
   // Build log map for today: habitId → HabitLog
@@ -110,7 +139,7 @@ export default async function HabitsPage() {
 
   // Compute today's completion stats
   const todayCompleted = scheduledHabits.filter(
-    (h) => todayLogMap[h.id]?.status === "completed"
+    (h) => todayLogMap[h.id]?.status === "completed",
   ).length;
   const totalScheduled = scheduledHabits.length;
 
@@ -148,9 +177,12 @@ export default async function HabitsPage() {
   const trends: Record<string, { d7: number; d30: number; d90: number }> = {};
 
   for (const habit of allHabits) {
-    let completed7 = 0, scheduled7 = 0;
-    let completed30 = 0, scheduled30 = 0;
-    let completed90 = 0, scheduled90 = 0;
+    let completed7 = 0,
+      scheduled7 = 0;
+    let completed30 = 0,
+      scheduled30 = 0;
+    let completed90 = 0,
+      scheduled90 = 0;
 
     for (let i = 0; i < 90; i++) {
       const d = new Date(todayDate);
@@ -158,17 +190,30 @@ export default async function HabitsPage() {
       const dow = d.getDay();
       const dateStr = d.toISOString().slice(0, 10);
 
-      if (!isHabitScheduledForDay(habit.scheduleType, habit.scheduleDays || [], dow)) continue;
+      if (
+        !isHabitScheduledForDay(
+          habit.scheduleType,
+          habit.scheduleDays || [],
+          dow,
+        )
+      )
+        continue;
 
       const status = historyLogMap[`${habit.id}:${dateStr}`];
-      // Skip "skipped" days — they don't count in the denominator
       if (status === "skipped") continue;
 
       const done = status === "completed" ? 1 : 0;
 
-      if (i < 7) { scheduled7++; completed7 += done; }
-      if (i < 30) { scheduled30++; completed30 += done; }
-      scheduled90++; completed90 += done;
+      if (i < 7) {
+        scheduled7++;
+        completed7 += done;
+      }
+      if (i < 30) {
+        scheduled30++;
+        completed30 += done;
+      }
+      scheduled90++;
+      completed90 += done;
     }
 
     trends[habit.id] = {
@@ -183,13 +228,19 @@ export default async function HabitsPage() {
   // ─────────────────────────────────────────
   const weekDays = heatmapDays.slice(-7);
   const missedCounts: Record<string, number> = {};
-  for (const habit of scheduledHabits) {
+  for (const habit of allHabits) {
     let missed = 0;
     for (const wd of weekDays) {
       const status = historyLogMap[`${habit.id}:${wd.date}`];
       if (!status || status === "missed" || status === "pending") {
         const dayDow = new Date(wd.date + "T12:00:00").getDay();
-        if (isHabitScheduledForDay(habit.scheduleType, habit.scheduleDays || [], dayDow)) {
+        if (
+          isHabitScheduledForDay(
+            habit.scheduleType,
+            habit.scheduleDays || [],
+            dayDow,
+          )
+        ) {
           missed++;
         }
       }
@@ -206,12 +257,204 @@ export default async function HabitsPage() {
     }))
     .filter((m) => m.habit);
 
+  // ─────────────────────────────────────────
+  // Diagnosis flags: habits with 3+ misses/week
+  // that don't already have an active diagnosis
+  // ─────────────────────────────────────────
+  const diagnosisFlags: {
+    habitId: string;
+    missCount: number;
+    diagnosisId?: string;
+  }[] = [];
+  for (const [habitId, count] of Object.entries(missedCounts)) {
+    if (count >= 3 && !activeDiagnosisHabitIds.has(habitId)) {
+      diagnosisFlags.push({ habitId, missCount: count });
+    }
+  }
+
+  // ─────────────────────────────────────────
+  // Days of data (distinct dates in history logs)
+  // ─────────────────────────────────────────
+  const uniqueDates = new Set<string>();
+  for (const log of historyLogs) {
+    uniqueDates.add(log.date);
+  }
+  const daysOfData = uniqueDates.size;
+
+  // ─────────────────────────────────────────
+  // Keystone Habit Detection (only when 30+ days of data)
+  // ─────────────────────────────────────────
+  const keystoneHabitIds: string[] = [];
+  const keystoneInsights: {
+    habitId: string;
+    habitName: string;
+    habitEmoji: string;
+    withRate: number;
+    withoutRate: number;
+  }[] = [];
+
+  if (daysOfData >= 30 && allHabits.length >= 2) {
+    // Build a day-level completion map: date → Set of completed habit IDs
+    const dateCompletedHabits: Record<string, Set<string>> = {};
+    for (const log of historyLogs) {
+      if (log.status === "completed") {
+        if (!dateCompletedHabits[log.date])
+          dateCompletedHabits[log.date] = new Set();
+        dateCompletedHabits[log.date].add(log.habitId);
+      }
+    }
+
+    // Get all dates where at least one habit was scheduled
+    const allDates = Array.from(uniqueDates);
+
+    for (const habit of allHabits) {
+      const otherHabits = allHabits.filter((h) => h.id !== habit.id);
+      if (otherHabits.length === 0) continue;
+
+      let withDays = 0,
+        withTotal = 0,
+        withCompleted = 0;
+      let withoutDays = 0,
+        withoutTotal = 0,
+        withoutCompleted = 0;
+
+      for (const dateStr of allDates) {
+        const dow = new Date(dateStr + "T12:00:00").getDay();
+        // Check if habit H was scheduled on this day
+        if (
+          !isHabitScheduledForDay(
+            habit.scheduleType,
+            habit.scheduleDays || [],
+            dow,
+          )
+        )
+          continue;
+
+        const completedSet = dateCompletedHabits[dateStr] || new Set();
+        const hDone = completedSet.has(habit.id);
+
+        // Count other habits' completion on this day
+        for (const other of otherHabits) {
+          if (
+            !isHabitScheduledForDay(
+              other.scheduleType,
+              other.scheduleDays || [],
+              dow,
+            )
+          )
+            continue;
+          if (hDone) {
+            withTotal++;
+            if (completedSet.has(other.id)) withCompleted++;
+          } else {
+            withoutTotal++;
+            if (completedSet.has(other.id)) withoutCompleted++;
+          }
+        }
+
+        if (hDone) withDays++;
+        else withoutDays++;
+      }
+
+      if (
+        withDays >= 5 &&
+        withoutDays >= 5 &&
+        withTotal > 0 &&
+        withoutTotal > 0
+      ) {
+        const withRate = Math.round((withCompleted / withTotal) * 100);
+        const withoutRate = Math.round((withoutCompleted / withoutTotal) * 100);
+        const diff = withRate - withoutRate;
+
+        if (diff > 15) {
+          keystoneHabitIds.push(habit.id);
+          keystoneInsights.push({
+            habitId: habit.id,
+            habitName: habit.name,
+            habitEmoji: habit.emoji || "",
+            withRate,
+            withoutRate,
+          });
+        }
+      }
+    }
+  }
+
+  // ─────────────────────────────────────────
+  // Recovery banner: check yesterday's misses
+  // ─────────────────────────────────────────
+  let recoveryMessage: string | null = null;
+  const yesterday = new Date(todayDate);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayStr = yesterday.toISOString().slice(0, 10);
+  const yesterdayDow = yesterday.getDay();
+
+  const yesterdayScheduled = allHabits.filter((h) =>
+    isHabitScheduledForDay(h.scheduleType, h.scheduleDays || [], yesterdayDow),
+  );
+
+  if (yesterdayScheduled.length > 0) {
+    let missedYesterday = 0;
+    let maxStreak = 0;
+
+    for (const habit of yesterdayScheduled) {
+      const status = historyLogMap[`${habit.id}:${yesterdayStr}`];
+      if (!status || status === "missed" || status === "pending") {
+        missedYesterday++;
+        if (habit.currentStreak > maxStreak) maxStreak = habit.currentStreak;
+      }
+    }
+
+    if (missedYesterday > 0) {
+      const missRatio = missedYesterday / yesterdayScheduled.length;
+      if (maxStreak >= 7 && missRatio < 0.5) {
+        recoveryMessage = `One slip doesn't erase your progress. Your longest active streak is ${maxStreak} days. Keep going.`;
+      } else if (missRatio >= 0.7) {
+        recoveryMessage =
+          "Every expert was once a beginner. Start with just one habit today.";
+      } else {
+        recoveryMessage = "Yesterday was tough. Today is what matters.";
+      }
+    }
+  }
+
+  // ─────────────────────────────────────────
+  // Perfect day count (this month)
+  // ─────────────────────────────────────────
+  const monthStart = new Date(todayDate.getFullYear(), todayDate.getMonth(), 1);
+  let perfectDayCount = 0;
+
+  for (
+    let d = new Date(monthStart);
+    d < todayDate;
+    d.setDate(d.getDate() + 1)
+  ) {
+    const dateStr = d.toISOString().slice(0, 10);
+    const dow = d.getDay();
+
+    const dayScheduled = allHabits.filter((h) =>
+      isHabitScheduledForDay(h.scheduleType, h.scheduleDays || [], dow),
+    );
+
+    if (dayScheduled.length === 0) continue;
+
+    const allCompleted = dayScheduled.every((h) => {
+      const status = historyLogMap[`${h.id}:${dateStr}`];
+      return status === "completed" || status === "skipped";
+    });
+
+    if (allCompleted) perfectDayCount++;
+  }
+
   const timeNudge = getTimeOfDayNudge();
 
   return (
     <div className="p-4 sm:p-8 max-w-7xl mx-auto space-y-8 sm:space-y-10">
       {/* Header */}
-      <div className="space-y-2 animate-slide-up" style={{ animationDelay: "0s", animationFillMode: "both" }}>
+      <div
+        className="space-y-2 animate-slide-up"
+        style={{ animationDelay: "0s", animationFillMode: "both" }}
+      >
         <p className="text-lg font-serif italic text-[#FFF8F0]/60">
           your garden is growing 🌱
         </p>
@@ -220,9 +463,7 @@ export default async function HabitsPage() {
             {todayCompleted} of {totalScheduled}
           </h1>
         </div>
-        <p className="text-sm text-[#FEC89A]">
-          {timeNudge}
-        </p>
+        <p className="text-sm text-[#FEC89A]">{timeNudge}</p>
         <p className="text-[11px] font-mono text-[#FFF8F0]/30 tracking-wider">
           {dateLabel}
         </p>
@@ -230,13 +471,18 @@ export default async function HabitsPage() {
         <div className="w-full max-w-md h-1.5 bg-[#FFF8F0]/[0.05] rounded-full overflow-hidden mt-3">
           <div
             className="h-full bg-gradient-to-r from-[#34D399] to-[#2DD4BF] rounded-full transition-all duration-500"
-            style={{ width: `${totalScheduled > 0 ? (todayCompleted / totalScheduled) * 100 : 0}%` }}
+            style={{
+              width: `${totalScheduled > 0 ? (todayCompleted / totalScheduled) * 100 : 0}%`,
+            }}
           />
         </div>
       </div>
 
       {/* Two-column layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 animate-slide-up" style={{ animationDelay: "0.08s", animationFillMode: "both" }}>
+      <div
+        className="grid grid-cols-1 lg:grid-cols-5 gap-8 animate-slide-up"
+        style={{ animationDelay: "0.08s", animationFillMode: "both" }}
+      >
         {/* Left column: Habit tracker */}
         <div className="lg:col-span-3">
           <HabitTracker
@@ -246,6 +492,12 @@ export default async function HabitsPage() {
             archivedHabits={archivedHabits}
             todayLogs={todayLogMap}
             date={today}
+            templates={templates}
+            diagnosisFlags={diagnosisFlags}
+            keystoneHabitIds={keystoneHabitIds}
+            recoveryMessage={recoveryMessage}
+            perfectDayCount={perfectDayCount}
+            daysOfData={daysOfData}
           />
         </div>
 
@@ -257,6 +509,9 @@ export default async function HabitsPage() {
             logMap={historyLogMap}
             trends={trends}
             mostMissed={mostMissed}
+            keystoneInsights={keystoneInsights}
+            perfectDayCount={perfectDayCount}
+            daysOfData={daysOfData}
           />
         </div>
       </div>

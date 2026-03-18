@@ -3,7 +3,11 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { logMirrorSignal } from "@/lib/mirror/signals";
-import type { ScheduleType, HabitLogStatus } from "@/lib/db/schema";
+import type {
+  ScheduleType,
+  HabitLogStatus,
+  DiagnosisType,
+} from "@/lib/db/schema";
 import { getScheduledDaySet } from "@/lib/habits";
 
 // ─────────────────────────────────────────
@@ -15,10 +19,20 @@ export async function createHabit(
   emoji: string | null,
   groupId: string | null,
   scheduleType: ScheduleType,
-  scheduleDays: number[]
-) {
+  scheduleDays: number[],
+  advanced?: {
+    purpose?: string;
+    identity?: string;
+    tinyVersion?: string;
+    anchorText?: string;
+    habitType?: "build" | "break";
+    breakTarget?: number;
+  },
+): Promise<string> {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
 
   // Get next sort_order for this group
@@ -41,7 +55,7 @@ export async function createHabit(
     nextSort = existing && existing.length > 0 ? existing[0].sort_order + 1 : 0;
   }
 
-  const { error } = await supabase.from("habits").insert({
+  const insertData: Record<string, unknown> = {
     user_id: user.id,
     name,
     emoji: emoji || null,
@@ -49,11 +63,26 @@ export async function createHabit(
     schedule_type: scheduleType,
     schedule_days: scheduleDays,
     sort_order: nextSort,
-  });
+  };
+
+  // Advanced behavioral fields
+  if (advanced?.purpose) insertData.purpose = advanced.purpose;
+  if (advanced?.identity) insertData.identity = advanced.identity;
+  if (advanced?.tinyVersion) insertData.tiny_version = advanced.tinyVersion;
+  if (advanced?.anchorText) insertData.anchor_text = advanced.anchorText;
+  if (advanced?.habitType) insertData.habit_type = advanced.habitType;
+  if (advanced?.breakTarget) insertData.break_target = advanced.breakTarget;
+
+  const { data, error } = await supabase
+    .from("habits")
+    .insert(insertData)
+    .select("id")
+    .single();
   if (error) throw new Error(error.message);
 
   revalidatePath("/habits");
   revalidatePath("/dashboard");
+  return data.id;
 }
 
 export async function updateHabit(
@@ -65,16 +94,34 @@ export async function updateHabit(
     scheduleType?: ScheduleType;
     scheduleDays?: number[];
     sortOrder?: number;
-  }
+    purpose?: string | null;
+    identity?: string | null;
+    tinyVersion?: string | null;
+    anchorText?: string | null;
+    habitType?: "build" | "break";
+    breakTarget?: number | null;
+  },
 ) {
   const supabase = await createClient();
-  const update: Record<string, unknown> = { updated_at: new Date().toISOString() };
+  const update: Record<string, unknown> = {
+    updated_at: new Date().toISOString(),
+  };
   if (fields.name !== undefined) update.name = fields.name;
   if (fields.emoji !== undefined) update.emoji = fields.emoji;
   if (fields.groupId !== undefined) update.group_id = fields.groupId;
-  if (fields.scheduleType !== undefined) update.schedule_type = fields.scheduleType;
-  if (fields.scheduleDays !== undefined) update.schedule_days = fields.scheduleDays;
+  if (fields.scheduleType !== undefined)
+    update.schedule_type = fields.scheduleType;
+  if (fields.scheduleDays !== undefined)
+    update.schedule_days = fields.scheduleDays;
   if (fields.sortOrder !== undefined) update.sort_order = fields.sortOrder;
+  if (fields.purpose !== undefined) update.purpose = fields.purpose;
+  if (fields.identity !== undefined) update.identity = fields.identity;
+  if (fields.tinyVersion !== undefined)
+    update.tiny_version = fields.tinyVersion;
+  if (fields.anchorText !== undefined) update.anchor_text = fields.anchorText;
+  if (fields.habitType !== undefined) update.habit_type = fields.habitType;
+  if (fields.breakTarget !== undefined)
+    update.break_target = fields.breakTarget;
 
   const { error } = await supabase.from("habits").update(update).eq("id", id);
   if (error) throw new Error(error.message);
@@ -126,10 +173,12 @@ export async function reorderHabits(orderedIds: string[]) {
 export async function createHabitGroup(
   name: string,
   emoji: string | null,
-  timeOfDay: "morning" | "afternoon" | "evening" | "anytime"
+  timeOfDay: "morning" | "afternoon" | "evening" | "anytime",
 ) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
 
   const { data: existing } = await supabase
@@ -137,7 +186,8 @@ export async function createHabitGroup(
     .select("sort_order")
     .order("sort_order", { ascending: false })
     .limit(1);
-  const nextSort = existing && existing.length > 0 ? existing[0].sort_order + 1 : 0;
+  const nextSort =
+    existing && existing.length > 0 ? existing[0].sort_order + 1 : 0;
 
   const { error } = await supabase.from("habit_groups").insert({
     user_id: user.id,
@@ -157,15 +207,20 @@ export async function updateHabitGroup(
     name?: string;
     emoji?: string | null;
     timeOfDay?: "morning" | "afternoon" | "evening" | "anytime";
-  }
+  },
 ) {
   const supabase = await createClient();
-  const update: Record<string, unknown> = { updated_at: new Date().toISOString() };
+  const update: Record<string, unknown> = {
+    updated_at: new Date().toISOString(),
+  };
   if (fields.name !== undefined) update.name = fields.name;
   if (fields.emoji !== undefined) update.emoji = fields.emoji;
   if (fields.timeOfDay !== undefined) update.time_of_day = fields.timeOfDay;
 
-  const { error } = await supabase.from("habit_groups").update(update).eq("id", id);
+  const { error } = await supabase
+    .from("habit_groups")
+    .update(update)
+    .eq("id", id);
   if (error) throw new Error(error.message);
 
   revalidatePath("/habits");
@@ -192,6 +247,129 @@ export async function reorderHabitGroups(orderedIds: string[]) {
 }
 
 // ─────────────────────────────────────────
+// ADOPT TEMPLATE
+// ─────────────────────────────────────────
+
+export async function adoptTemplate(
+  templateId: string,
+  groupId: string | null,
+) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
+  // Fetch template
+  const { data: template, error: tErr } = await supabase
+    .from("habit_templates")
+    .select("*")
+    .eq("id", templateId)
+    .single();
+  if (tErr || !template) throw new Error("Template not found");
+
+  // Convert default_schedule to ScheduleType + days
+  const scheduleType = template.default_schedule as ScheduleType;
+  const scheduleDays =
+    scheduleType === "weekdays"
+      ? [1, 2, 3, 4, 5]
+      : scheduleType === "weekends"
+        ? [0, 6]
+        : [];
+
+  return createHabit(
+    template.name,
+    template.emoji || null,
+    groupId,
+    scheduleType,
+    scheduleDays,
+    {
+      purpose: template.purpose || undefined,
+      tinyVersion: template.tiny_version || undefined,
+      anchorText: template.anchor_text || undefined,
+    },
+  );
+}
+
+// ─────────────────────────────────────────
+// HABIT DIAGNOSIS (B=MAP)
+// ─────────────────────────────────────────
+
+export async function submitDiagnosis(
+  habitId: string,
+  diagnosis: DiagnosisType,
+  actionTaken?: string,
+) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
+  const { error } = await supabase.from("habit_diagnoses").insert({
+    habit_id: habitId,
+    user_id: user.id,
+    diagnosis,
+    action_taken: actionTaken || null,
+  });
+  if (error) throw new Error(error.message);
+
+  // Fire Mirror AI signal
+  try {
+    logMirrorSignal({
+      type: "habit",
+      context: {
+        event: `diagnosis_${diagnosis}`,
+        habit_id: habitId,
+        action_taken: actionTaken || null,
+      },
+    });
+  } catch {
+    // Non-critical
+  }
+
+  revalidatePath("/habits");
+}
+
+export async function dismissDiagnosis(diagnosisId: string) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("habit_diagnoses")
+    .update({ dismissed_at: new Date().toISOString() })
+    .eq("id", diagnosisId);
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/habits");
+}
+
+// ─────────────────────────────────────────
+// BULK COMPLETE (Recovery "I'm back" button)
+// ─────────────────────────────────────────
+
+export async function bulkCompleteToday(habitIds: string[], date: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
+  for (const habitId of habitIds) {
+    await supabase.from("habit_logs").upsert(
+      {
+        habit_id: habitId,
+        user_id: user.id,
+        date,
+        status: "completed",
+      },
+      { onConflict: "habit_id,date" },
+    );
+  }
+
+  revalidatePath("/habits");
+  revalidatePath("/dashboard");
+}
+
+// ─────────────────────────────────────────
 // TOGGLE HABIT LOG (primary action)
 // ─────────────────────────────────────────
 
@@ -199,10 +377,12 @@ export async function toggleHabitLog(
   habitId: string,
   date: string,
   newStatus: HabitLogStatus,
-  note?: string | null
+  note?: string | null,
 ): Promise<{ currentStreak: number; bestStreak: number }> {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
 
   // Step 1: Upsert the log entry — THIS is the critical save
@@ -214,7 +394,7 @@ export async function toggleHabitLog(
       status: newStatus,
       note: note ?? null,
     },
-    { onConflict: "habit_id,date" }
+    { onConflict: "habit_id,date" },
   );
   if (error) throw new Error(error.message);
 
@@ -278,7 +458,7 @@ export async function toggleHabitLog(
  */
 async function recomputeStreak(
   supabase: Awaited<ReturnType<typeof createClient>>,
-  habitId: string
+  habitId: string,
 ) {
   // Get the habit's schedule
   const { data: habitRow } = await supabase
@@ -301,7 +481,10 @@ async function recomputeStreak(
     logMap.set(log.date, log.status);
   }
 
-  const scheduledDays = getScheduledDaySet(habitRow.schedule_type, habitRow.schedule_days || []);
+  const scheduledDays = getScheduledDaySet(
+    habitRow.schedule_type,
+    habitRow.schedule_days || [],
+  );
 
   // Walk backwards from today, computing current streak
   const today = new Date();
