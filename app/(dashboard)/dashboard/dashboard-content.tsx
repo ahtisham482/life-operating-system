@@ -27,7 +27,7 @@ export async function DashboardContent() {
       .select("*")
       .order("date", { ascending: false })
       .limit(60),
-    supabase.from("habit_entries").select("*").eq("date", today).limit(1),
+    supabase.from("habit_completion_summary").select("*").eq("date", today).limit(1),
     supabase.from("journal_entries").select("id").eq("date", today).limit(1),
     supabase.from("expenses").select("id").eq("date", today).limit(1),
     supabase
@@ -89,15 +89,13 @@ export async function DashboardContent() {
     .lte("updated_at", today + "T23:59:59");
   const tasksDoneToday = doneTodayRows?.length ?? 0;
 
-  // Habits
-  const habitEntry =
+  // Habits (from compatibility view)
+  const habitSummary =
     habitRows && habitRows.length > 0
-      ? fromDb<{ habits: Record<string, boolean> }>(habitRows[0])
+      ? fromDb<{ habitsCompleted: number; habitsTotal: number; completionRate: number }>(habitRows[0])
       : null;
-  const habitsCompleted = habitEntry
-    ? Object.values(habitEntry.habits).filter(Boolean).length
-    : 0;
-  const habitsTotal = 14;
+  const habitsCompleted = habitSummary?.habitsCompleted ?? 0;
+  const habitsTotal = habitSummary?.habitsTotal ?? 0;
 
   // Journal & Expenses
   const journalWritten = (journalRows?.length ?? 0) > 0;
@@ -142,7 +140,7 @@ export async function DashboardContent() {
   let primaryAction = "checkin";
   if (!todayCheckedIn) {
     primaryAction = "checkin";
-  } else if (!habitEntry || habitsCompleted < habitsTotal) {
+  } else if (!habitSummary || habitsCompleted < habitsTotal) {
     primaryAction = "habits";
   } else if (dayOfWeek === "Sunday") {
     primaryAction = "weekly";

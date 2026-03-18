@@ -68,7 +68,7 @@ export const taskDependenciesRelations = relations(taskDependencies, ({ one }) =
 }));
 
 // ─────────────────────────────────────────
-// DAILY HABIT TRACKER
+// DAILY HABIT TRACKER (legacy — deprecated, kept for backfill reference)
 // ─────────────────────────────────────────
 export type HabitChecks = {
   quickAction: boolean; exercise: boolean; clothes: boolean;
@@ -86,6 +86,61 @@ export const habitEntries = pgTable("habit_entries", {
   notes: text("notes"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
+
+// ─────────────────────────────────────────
+// HABITS SYSTEM (v2 — normalized tables)
+// ─────────────────────────────────────────
+export type TimeOfDay = "morning" | "afternoon" | "evening" | "anytime";
+export type ScheduleType = "daily" | "weekdays" | "weekends" | "custom";
+export type HabitLogStatus = "completed" | "skipped" | "missed" | "pending";
+
+export const habitGroups = pgTable("habit_groups", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: text("name").notNull(),
+  emoji: text("emoji"),
+  timeOfDay: text("time_of_day").$type<TimeOfDay>().default("anytime").notNull(),
+  sortOrder: integer("sort_order").default(0).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const habits = pgTable("habits", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: text("name").notNull(),
+  emoji: text("emoji"),
+  description: text("description"),
+  groupId: uuid("group_id").references(() => habitGroups.id, { onDelete: "set null" }),
+  scheduleType: text("schedule_type").$type<ScheduleType>().default("daily").notNull(),
+  scheduleDays: integer("schedule_days").array().default([]),
+  sortOrder: integer("sort_order").default(0).notNull(),
+  currentStreak: integer("current_streak").default(0).notNull(),
+  bestStreak: integer("best_streak").default(0).notNull(),
+  archivedAt: timestamp("archived_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const habitLogs = pgTable("habit_logs", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  habitId: uuid("habit_id").notNull().references(() => habits.id, { onDelete: "cascade" }),
+  date: date("date").notNull(),
+  status: text("status").$type<HabitLogStatus>().default("pending").notNull(),
+  note: text("note"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const habitGroupsRelations = relations(habitGroups, ({ many }) => ({
+  habits: many(habits),
+}));
+
+export const habitsRelations = relations(habits, ({ one, many }) => ({
+  group: one(habitGroups, { fields: [habits.groupId], references: [habitGroups.id] }),
+  logs: many(habitLogs),
+}));
+
+export const habitLogsRelations = relations(habitLogs, ({ one }) => ({
+  habit: one(habits, { fields: [habitLogs.habitId], references: [habits.id] }),
+}));
 
 // ─────────────────────────────────────────
 // BOOK ACTION ITEMS
@@ -185,6 +240,9 @@ export type ParsedRoute = {
 export type Task = typeof tasks.$inferSelect;
 export type NewTask = typeof tasks.$inferInsert;
 export type HabitEntry = typeof habitEntries.$inferSelect;
+export type HabitGroup = typeof habitGroups.$inferSelect;
+export type Habit = typeof habits.$inferSelect;
+export type HabitLog = typeof habitLogs.$inferSelect;
 export type BookActionItem = typeof bookActionItems.$inferSelect;
 export type JournalEntry = typeof journalEntries.$inferSelect;
 export type Expense = typeof expenses.$inferSelect;

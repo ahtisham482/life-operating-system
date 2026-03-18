@@ -35,7 +35,7 @@ create table if not exists task_dependencies (
 );
 
 -- ─────────────────────────────────────────────────────────────
--- DAILY HABIT TRACKER
+-- DAILY HABIT TRACKER (legacy — deprecated, kept for data preservation)
 -- ─────────────────────────────────────────────────────────────
 create table if not exists habit_entries (
   id uuid primary key default gen_random_uuid(),
@@ -51,6 +51,67 @@ create table if not exists habit_entries (
   notes text,
   created_at timestamptz not null default now()
 );
+
+-- ─────────────────────────────────────────────────────────────
+-- HABITS SYSTEM v2 (normalized tables)
+-- ─────────────────────────────────────────────────────────────
+create table if not exists habit_groups (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  emoji text,
+  time_of_day text not null default 'anytime'
+    check (time_of_day in ('morning','afternoon','evening','anytime')),
+  sort_order integer not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists habits (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  emoji text,
+  description text,
+  group_id uuid references habit_groups(id) on delete set null,
+  schedule_type text not null default 'daily'
+    check (schedule_type in ('daily','weekdays','weekends','custom')),
+  schedule_days integer[] default '{}'::integer[],
+  sort_order integer not null default 0,
+  current_streak integer not null default 0,
+  best_streak integer not null default 0,
+  archived_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists habit_logs (
+  id uuid primary key default gen_random_uuid(),
+  habit_id uuid not null references habits(id) on delete cascade,
+  date date not null,
+  status text not null default 'pending'
+    check (status in ('completed','skipped','missed','pending')),
+  note text,
+  created_at timestamptz not null default now(),
+  unique (habit_id, date)
+);
+
+-- Compatibility view for Pulse Score + Mirror AI
+create or replace view habit_completion_summary as
+select
+  hl.date,
+  count(*) filter (where hl.status = 'completed') as habits_completed,
+  count(*) filter (where hl.status in ('completed', 'missed', 'pending')) as habits_total,
+  case
+    when count(*) filter (where hl.status in ('completed', 'missed', 'pending')) > 0
+    then round(
+      count(*) filter (where hl.status = 'completed')::numeric /
+      count(*) filter (where hl.status in ('completed', 'missed', 'pending'))::numeric * 100
+    )
+    else 0
+  end as completion_rate
+from habit_logs hl
+join habits h on h.id = hl.habit_id
+where h.archived_at is null
+group by hl.date;
 
 -- ─────────────────────────────────────────────────────────────
 -- BOOK ACTION ITEMS
@@ -135,6 +196,13 @@ create index if not exists idx_tasks_life_area on tasks(life_area);
 create index if not exists idx_tasks_recurring on tasks(recurring);
 create index if not exists idx_tasks_parent on tasks(parent_project_id);
 create index if not exists idx_habit_entries_date on habit_entries(date);
+create index if not exists idx_habit_groups_sort on habit_groups(sort_order);
+create index if not exists idx_habits_group on habits(group_id);
+create index if not exists idx_habits_active on habits(archived_at) where archived_at is null;
+create index if not exists idx_habits_sort on habits(group_id, sort_order);
+create index if not exists idx_habit_logs_date on habit_logs(date);
+create index if not exists idx_habit_logs_habit_date on habit_logs(habit_id, date desc);
+create index if not exists idx_habit_logs_status on habit_logs(date, status);
 create index if not exists idx_expenses_date on expenses(date);
 create index if not exists idx_journal_date on journal_entries(date);
 create index if not exists idx_book_items_book on book_action_items(book_name, phase_number);
@@ -148,6 +216,9 @@ create index if not exists idx_engine_logs_name on engine_logs(engine_name, run_
 alter table tasks disable row level security;
 alter table task_dependencies disable row level security;
 alter table habit_entries disable row level security;
+alter table habit_groups disable row level security;
+alter table habits disable row level security;
+alter table habit_logs disable row level security;
 alter table book_action_items disable row level security;
 alter table journal_entries disable row level security;
 alter table expenses disable row level security;
