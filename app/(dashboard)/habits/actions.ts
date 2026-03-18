@@ -6,6 +6,14 @@ import { logMirrorSignal } from "@/lib/mirror/signals";
 import type { ScheduleType, HabitLogStatus } from "@/lib/db/schema";
 import { getScheduledDaySet } from "@/lib/habits";
 
+/** Get the authenticated user's ID, or throw */
+async function getUserId() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+  return user.id;
+}
+
 // ─────────────────────────────────────────
 // HABIT CRUD
 // ─────────────────────────────────────────
@@ -18,6 +26,7 @@ export async function createHabit(
   scheduleDays: number[]
 ) {
   const supabase = await createClient();
+  const userId = await getUserId();
 
   // Get next sort_order for this group
   const { data: existing } = await supabase
@@ -29,6 +38,7 @@ export async function createHabit(
   const nextSort = existing && existing.length > 0 ? existing[0].sort_order + 1 : 0;
 
   const { error } = await supabase.from("habits").insert({
+    user_id: userId,
     name,
     emoji: emoji || null,
     group_id: groupId,
@@ -115,6 +125,7 @@ export async function createHabitGroup(
   timeOfDay: "morning" | "afternoon" | "evening" | "anytime"
 ) {
   const supabase = await createClient();
+  const userId = await getUserId();
 
   const { data: existing } = await supabase
     .from("habit_groups")
@@ -124,6 +135,7 @@ export async function createHabitGroup(
   const nextSort = existing && existing.length > 0 ? existing[0].sort_order + 1 : 0;
 
   const { error } = await supabase.from("habit_groups").insert({
+    user_id: userId,
     name,
     emoji: emoji || null,
     time_of_day: timeOfDay,
@@ -184,11 +196,13 @@ export async function toggleHabitLog(
   newStatus: HabitLogStatus
 ) {
   const supabase = await createClient();
+  const userId = await getUserId();
 
   // Upsert the log entry
   const { error } = await supabase.from("habit_logs").upsert(
     {
       habit_id: habitId,
+      user_id: userId,
       date,
       status: newStatus,
     },

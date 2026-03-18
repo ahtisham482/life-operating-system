@@ -47,6 +47,7 @@ export default async function HabitsPage() {
   const [
     { data: groupRows },
     { data: habitRows },
+    { data: archivedHabitRows },
     { data: logRows },
     { data: recentLogRows },
   ] = await Promise.all([
@@ -59,6 +60,11 @@ export default async function HabitsPage() {
       .select("*")
       .is("archived_at", null)
       .order("sort_order", { ascending: true }),
+    supabase
+      .from("habits")
+      .select("*")
+      .not("archived_at", "is", null)
+      .order("updated_at", { ascending: false }),
     supabase
       .from("habit_logs")
       .select("*")
@@ -74,6 +80,7 @@ export default async function HabitsPage() {
 
   const groups = (groupRows || []).map((r) => fromDb<HabitGroup>(r));
   const allHabits = (habitRows || []).map((r) => fromDb<Habit>(r));
+  const archivedHabits = (archivedHabitRows || []).map((r) => fromDb<Habit>(r));
   const todayLogs = (logRows || []).map((r) => fromDb<HabitLog>(r));
   const recentLogs = (recentLogRows || []).map((r) => fromDb<HabitLog>(r));
 
@@ -195,6 +202,7 @@ export default async function HabitsPage() {
             groups={sortedGroups}
             habits={scheduledHabits}
             notTodayHabits={notTodayHabits}
+            archivedHabits={archivedHabits}
             todayLogs={todayLogMap}
             date={today}
           />
