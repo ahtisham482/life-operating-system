@@ -1363,7 +1363,11 @@ function SortableHabitCard(props: {
     zIndex: isDragging ? 10 : undefined,
   };
   return (
-    <div ref={setNodeRef} style={style}>
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="relative [&:has([data-menu-open])]:z-50"
+    >
       <HabitCard {...props} dragHandleProps={{ ...attributes, ...listeners }} />
     </div>
   );
@@ -1731,6 +1735,7 @@ function HabitCard({
       <AnimatePresence>
         {showActions && (
           <motion.div
+            data-menu-open
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
