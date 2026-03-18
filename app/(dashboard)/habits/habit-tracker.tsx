@@ -1696,36 +1696,79 @@ function HabitCard({
           )}
         </div>
 
-        {/* Purpose display */}
-        {purpose && !isCompleted && !isSkipped && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setShowPurpose(!showPurpose);
-            }}
-            className="text-[9px] font-serif italic text-[#FFF8F0]/25 hover:text-[#FFF8F0]/40 transition-colors truncate block max-w-full text-left"
-          >
-            {showPurpose ? purpose : "why?"}
-          </button>
+        {/* "My Why" badge — visible indicator that profile data exists */}
+        {purpose && (
+          <div className="mt-1.5">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowPurpose(!showPurpose);
+              }}
+              className="inline-flex items-center gap-1 px-2 py-0.5 text-[9px] font-mono uppercase tracking-wider text-[#FEC89A]/70 bg-[#FEC89A]/[0.08] border border-[#FEC89A]/[0.15] rounded-md hover:bg-[#FEC89A]/[0.15] transition-colors"
+            >
+              ✦ My Why {showPurpose ? "▴" : "▾"}
+            </button>
+
+            {/* Expanded profile card */}
+            <AnimatePresence>
+              {showPurpose && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="overflow-hidden"
+                >
+                  <div className="mt-2 p-3 rounded-xl bg-[#FEC89A]/[0.04] border border-[#FEC89A]/[0.1] space-y-2.5">
+                    {purpose && (
+                      <div>
+                        <span className="text-[8px] font-mono text-[#FEC89A]/50 uppercase tracking-widest">
+                          Why
+                        </span>
+                        <p className="text-xs font-serif text-[#FFF8F0]/60 italic leading-relaxed">
+                          {purpose}
+                        </p>
+                      </div>
+                    )}
+                    {identity && (
+                      <div>
+                        <span className="text-[8px] font-mono text-[#FEC89A]/50 uppercase tracking-widest">
+                          Identity
+                        </span>
+                        <p className="text-xs font-serif text-[#FFF8F0]/60 italic leading-relaxed">
+                          {identity}
+                        </p>
+                      </div>
+                    )}
+                    {tinyVersion && (
+                      <div>
+                        <span className="text-[8px] font-mono text-[#FEC89A]/50 uppercase tracking-widest">
+                          2-Min Version
+                        </span>
+                        <p className="text-xs font-serif text-[#FFF8F0]/60 leading-relaxed">
+                          {tinyVersion}
+                        </p>
+                      </div>
+                    )}
+                    {anchorText && (
+                      <div>
+                        <span className="text-[8px] font-mono text-[#FEC89A]/50 uppercase tracking-widest">
+                          Anchor
+                        </span>
+                        <p className="text-xs font-serif text-[#FFF8F0]/60 leading-relaxed">
+                          {anchorText}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         )}
 
-        {/* Identity tooltip on purpose expand */}
-        <AnimatePresence>
-          {showPurpose && identity && (
-            <motion.p
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="text-[9px] font-mono text-[#FEC89A]/40 mt-0.5"
-            >
-              {identity}
-            </motion.p>
-          )}
-        </AnimatePresence>
-
-        {/* Anchor text */}
-        {anchorText && !isCompleted && !isSkipped && !showPurpose && (
-          <span className="text-[9px] font-mono text-[#FFF8F0]/15 block truncate">
+        {/* Anchor text hint (when profile exists but not expanded) */}
+        {anchorText && !showPurpose && (
+          <span className="text-[9px] font-mono text-[#FFF8F0]/30 block truncate">
             {anchorText}
           </span>
         )}
@@ -1742,8 +1785,8 @@ function HabitCard({
           </span>
         )}
 
-        {/* Tiny version prompt */}
-        {tinyVersion && !isCompleted && !isSkipped && (
+        {/* Tiny version quick-complete pill (only when not done and profile not expanded) */}
+        {tinyVersion && !isCompleted && !isSkipped && !showPurpose && (
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -1815,17 +1858,20 @@ function HabitCard({
             >
               Edit habit
             </button>
-            {!purpose && (
-              <button
-                onClick={() => {
+            <button
+              onClick={() => {
+                if (purpose) {
+                  setShowPurpose(true);
+                  setShowActions(false);
+                } else {
                   onOpenInterview(habit.id, habit.name);
                   setShowActions(false);
-                }}
-                className="w-full px-4 py-2 text-left text-xs font-mono text-[#FEC89A]/70 hover:bg-[#FEC89A]/10 transition-colors"
-              >
-                Build your why
-              </button>
-            )}
+                }
+              }}
+              className="w-full px-4 py-2 text-left text-xs font-mono text-[#FEC89A]/70 hover:bg-[#FEC89A]/10 transition-colors"
+            >
+              {purpose ? "View your why" : "Build your why"}
+            </button>
             <button
               onClick={() => {
                 onArchive();
