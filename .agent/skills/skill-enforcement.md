@@ -78,8 +78,11 @@ Project setup / CI config    │ Skill 10 (automation gates)
 
 ## SKILL FILE LOCATIONS
 
+Skills live in TWO possible locations. Project-specific takes priority.
+
 ```
-.agent/skills/
+GLOBAL (all projects):
+~/.claude/skills/
 ├── skill-enforcement.md      ← YOU ARE HERE (Skill 11)
 ├── pre-build-checklist.md    ← Skill 1
 ├── definition-of-done.md     ← Skill 2 ⛔ BLOCKING
@@ -91,8 +94,11 @@ Project setup / CI config    │ Skill 10 (automation gates)
 ├── performance-budget.md     ← Skill 8
 ├── security-checklist.md     ← Skill 9
 ├── automation-gates.md       ← Skill 10
-├── testing-strategy.md      ← Skill 12 ⚠️ MANDATORY
-└── deploy-confidence.md     ← Skill 13
+├── testing-strategy.md       ← Skill 12 ⚠️ MANDATORY
+└── deploy-confidence.md      ← Skill 13
+
+PROJECT-SPECIFIC (overrides global):
+.agent/skills/  ← If this folder exists, read skills from HERE instead
 ```
 
 ---
