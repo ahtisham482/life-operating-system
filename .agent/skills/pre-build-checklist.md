@@ -14,6 +14,13 @@ Run this checklist BEFORE writing any feature code. Every check has a YES/NO gat
 - [ ] What does failure look like? What should happen when something goes wrong?
 - [ ] Are there any edge cases the user mentioned? (Examples: "what if there are 100 items?", "what if the name is really long?")
 
+### Write the commit message first
+
+- Before writing any code, write the commit message for the finished feature
+- If you can't describe what you're building in one sentence, you don't understand it yet
+- This sentence becomes your spec, your commit message, and your verification target
+- Source: Stripe's "shipped email" practice — they draft the announcement BEFORE building
+
 **Gate:** Can you explain this feature to someone in plain English without hesitation? YES → proceed. NO → ask the user to clarify.
 
 ---
@@ -30,6 +37,14 @@ Run this checklist BEFORE writing any feature code. Every check has a YES/NO gat
 - [ ] Search for similar naming patterns (e.g., if building a "TaskCard", search for "Card", "Task", "Item").
 - [ ] Check if there's an existing design pattern you should follow. Look at how similar features were built. Match the same style.
 - [ ] Check if there's a shared component you can reuse instead of creating a new one (buttons, modals, forms, cards, empty states, loading skeletons).
+
+### Concrete search patterns
+
+- Search for similar component names: `grep -r "ComponentName" --include="*.tsx"`
+- Search for similar function names: `grep -r "functionName" --include="*.ts"`
+- Search for components with similar props: `grep -r "propName" --include="*.tsx"`
+- Search for similar files in the same directory: `glob "src/components/**/*.tsx"`
+- If you find something similar, REUSE or EXTEND it — don't create a duplicate
 
 **Gate:** You've searched and confirmed this doesn't already exist, OR you've found existing pieces you'll reuse. YES → proceed. NO → search again.
 
@@ -91,6 +106,20 @@ Draw the flow: **Source** → **Transform** → **Display** → **User Action** 
   - Enum/allowed values match (if DB only allows "low", "medium", "high" — the form should only offer those options)
 - [ ] Check foreign keys — if the form references another table (like user_id or project_id), make sure those IDs are valid.
 
+### TypeScript interface mapping
+
+- Write the EXACT TypeScript interface for the data your form will send:
+  ```typescript
+  interface CheckinData {
+    mood: number; // DB: mood smallint CHECK (1-5)
+    energy: number; // DB: energy smallint CHECK (1-5)
+    notes: string; // DB: notes text, nullable
+  }
+  ```
+- For each field, write the DB column name, type, and constraints next to it
+- If they don't match → fix BEFORE writing any code
+- This would have prevented the boolean→numeric mismatch bug
+
 **Gate:** Every form field has a verified matching database column with correct types and constraints. YES → proceed. NO → fix the mismatch.
 
 ---
@@ -131,6 +160,15 @@ You MUST cover ALL 9 states. This is a required step, not a mental note.
 - [ ] **Long content** — Text is very long, names are 200 characters. Does the layout break? Truncate or wrap.
 - [ ] **Many items** — What happens with 100+ items? Pagination, virtual scrolling, or "show more"?
 - [ ] **Offline** — Network is down. Show cached data or a clear offline message.
+
+### Map the transitions, not just the states
+
+- Don't just LIST the states — MAP the transitions between them
+- For each state, answer: "What event moves the user to the NEXT state?"
+- Draw the arrows, not just the boxes
+- Example: Loading → (success) → Happy Path, Loading → (timeout) → Error, Loading → (empty response) → Empty State
+- Ask: "What happens if the user clicks Back during loading? What happens if the network drops?"
+- This is what prevents the "AI auto-concluding" and "AI auto-scrolling" bugs — those were missing transitions
 
 Write the transitions:
 

@@ -85,6 +85,16 @@ Error:   { success: false, error: "Specific message", details: {...} }
 
 NEVER return a generic "Internal server error" — always include enough detail to debug. The error message should tell you (or the user) what went wrong and where to look.
 
+Standardized error response format:
+
+```
+{ success: false, error: { code: "VALIDATION_ERROR", message: "Email is required", field: "email", retryable: false } }
+```
+
+- Retryable codes: `UNAVAILABLE`, `TIMEOUT`, `RATE_LIMIT` — the client can retry with exponential backoff.
+- Non-retryable codes: `VALIDATION_ERROR`, `AUTH_FAILED`, `NOT_FOUND` — fail immediately, do not retry.
+- NEVER return raw error strings, stack traces, or database error messages to the client. These leak internal details and help attackers.
+
 ---
 
 ## 6. Type Safety Rules
@@ -95,6 +105,9 @@ NEVER return a generic "Internal server error" — always include enough detail 
 - NEVER use `any` type — use `unknown` and narrow with type guards.
   - `any` turns off TypeScript's protection. `unknown` keeps it on but lets you check the type before using it.
 - Count the `as` assertions in your code — each one is a potential runtime crash waiting to happen.
+- **Hard rule: every `as` assertion MUST be accompanied by a runtime check.** If you cannot write the runtime check, you cannot use `as`.
+- Replace `as` with Zod `.parse()` or `.safeParse()` wherever possible — these give you real validation, not just a promise.
+- The project currently has 253 `as` assertions — each one is a potential runtime bug waiting to surface.
 
 ---
 
@@ -134,3 +147,34 @@ auth -> validate -> execute -> respond
   - Disable the button while the async operation is running, OR
   - Use a request queue so actions happen in order.
 - Never leave the UI in an inconsistent state after a failed network request. If you showed a success state but the server said "no," undo it.
+
+Full rollback pattern (follow in order):
+
+1. Save the previous state before applying the optimistic update.
+2. Apply the optimistic update immediately — the user sees instant feedback.
+3. Send the request to the server in the background.
+4. If the server succeeds — done, no further action needed.
+5. If the server fails — revert to the saved previous state AND show a toast notification explaining what went wrong.
+6. Never leave the UI in a state that does not match the server. If the server says "no," the UI must reflect that.
+
+---
+
+## 10. Zod Schema Sharing
+
+The SAME Zod schema should be used in 3 places: form validation (client), API validation (server), and database type checking. One schema, three uses, zero drift.
+
+- Put shared schemas in `lib/schemas/` (e.g., `lib/schemas/habit.ts`).
+- Example: `export const habitSchema = z.object({ name: z.string().min(1), frequency: z.enum(['daily', 'weekly']) })`
+- Import this schema in your form component AND your API route — they are guaranteed to match.
+- When you change the schema, both the form and the API update automatically. No more "the form sends a field the API doesn't expect."
+
+---
+
+## 11. Database Automation
+
+Use Postgres triggers and functions to automate repetitive database tasks. These run inside the database itself, so they cannot be bypassed by application code.
+
+- **Auto-update timestamps:** Use `CREATE TRIGGER` to automatically set `updated_at` on every row modification. You never have to remember to set it in your API code.
+- **Audit logging:** Create triggers that log changes to sensitive data (who changed what, when, and the old value). Essential for debugging and compliance.
+- **Use `SECURITY DEFINER`** for triggers that need elevated permissions (e.g., writing to an audit table the user cannot directly access).
+- **Database functions for complex logic:** Put validation and calculation logic (like calculating habit streaks from check-in history) in database functions. They run faster than API-level code and cannot be bypassed by direct database access.

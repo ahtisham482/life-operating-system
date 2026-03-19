@@ -35,6 +35,7 @@ CSS `transform` creates a new stacking context. This means: an element inside a 
 - Use the CSS `:has()` pseudo-class to dynamically boost the z-index of the transformed parent when a child needs to appear on top
 - Use `isolation: isolate` on component roots to create predictable stacking contexts
 - Example: `.card:has([data-dropdown-open]) { z-index: 100; }`
+- Note: `opacity` (any value < 1), `filter`, `will-change`, and `perspective` also create new stacking contexts — the same z-index issues as transform apply to all of these
 
 ### Drag-and-Drop Libraries (@dnd-kit, react-beautiful-dnd)
 
@@ -151,7 +152,9 @@ Every clickable element needs all four states. No exceptions.
 
 - Must be visible — never remove the default focus ring without replacing it
 - Keyboard users rely on focus indicators to know where they are on the page
-- Use `focus-visible:` (not `focus:`) to avoid showing focus rings on mouse clicks
+- Use `focus-visible:` (NOT `focus:`) for focus styles — this only shows the focus ring for keyboard users, not mouse clicks
+- NEVER remove the default focus ring (`outline: none`) without providing a visible replacement
+- Example: `focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none`
 
 ---
 
@@ -209,3 +212,39 @@ All modals and dropdowns must match the app's dark theme. No white modals poppin
 - **Disabled states should not animate** — if a button is disabled, it should not have hover animations or transitions.
 - **Reduce motion**: Respect `prefers-reduced-motion` media query. Wrap animations in a check or use Framer Motion's built-in support.
 - **No animation on initial page load** for lists — animating 20 items sliding in is distracting, not delightful.
+
+---
+
+## 10. Font Loading Strategy
+
+- Every custom font MUST use `next/font` (from `next/font/google` or `next/font/local`)
+- Always set `display: 'swap'` — prevents invisible text while the font loads
+- Enable `adjustFontFallback` — prevents layout shift (CLS) when the font swaps in
+- NEVER load fonts from external CDNs (Google Fonts CDN, Adobe Fonts, etc.)
+- `next/font` automatically self-hosts fonts, eliminating external network requests
+
+---
+
+## 11. Image Optimization Checklist
+
+Every image in the app must follow these rules:
+
+- Always use the `next/image` component (never raw `<img>` tags)
+- Always set explicit `width` and `height` props (prevents CLS — layout shift)
+- Set `priority` on above-the-fold images (hero images, logos) — improves LCP
+- Set `loading="lazy"` on below-fold images (loaded only when scrolled to)
+- Use the `sizes` attribute for responsive images: `sizes="(max-width: 768px) 100vw, 50vw"`
+- For background images, use CSS `background-image` with optimized sources
+
+---
+
+## 12. Design Token Basics
+
+Keep your UI consistent by using Tailwind's built-in token system:
+
+- **Spacing**: use Tailwind's spacing scale (p-1, p-2, p-3, p-4...) — never invent custom pixel values like `p-[13px]`
+- **Colors**: reference color tokens from `tailwind.config.ts` — never hardcode hex values
+- **Border radius**: use the scale (rounded-sm, rounded, rounded-md, rounded-lg) — not arbitrary values
+- **Shadows**: use the scale (shadow-sm, shadow, shadow-md, shadow-lg) — not custom box-shadow
+- Rule: if a value doesn't exist in Tailwind's token system, don't use it — extend the config instead
+- This prevents the "every component uses slightly different spacing" problem

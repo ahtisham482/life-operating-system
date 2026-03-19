@@ -20,11 +20,34 @@ PLAN -> BUILD -> VERIFY -> SHIP -> CAPTURE
 
 Do not skip steps. The most tempting one to skip is VERIFY — that is the one that saves you the most time.
 
+### Timing guidance
+
+- First 10 minutes: review what's in progress, what's blocked, what's next
+- Build phase: maximum 2-hour focused blocks (longer = diminishing returns)
+- After each block: commit, push, verify Vercel preview
+- Last 10 minutes: update progress, capture learnings, plan next session
+
+### Context decay rule
+
+- When Claude Code's context window hits ~50% usage, start a new session
+- Long sessions cause quality degradation — short, focused sessions are better
+- Before ending: save learnings to memory so the next session doesn't repeat work
+
 ---
 
 ## 2. The 30-Minute Spec Rule
 
 If a feature will take more than 1 hour to build, write a brief spec FIRST.
+
+### Shipped email first
+
+Before starting any feature that takes more than 1 hour, write 3 things:
+
+1. One sentence describing what the finished feature does
+2. 3-5 acceptance criteria (how you'll know it works)
+3. The commit message you'll use when it's done
+
+This becomes your spec, your checklist, and your finish line. Source: Stripe engineers draft the "shipped@ email" BEFORE building.
 
 Spec format:
 
@@ -87,6 +110,10 @@ Run through this checklist after every push:
 - [ ] Click through the happy path — does the feature actually work?
 - [ ] Check in an incognito/private window — no cached state hiding bugs.
 - [ ] Verify the feature is VISIBLE — would a real user find it without being told where to look?
+- [ ] Check browser console for JavaScript errors (zero red entries)
+- [ ] Check network tab for failed requests (zero red/4xx/5xx entries)
+- [ ] Test on mobile viewport (resize to 375px width)
+- [ ] Cross-reference: see Skill 13 (Deploy Confidence) for full production checklist
 
 That last point catches a common problem: the feature works perfectly but nobody can find it because there is no link, no button, or no menu entry pointing to it.
 
@@ -102,6 +129,14 @@ That last point catches a common problem: the feature works perfectly but nobody
   - "Let me just quickly add..."
 - The correct response to scope creep: "Good idea — I'll note that for v2. Let's ship v1 first."
 - Shipping something small that works is always better than shipping something big that is half-broken.
+
+### Exact phrases for scope control
+
+Use these when scope creep appears — they make scope control feel like process, not pushback:
+
+- "That's a v2 feature — I'll add it to the backlog"
+- "That's a nice-to-have — the MVP ships without it"
+- "That's a separate PR — let's ship this one first"
 
 ---
 

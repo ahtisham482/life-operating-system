@@ -20,6 +20,8 @@ if (!user) {
 - This check goes at the TOP of every route handler, before any other logic
 - If there's no authenticated user, return 401 immediately
 - Never assume a request is coming from a logged-in user — always verify
+- **Server Components need auth too.** Server Components can access data and render it — if not auth-checked, data leaks to unauthenticated users. Every Server Component that shows user data must start with an auth check.
+- **Use `supabase.auth.getUser()` (server-verified, secure), NOT `supabase.auth.getSession()` (client-side, can be tampered with).** `getSession()` reads from the cookie without verifying it with Supabase — an attacker can forge it. `getUser()` makes a server call to verify the token is real.
 
 ---
 
@@ -41,6 +43,21 @@ Every database query must be limited to the current user's data. A user should n
 
 ---
 
+## 2.5. Row-Level Security — The Database Firewall
+
+Every table with user data MUST have RLS enabled. RLS is your last line of defense — even if your application code has a bug, the database itself blocks unauthorized access.
+
+- **Default policy: DENY ALL.** No access unless explicitly granted by a policy.
+- **Add specific policies per operation:**
+  - SELECT: users can only read their own rows (`auth.uid() = user_id`)
+  - INSERT: users can only create rows with their own user_id
+  - UPDATE: users can only modify their own rows
+  - DELETE: users can only delete their own rows
+- **Testing protocol:** Query the table as an unauthenticated user using the Supabase JavaScript client — you should get ZERO rows. If you can see rows without being logged in, your RLS is broken.
+- **NEVER test RLS from the Supabase SQL Editor.** The SQL Editor bypasses RLS entirely and will always return all rows, giving you false confidence that your policies work.
+
+---
+
 ## 3. Input Sanitization
 
 Never trust user input. Treat everything from the user as potentially dangerous.
@@ -48,6 +65,8 @@ Never trust user input. Treat everything from the user as potentially dangerous.
 - **XSS (Cross-Site Scripting):** Never insert user input directly into HTML. React auto-escapes JSX content, which handles most cases automatically.
 - **dangerouslySetInnerHTML:** This bypasses React's auto-escaping. NEVER use it with user-provided content. If you must render HTML, sanitize it first with a library like DOMPurify.
 - **Server-side validation:** Validate and sanitize all form inputs on the server, not just the client. Client-side validation is for user experience; server-side validation is for security. A user can bypass client-side checks.
+- **SQL injection prevention:** Never interpolate user input into SQL queries. BAD: `` `SELECT * FROM users WHERE name = '${name}'` ``. GOOD: `supabase.from('users').select().eq('name', name)` — parameterized queries escape input automatically.
+- **Max lengths on ALL string inputs.** Set maximum lengths to prevent payload attacks (e.g., name max 100 chars, bio max 500 chars, comment max 2000 chars). Without limits, an attacker can send megabytes of data in a single field.
 
 ---
 
@@ -72,6 +91,9 @@ Secrets and configuration must be handled carefully to avoid leaking them.
 - **Security headers to set:**
   - `X-Content-Type-Options: nosniff` — prevents browsers from guessing content types
   - `X-Frame-Options: DENY` — prevents your site from being embedded in iframes (clickjacking protection)
+  - `Content-Security-Policy` — restricts where scripts, styles, and images can load from, blocking injected malicious resources
+  - `X-Content-Type-Options: nosniff` — prevents MIME type sniffing attacks where browsers guess content types incorrectly
+  - `Referrer-Policy: strict-origin-when-cross-origin` — limits how much referrer information leaks when navigating to external sites
 
 ---
 

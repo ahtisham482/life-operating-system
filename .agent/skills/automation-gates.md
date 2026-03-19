@@ -45,6 +45,17 @@ Beyond the defaults, add rules that catch the specific mistakes that cause real 
 - **Flag missing React keys in list rendering** — missing keys cause subtle rendering bugs that are hard to track down.
 - **Flag unused imports and variables** — dead code creates confusion and adds bundle weight.
 
+**Recommended ESLint rules to enforce skill compliance:**
+
+```
+- `@typescript-eslint/no-explicit-any` — ban the `any` type entirely
+- `@typescript-eslint/consistent-type-assertions` — flag every `as` assertion for review
+- `max-lines-per-function: [warn, 200]` — warn when functions exceed 200 lines
+- `complexity: [warn, 10]` — warn when cyclomatic complexity is too high
+- `no-console: warn` — catch leftover console.log statements before production
+- `no-restricted-imports` — ban full library imports (e.g., `import _ from 'lodash'`)
+```
+
 ---
 
 ## CI Pipeline (GitHub Actions)
@@ -98,3 +109,48 @@ If you're starting from zero automation, add these in order. Each one catches a 
 | 4        | CI pipeline (GitHub Actions)                 | Catches everything else before deploy           | Final safety net           |
 
 Start with Priority 1. It gives you the most protection for the least effort. Add the others as the project matures.
+
+---
+
+## Playwright Smoke Test (Catches 80% of "I Broke Everything" Bugs)
+
+A minimal smoke test that runs after every deployment:
+
+- **Test 1**: Visit the homepage → verify it loads without errors
+- **Test 2**: Visit a protected page (e.g., /dashboard) → verify redirect to login
+- **Test 3**: Login with test credentials → verify dashboard loads
+- **Test 4**: Create a simple item → verify it appears in the list
+
+These 4 tests catch the vast majority of catastrophic deployment failures. Run them after every Vercel deployment using deployment webhooks. Takes less than 30 seconds to run, saves hours of manual verification.
+
+---
+
+## GitHub Actions CI Pipeline
+
+Add this workflow to your repository to block broken code from merging:
+
+```yaml
+# .github/workflows/ci.yml
+name: CI
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+      - run: npm ci
+      - run: npx tsc --noEmit # Type check
+      - run: npx next build # Build check
+      - run: npx vitest run # Run tests
+```
+
+This blocks merging any PR that has type errors, build failures, or test failures. Add this to your repository and enable branch protection on main (Settings → Branches → Branch protection rules → Require status checks to pass).

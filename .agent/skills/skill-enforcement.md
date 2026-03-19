@@ -18,7 +18,8 @@ Before building API/forms    │ Skill 1 + Skill 5 (data contract) + Skill 9 (se
 When a bug is reported       │ Skill 7 (debugging protocol)
 After ANY code is complete   │ Skill 2 (Definition of Done) ⛔ BLOCKING
 After UI code is complete    │ Skill 2 (DoD) ⛔ + Skill 3 (UI/UX gate)
-After build/deploy           │ Skill 8 (performance budget)
+After build/deploy           │ Skill 8 (performance) + Skill 13 (deploy confidence)
+Before declaring done        │ Skill 12 (testing strategy) ⚠️ MANDATORY
 Project setup / CI config    │ Skill 10 (automation gates)
 ═══════════════════════════════════════════════════════════════════
 ```
@@ -35,6 +36,7 @@ Project setup / CI config    │ Skill 10 (automation gates)
 
 - **Skill 1: Pre-Build Checklist** — Before writing any feature code
 - **Skill 6: Fast Shipping Workflow** — Session structure and deploy verification
+- **Skill 12: Testing Strategy** — Every new feature must ship with tests
 
 ### 📋 CONDITIONAL — Run only when the task type matches
 
@@ -45,6 +47,7 @@ Project setup / CI config    │ Skill 10 (automation gates)
 - **Skill 8: Performance Budget** — Only after significant feature builds
 - **Skill 9: Security Checklist** — Only when handling auth, user data, or API routes
 - **Skill 10: Automation Gates** — Only during project setup or CI configuration
+- **Skill 13: Deploy Confidence** — Only before/after production deployments
 
 ---
 
@@ -87,5 +90,20 @@ Project setup / CI config    │ Skill 10 (automation gates)
 ├── debugging-protocol.md     ← Skill 7
 ├── performance-budget.md     ← Skill 8
 ├── security-checklist.md     ← Skill 9
-└── automation-gates.md       ← Skill 10
+├── automation-gates.md       ← Skill 10
+├── testing-strategy.md      ← Skill 12 ⚠️ MANDATORY
+└── deploy-confidence.md     ← Skill 13
 ```
+
+---
+
+## SKILL AUTHORING STANDARDS
+
+When creating or updating skills, follow these rules:
+
+- **Plain language** — the user is not a coder, explain concepts simply
+- **Under 300 lines** — if a skill exceeds 300 lines, split into sub-files
+- **Reference real bugs** — tie rules to actual past bugs from this project
+- **Gate format** — describe what to check, then state PASS/FAIL criteria
+- **Cross-reference** — link to other skills by number (e.g., "see Skill 8")
+- **Actionable** — every rule must tell you exactly WHAT to do, not just what to avoid

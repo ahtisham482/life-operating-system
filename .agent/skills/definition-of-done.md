@@ -74,6 +74,7 @@ Does the user feel in control? Or does the app do things without asking?
 
 - [ ] **User controls all finalizing actions.** The user clicks "Save", "Submit", "Delete", "Send". The app NEVER does these automatically.
 - [ ] **AI features provide options, user decides.** If the app uses AI to suggest things, it shows suggestions as options — the user picks one. Never auto-apply AI suggestions without asking.
+- [ ] **AI NEVER executes finalizing actions without explicit user input.** AI must not call any function that changes user state (save, submit, navigate, scroll, conclude) unless the user performed an explicit action (click, tap, confirm button). AI may SUGGEST actions. AI may PREPARE data. AI may NOT EXECUTE finalizing actions. Example: an AI interview can ask questions forever, but only the user clicking "Done" triggers profile creation.
 - [ ] **No auto-scrolling.** The user controls where they are on the page. The app never yanks the scroll position without the user's action.
 - [ ] **No auto-submitting.** Forms wait for the user to click submit. Never send data automatically when a field changes (unless it's an explicit auto-save feature the user opted into).
 - [ ] **Forms preserve input on error.** If a form submission fails, the user's input is still there when they come back. NEVER clear the form on error — that's punishing the user for a system failure.
@@ -119,6 +120,46 @@ Does it build and run without errors?
 
 ---
 
+## Gate 6.5: Screenshot Proof
+
+Take a screenshot (or describe in detail) showing the feature working in ALL key states:
+
+- [ ] **Happy path** — the feature working normally, doing what it's supposed to do.
+- [ ] **Error state** — what happens when something fails (API down, network error, invalid data).
+- [ ] **Empty state** — what happens with no data (new user, empty list, no results).
+- [ ] **Loading state** — what the user sees while waiting for data to load.
+
+This gate exists because visual bugs hide in plain sight. The invisible UI bug (9px text at 15% opacity) passed every other gate but would have been caught instantly by a screenshot.
+
+**Gate 6.5:** PASS / FAIL
+
+---
+
+## Gate 6.6: Incognito Test
+
+Open the feature in an incognito/private browser window and verify it works.
+
+- [ ] **No cached state.** Incognito has no saved data from previous sessions.
+- [ ] **No lingering auth tokens.** Forces a fresh login flow.
+- [ ] **No stored preferences.** No theme, no saved form data, no local storage.
+- [ ] **If it works in incognito, it works for everyone.** This catches stale-state bugs that developers miss because they are always logged in with warm caches.
+
+**Gate 6.6:** PASS / FAIL
+
+---
+
+## Gate 6.7: Regression Check
+
+After completing the feature, test the 3 most closely related features.
+
+- [ ] **Identify the 3 closest features.** If you changed the habits page, those might be: check-in, profile, archive.
+- [ ] **Verify each related feature still works.** Click through the happy path of each one.
+- [ ] **No chain reactions.** Fixing one thing must not break another. If it does, fix the regression before declaring done.
+
+**Gate 6.7:** PASS / FAIL
+
+---
+
 ## Gate 7: Screenshot
 
 Would a real user understand this feature at a glance?
@@ -141,10 +182,24 @@ Count your gates:
 - Gate 4 (User Control): \_\_\_
 - Gate 5 (Data): \_\_\_
 - Gate 6 (Build): \_\_\_
+- Gate 6.5 (Screenshot Proof): \_\_\_
+- Gate 6.6 (Incognito Test): \_\_\_
+- Gate 6.7 (Regression Check): \_\_\_
 - Gate 7 (Screenshot): \_\_\_
 
-**ALL 7 gates must be PASS to declare this feature done.**
+**ALL 10 gates must be PASS to declare this feature done.**
 
 If ANY gate is FAIL → fix the failing items → re-check → only then mark as done.
 
 No exceptions. No "we'll fix it later." Fix it now.
+
+---
+
+## Commit Message Quality
+
+Every commit message must answer 3 questions: WHAT changed, WHY it changed, and HOW to verify it works.
+
+- Bad: `fix bug`
+- Good: `Fix invisible profile card by setting min-opacity to 30% — verify on /habits page`
+
+If you cannot write all three parts, you do not understand the change well enough to commit it.

@@ -4,6 +4,16 @@ Run this checklist when creating or modifying React components. The goal: every 
 
 ---
 
+## 0. Server Component Default Rule
+
+- In Next.js App Router, every component is a Server Component by default (zero client JavaScript)
+- Add `'use client'` ONLY when you need: useState, useEffect, onClick, onChange, or browser APIs
+- This alone can cut your JavaScript bundle by 50%+
+- Rule: start server, add client only when forced
+- When in doubt, leave out `'use client'` — you'll get a clear error if you need it
+
+---
+
 ## 1. Proactive File Tree
 
 BEFORE building any component, write out the planned file tree. This forces you to think about structure before you start coding.
@@ -36,6 +46,11 @@ habits/
   use-habit-form.ts       — form state and validation logic
   use-habit-mutations.ts  — create/update/delete API calls
 ```
+
+### Import audit
+
+- Before adding any new dependency, check its bundle size on bundlephobia.com
+- If you can implement the same thing in under 50 lines, skip the dependency
 
 ---
 
@@ -163,6 +178,14 @@ use-auto-save.ts
 - A hook should not know about JSX — it manages logic and returns data/functions. The component decides how to render.
 - If a hook is only used by one component and is under 30 lines, it can live in the same file. Otherwise, give it its own file.
 
+### Common hook signatures
+
+- `useForm(initialValues)` → returns { values, errors, handleChange, handleSubmit, isSubmitting }
+- `useAsync(asyncFn)` → returns { data, error, isLoading, execute }
+- `useToggle(initial)` → returns [isOpen, toggle, setOpen, setClosed]
+- `useDebounce(value, delay)` → returns debouncedValue
+- These prevent the "31 useState" problem at the source
+
 ---
 
 ## 6. Prop Drilling Prevention
@@ -225,6 +248,12 @@ When someone opens a file, they read top to bottom. This order answers their que
 3. "What are the fixed values?" (constants)
 4. "What does this component do?" (hooks, handlers, render)
 
+### Co-location principle
+
+- Tests, types, and styles live NEXT TO their component (not in separate /tests or /types folders)
+- `habit-card.tsx` → `habit-card.test.tsx`, `habit-card.types.ts`
+- If a component has no test file next to it, the test is missing
+
 ---
 
 ## 8. When NOT to Split
@@ -239,3 +268,12 @@ Splitting is usually good, but you can over-do it. Don't split when:
 ### The test
 
 After splitting, ask: "Is this easier to understand now?" If the answer is no, undo the split.
+
+---
+
+## 9. React 19 Patterns
+
+- `use()` hook: unwrap promises directly in components — replaces many custom async hooks
+- Form actions: `<form action={serverAction}>` — automatic pending/error states, no useState needed
+- React Compiler: don't manually memoize (useMemo, useCallback, React.memo) — the compiler handles it
+- These patterns reduce boilerplate significantly — use them in new code
