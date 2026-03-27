@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { fromDb, getTodayKarachi } from "@/lib/utils";
 import { HabitTracker } from "./habit-tracker";
 import { HabitInsights } from "./habit-insights";
+import { IdentityBoard } from "./identity-board";
+import { HabitsTabs } from "./habits-tabs";
 import type {
   Habit,
   HabitGroup,
@@ -36,7 +38,14 @@ function getCurrentTimeOfDay(): TimeOfDay {
   return "evening";
 }
 
-export default async function HabitsPage() {
+export default async function HabitsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tab?: string }>;
+}) {
+  const { tab } = await searchParams;
+  const activeTab = tab === "identity" ? "identity" : "tracker";
+
   const supabase = await createClient();
   const today = getTodayKarachi();
   const dateLabel = new Intl.DateTimeFormat("en-US", {
@@ -107,6 +116,80 @@ export default async function HabitsPage() {
   const todayLogs = (logRows || []).map((r) => fromDb<HabitLog>(r));
   const historyLogs = (historyLogRows || []).map((r) => fromDb<HabitLog>(r));
   const templates = (templateRows || []).map((r) => fromDb<HabitTemplate>(r));
+
+  // ─────────────────────────────────────────
+  // Identity Engine data (fetched for both tabs, lightweight)
+  // ─────────────────────────────────────────
+  const [{ data: identityRows }, { data: uncelebratedRows }] =
+    await Promise.all([
+      supabase
+        .from("user_identities")
+        .select("*")
+        .eq("status", "active")
+        .order("sort_order", { ascending: true }),
+      supabase
+        .from("identity_milestones")
+        .select("id, milestone_title, milestone_message")
+        .eq("celebrated", false)
+        .order("achieved_at", { ascending: true })
+        .limit(5),
+    ]);
+
+  const identities = (identityRows ?? []).map((r) => ({
+    id: r.id as string,
+    identityStatement: r.identity_statement as string,
+    icon: r.icon as string | null,
+    color: r.color as string,
+    whyStatement: r.why_statement as string | null,
+    confidenceLevel: r.confidence_level as number,
+  }));
+
+  const uncelebrated = (uncelebratedRows ?? []).map((r) => ({
+    id: r.id as string,
+    milestoneTitle: r.milestone_title as string,
+    milestoneMessage: r.milestone_message as string,
+  }));
+
+  // Habits with completion status for the Identity tab
+  const todayLogSet = new Set(
+    todayLogs.filter((l) => l.status === "completed").map((l) => l.habitId),
+  );
+  const habitsForIdentity = allHabits.map((h) => ({
+    id: h.id,
+    name: h.name,
+    emoji: h.emoji ?? null,
+    tinyVersion: h.tinyVersion ?? null,
+    identityId: h.identityId ?? null,
+    isCompletedToday: todayLogSet.has(h.id),
+  }));
+
+  // Week stats per identity (for reflection modal)
+  const weekStart = new Date(todayDate);
+  weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+  const weekStartStr = weekStart.toISOString().slice(0, 10);
+
+  const weekStats: Record<
+    string,
+    { totalVotes: number; positiveVotes: number; percentage: number }
+  > = {};
+  for (const identity of identities) {
+    const linkedHabitIds = habitsForIdentity
+      .filter((h) => h.identityId === identity.id)
+      .map((h) => h.id);
+    const weekLogs = historyLogs.filter(
+      (l) => linkedHabitIds.includes(l.habitId) && l.date >= weekStartStr,
+    );
+    const positiveVotes = weekLogs.filter(
+      (l) => l.status === "completed",
+    ).length;
+    const totalVotes = weekLogs.length;
+    weekStats[identity.id] = {
+      totalVotes,
+      positiveVotes,
+      percentage:
+        totalVotes > 0 ? Math.round((positiveVotes / totalVotes) * 100) : 0,
+    };
+  }
 
   // Build a set of habit IDs that have active diagnoses (undismissed, within 7 days)
   const activeDiagnosisHabitIds = new Set<string>();
@@ -478,43 +561,63 @@ export default async function HabitsPage() {
         </div>
       </div>
 
-      {/* Two-column layout */}
-      <div
-        className="grid grid-cols-1 lg:grid-cols-5 gap-8 animate-slide-up"
-        style={{ animationDelay: "0.08s", animationFillMode: "both" }}
-      >
-        {/* Left column: Habit tracker */}
-        <div className="lg:col-span-3">
-          <HabitTracker
-            groups={sortedGroups}
-            habits={scheduledHabits}
-            notTodayHabits={notTodayHabits}
-            archivedHabits={archivedHabits}
-            todayLogs={todayLogMap}
-            date={today}
-            templates={templates}
-            diagnosisFlags={diagnosisFlags}
-            keystoneHabitIds={keystoneHabitIds}
-            recoveryMessage={recoveryMessage}
-            perfectDayCount={perfectDayCount}
-            daysOfData={daysOfData}
-          />
-        </div>
+      {/* Tab switcher */}
+      <HabitsTabs activeTab={activeTab} />
 
-        {/* Right column: Insights */}
-        <div className="lg:col-span-2">
-          <HabitInsights
-            habits={allHabits}
-            heatmapDays={heatmapDays}
-            logMap={historyLogMap}
-            trends={trends}
-            mostMissed={mostMissed}
-            keystoneInsights={keystoneInsights}
-            perfectDayCount={perfectDayCount}
-            daysOfData={daysOfData}
+      {/* Tracker tab */}
+      {activeTab === "tracker" && (
+        <div
+          className="grid grid-cols-1 lg:grid-cols-5 gap-8 animate-slide-up"
+          style={{ animationDelay: "0.08s", animationFillMode: "both" }}
+        >
+          {/* Left column: Habit tracker */}
+          <div className="lg:col-span-3">
+            <HabitTracker
+              groups={sortedGroups}
+              habits={scheduledHabits}
+              notTodayHabits={notTodayHabits}
+              archivedHabits={archivedHabits}
+              todayLogs={todayLogMap}
+              date={today}
+              templates={templates}
+              diagnosisFlags={diagnosisFlags}
+              keystoneHabitIds={keystoneHabitIds}
+              recoveryMessage={recoveryMessage}
+              perfectDayCount={perfectDayCount}
+              daysOfData={daysOfData}
+            />
+          </div>
+
+          {/* Right column: Insights */}
+          <div className="lg:col-span-2">
+            <HabitInsights
+              habits={allHabits}
+              heatmapDays={heatmapDays}
+              logMap={historyLogMap}
+              trends={trends}
+              mostMissed={mostMissed}
+              keystoneInsights={keystoneInsights}
+              perfectDayCount={perfectDayCount}
+              daysOfData={daysOfData}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Identity tab */}
+      {activeTab === "identity" && (
+        <div
+          className="animate-slide-up"
+          style={{ animationDelay: "0.08s", animationFillMode: "both" }}
+        >
+          <IdentityBoard
+            identities={identities}
+            habits={habitsForIdentity}
+            uncelebrated={uncelebrated}
+            weekStats={weekStats}
           />
         </div>
-      </div>
+      )}
     </div>
   );
 }

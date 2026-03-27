@@ -163,6 +163,8 @@ export const habits = pgTable("habits", {
   sortOrder: integer("sort_order").default(0).notNull(),
   currentStreak: integer("current_streak").default(0).notNull(),
   bestStreak: integer("best_streak").default(0).notNull(),
+  // Identity Engine link
+  identityId: uuid("identity_id"),
   // Advanced behavioral fields
   purpose: text("purpose"),
   identity: text("identity"),
@@ -202,7 +204,12 @@ export const habitsRelations = relations(habits, ({ one, many }) => ({
     fields: [habits.groupId],
     references: [habitGroups.id],
   }),
+  identity: one(userIdentities, {
+    fields: [habits.identityId],
+    references: [userIdentities.id],
+  }),
   logs: many(habitLogs),
+  votes: many(habitVotes),
 }));
 
 export const habitLogsRelations = relations(habitLogs, ({ one }) => ({
@@ -357,6 +364,168 @@ export const workspaceExclusions = pgTable("workspace_exclusions", {
 });
 
 // ─────────────────────────────────────────
+// IDENTITY ENGINE
+// ─────────────────────────────────────────
+export type IdentityCategory =
+  | "health"
+  | "learning"
+  | "productivity"
+  | "relationships"
+  | "finance"
+  | "creativity"
+  | "spirituality"
+  | "personal";
+
+export type IdentityStatus = "active" | "paused" | "archived";
+export type MilestoneType = "streak" | "votes" | "confidence";
+export type ConfidenceTrigger = "vote_cast" | "reflection_saved" | "manual";
+
+export const userIdentities = pgTable("user_identities", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").notNull(),
+  identityStatement: text("identity_statement").notNull(),
+  identityCategory: text("identity_category")
+    .$type<IdentityCategory>()
+    .default("personal")
+    .notNull(),
+  icon: text("icon"),
+  color: text("color").default("#FF6B6B").notNull(),
+  whyStatement: text("why_statement"),
+  status: text("status").$type<IdentityStatus>().default("active").notNull(),
+  confidenceLevel: integer("confidence_level").default(0).notNull(),
+  sortOrder: integer("sort_order").default(0).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+});
+
+export const habitVotes = pgTable("habit_votes", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  habitId: uuid("habit_id")
+    .notNull()
+    .references(() => habits.id, { onDelete: "cascade" }),
+  identityId: uuid("identity_id")
+    .notNull()
+    .references(() => userIdentities.id, { onDelete: "cascade" }),
+  userId: uuid("user_id").notNull(),
+  voteDate: date("vote_date").notNull(),
+  difficultyFelt: integer("difficulty_felt"),
+  satisfactionRating: integer("satisfaction_rating"),
+  reflectionNote: text("reflection_note"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+});
+
+export const identityConfidenceLog = pgTable("identity_confidence_log", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  identityId: uuid("identity_id")
+    .notNull()
+    .references(() => userIdentities.id, { onDelete: "cascade" }),
+  userId: uuid("user_id").notNull(),
+  confidenceLevel: integer("confidence_level").notNull(),
+  loggedDate: date("logged_date").defaultNow().notNull(),
+  triggerType: text("trigger_type")
+    .$type<ConfidenceTrigger>()
+    .default("vote_cast")
+    .notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+});
+
+export const identityReflections = pgTable("identity_reflections", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  identityId: uuid("identity_id")
+    .notNull()
+    .references(() => userIdentities.id, { onDelete: "cascade" }),
+  userId: uuid("user_id").notNull(),
+  reflectionWeek: text("reflection_week").notNull(),
+  wins: text("wins"),
+  challenges: text("challenges"),
+  learning: text("learning"),
+  nextWeekIntention: text("next_week_intention"),
+  confidenceStart: integer("confidence_start"),
+  confidenceEnd: integer("confidence_end"),
+  totalVotes: integer("total_votes").default(0).notNull(),
+  positiveVotes: integer("positive_votes").default(0).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+});
+
+export const identityMilestones = pgTable("identity_milestones", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  identityId: uuid("identity_id")
+    .notNull()
+    .references(() => userIdentities.id, { onDelete: "cascade" }),
+  userId: uuid("user_id").notNull(),
+  milestoneType: text("milestone_type").$type<MilestoneType>().notNull(),
+  milestoneValue: integer("milestone_value").notNull(),
+  milestoneTitle: text("milestone_title").notNull(),
+  milestoneMessage: text("milestone_message").notNull(),
+  achievedAt: timestamp("achieved_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+  celebrated: boolean("celebrated").default(false).notNull(),
+});
+
+export const userIdentitiesRelations = relations(
+  userIdentities,
+  ({ many }) => ({
+    habits: many(habits),
+    votes: many(habitVotes),
+    confidenceLog: many(identityConfidenceLog),
+    reflections: many(identityReflections),
+    milestones: many(identityMilestones),
+  }),
+);
+
+export const habitVotesRelations = relations(habitVotes, ({ one }) => ({
+  habit: one(habits, { fields: [habitVotes.habitId], references: [habits.id] }),
+  identity: one(userIdentities, {
+    fields: [habitVotes.identityId],
+    references: [userIdentities.id],
+  }),
+}));
+
+export const identityConfidenceLogRelations = relations(
+  identityConfidenceLog,
+  ({ one }) => ({
+    identity: one(userIdentities, {
+      fields: [identityConfidenceLog.identityId],
+      references: [userIdentities.id],
+    }),
+  }),
+);
+
+export const identityReflectionsRelations = relations(
+  identityReflections,
+  ({ one }) => ({
+    identity: one(userIdentities, {
+      fields: [identityReflections.identityId],
+      references: [userIdentities.id],
+    }),
+  }),
+);
+
+export const identityMilestonesRelations = relations(
+  identityMilestones,
+  ({ one }) => ({
+    identity: one(userIdentities, {
+      fields: [identityMilestones.identityId],
+      references: [userIdentities.id],
+    }),
+  }),
+);
+
+// ─────────────────────────────────────────
 // INBOX TYPES (audit trail uses engine_logs)
 // ─────────────────────────────────────────
 export type ParsedRoute = {
@@ -387,3 +556,10 @@ export type BookActionItem = typeof bookActionItems.$inferSelect;
 export type JournalEntry = typeof journalEntries.$inferSelect;
 export type Expense = typeof expenses.$inferSelect;
 export type EngineLog = typeof engineLogs.$inferSelect;
+export type UserIdentity = typeof userIdentities.$inferSelect;
+export type NewUserIdentity = typeof userIdentities.$inferInsert;
+export type HabitVote = typeof habitVotes.$inferSelect;
+export type NewHabitVote = typeof habitVotes.$inferInsert;
+export type IdentityConfidenceLog = typeof identityConfidenceLog.$inferSelect;
+export type IdentityReflection = typeof identityReflections.$inferSelect;
+export type IdentityMilestone = typeof identityMilestones.$inferSelect;
