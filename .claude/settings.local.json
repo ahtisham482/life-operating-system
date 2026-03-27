@@ -1,7 +1,33 @@
 {
   "permissions": {
     "allow": [
-      "Bash(find /c/Users/DELLL/Downloads/life-operating-system -type f \\\\\\(-name *.svg -o -name *.png -o -name *.jpg \\\\\\))"
+      "Bash(find /c/Users/DELLL/Downloads/life-operating-system -type f \\\\\\(-name *.svg -o -name *.png -o -name *.jpg \\\\\\))",
+      "Bash(ls -la /c/Users/DELLL/Downloads/life-operating-system/.claude/worktrees/tender-yonath/components/*.tsx)",
+      "Bash(grep -E \"\\\\.\\(sql|ts|js\\)$\")",
+      "Bash(find app:*)",
+      "mcp__stitch__list_projects",
+      "mcp__stitch__list_screens",
+      "mcp__stitch__generate_screen_from_text",
+      "mcp__stitch__generate_variants",
+      "Bash(npx next:*)",
+      "Bash(find \"C:\\\\Users\\\\DELLL\\\\Downloads\\\\life-operating-system\" -type f \\\\\\( -name \"*.tsx\" -o -name \"*.ts\" \\\\\\) ! -path \"*/.next/*\" -exec wc -l {} +)",
+      "Bash(grep -r \"^[[:space:]]*//\" app/ lib/ --include=\"*.tsx\" --include=\"*.ts\")",
+      "Bash(xargs wc:*)",
+      "Bash(find app/api -name \"*.ts\" ! -path \"*/node_modules/*\" -exec wc -l {} +)",
+      "Bash(find app/\\\\\\(dashboard\\\\\\) -name \"actions.ts\" ! -path \"*/.next/*\" -exec wc -l {} +)",
+      "Bash(grep -r \"error\\\\.tsx\\\\|error-boundary\" --include=\"*.tsx\" --include=\"*.ts\" ! -path \"*/node_modules/*\")",
+      "Bash(xargs grep:*)",
+      "Bash(wc -l /c/Users/DELLL/Downloads/life-operating-system/.agent/skills/*.md)",
+      "Bash(wc -l .agent/skills/*.md)",
+      "Bash(ls \"C:\\\\Users\\\\DELLL\\\\.claude\\\\commands\"\" 2>/dev/null && echo \"---\" && ls \"C:UsersDELLL.claude\"\")",
+      "Read(//c/Users/DELLL/Downloads/life-operating-system/.claude/worktrees/tender-yonath/$HOME/.claude/**)",
+      "Read(//c/Users/DELLL/Downloads/life-operating-system/.claude/worktrees/tender-yonath/$HOME/**)",
+      "Bash(mkdir -p /c/Users/DELLL/.claude/skills)",
+      "Bash(cp /c/Users/DELLL/Downloads/life-operating-system/.agent/skills/*.md /c/Users/DELLL/.claude/skills/)",
+      "Bash(chmod +x ~/.claude/hooks/session-start.sh)",
+      "Bash(python -c \"import json; d=json.load\\(open\\(''C:/Users/DELLL/.claude/settings.json''\\)\\); print\\(''autoMemoryEnabled:'', d.get\\(''autoMemoryEnabled'', ''NOT SET \\(defaults to ON\\)''\\)\\)\")",
+      "Bash(python -c \"import json; d=json.load\\(open\\(''C:/Users/DELLL/.claude/settings.json''\\)\\); print\\(json.dumps\\(d.get\\(''hooks'',{}\\), indent=2\\)\\)\")",
+      "Bash(python -c \"import json; d=json.load\\(open\\(''C:/Users/DELLL/.claude/settings.json''\\)\\); print\\(json.dumps\\(d.get\\(''permissions'',{}\\).get\\(''deny'',[]\\), indent=2\\)\\)\")"
     ]
   }
 }
