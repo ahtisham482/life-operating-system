@@ -14,6 +14,7 @@ import type {
   TimeOfDay,
 } from "@/lib/db/schema";
 import { isHabitScheduledForDay } from "@/lib/habits";
+import { ScorecardTab } from "./scorecard-tab";
 
 function getTimeOfDayNudge(): string {
   const now = new Date();
@@ -44,7 +45,12 @@ export default async function HabitsPage({
   searchParams: Promise<{ tab?: string }>;
 }) {
   const { tab } = await searchParams;
-  const activeTab = tab === "identity" ? "identity" : "tracker";
+  const activeTab =
+    tab === "identity"
+      ? "identity"
+      : tab === "scorecard"
+        ? "scorecard"
+        : "tracker";
 
   const supabase = await createClient();
   const today = getTodayKarachi();
@@ -120,7 +126,7 @@ export default async function HabitsPage({
   // ─────────────────────────────────────────
   // Identity Engine data (fetched for both tabs, lightweight)
   // ─────────────────────────────────────────
-  const [{ data: identityRows }, { data: uncelebratedRows }] =
+  const [{ data: identityRows }, { data: uncelebratedRows }, { count: scorecardCount }] =
     await Promise.all([
       supabase
         .from("user_identities")
@@ -133,6 +139,9 @@ export default async function HabitsPage({
         .eq("celebrated", false)
         .order("achieved_at", { ascending: true })
         .limit(5),
+      supabase
+        .from("scorecard_days")
+        .select("*", { count: "exact", head: true }),
     ]);
 
   const identities = (identityRows ?? []).map((r) => ({
@@ -616,6 +625,16 @@ export default async function HabitsPage({
             uncelebrated={uncelebrated}
             weekStats={weekStats}
           />
+        </div>
+      )}
+
+      {/* Scorecard tab */}
+      {activeTab === "scorecard" && (
+        <div
+          className="max-w-2xl animate-slide-up"
+          style={{ animationDelay: "0.08s", animationFillMode: "both" }}
+        >
+          <ScorecardTab date={today} totalScorecards={scorecardCount ?? 0} />
         </div>
       )}
     </div>
