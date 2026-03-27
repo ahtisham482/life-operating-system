@@ -5,6 +5,7 @@ import {
   boolean,
   integer,
   date,
+  time,
   timestamp,
   primaryKey,
   jsonb,
@@ -127,6 +128,23 @@ export type ScheduleType = "daily" | "weekdays" | "weekends" | "custom";
 export type HabitLogStatus = "completed" | "skipped" | "missed" | "pending";
 export type HabitType = "build" | "break";
 export type DiagnosisType = "forgot" | "too_hard" | "no_motivation";
+export type ScorecardRating = "+" | "-" | "=";
+export type ScorecardDayStatus = "in_progress" | "completed";
+export type ScorecardDayType =
+  | "normal"
+  | "weekend"
+  | "holiday"
+  | "travel"
+  | "sick";
+export type IdentityAlignment = "supports" | "opposes" | "neutral";
+export type ScorecardEnergyLevel = "high" | "medium" | "low";
+export type ScorecardTriggerType =
+  | "time"
+  | "location"
+  | "emotion"
+  | "preceding_action"
+  | "other_people"
+  | "other";
 
 export const habitGroups = pgTable("habit_groups", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -254,6 +272,117 @@ export const habitDiagnosesRelations = relations(habitDiagnoses, ({ one }) => ({
     references: [habits.id],
   }),
 }));
+
+// ─────────────────────────────────────────
+// AWARENESS SCORECARD
+// ─────────────────────────────────────────
+export const scorecardDays = pgTable("scorecard_days", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").notNull(),
+  scorecardDate: date("scorecard_date").notNull(),
+  dayType: text("day_type").$type<ScorecardDayType>().default("normal").notNull(),
+  dayLabel: text("day_label"),
+  morningIntention: text("morning_intention"),
+  eveningReflection: text("evening_reflection"),
+  awarenessRating: integer("awareness_rating"),
+  totalEntries: integer("total_entries").default(0).notNull(),
+  positiveCount: integer("positive_count").default(0).notNull(),
+  negativeCount: integer("negative_count").default(0).notNull(),
+  neutralCount: integer("neutral_count").default(0).notNull(),
+  positivePercentage: numeric("positive_percentage", {
+    precision: 5,
+    scale: 2,
+  })
+    .default("0")
+    .notNull(),
+  negativePercentage: numeric("negative_percentage", {
+    precision: 5,
+    scale: 2,
+  })
+    .default("0")
+    .notNull(),
+  totalPositiveMinutes: integer("total_positive_minutes").default(0).notNull(),
+  totalNegativeMinutes: integer("total_negative_minutes").default(0).notNull(),
+  totalNeutralMinutes: integer("total_neutral_minutes").default(0).notNull(),
+  dayScore: integer("day_score").default(0).notNull(),
+  status: text("status")
+    .$type<ScorecardDayStatus>()
+    .default("in_progress")
+    .notNull(),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+});
+
+export const scorecardEntries = pgTable("scorecard_entries", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  scorecardId: uuid("scorecard_id")
+    .notNull()
+    .references(() => scorecardDays.id, { onDelete: "cascade" }),
+  userId: uuid("user_id").notNull(),
+  timeOfAction: time("time_of_action").notNull(),
+  endTime: time("end_time"),
+  durationMinutes: integer("duration_minutes"),
+  behaviorDescription: text("behavior_description").notNull(),
+  behaviorCategory: text("behavior_category"),
+  rating: text("rating").$type<ScorecardRating>().notNull(),
+  ratingReason: text("rating_reason"),
+  linkedIdentityId: uuid("linked_identity_id").references(() => userIdentities.id, {
+    onDelete: "set null",
+  }),
+  identityAlignment: text("identity_alignment").$type<IdentityAlignment>(),
+  location: text("location"),
+  energyLevel: text("energy_level").$type<ScorecardEnergyLevel>(),
+  emotionalState: text("emotional_state"),
+  wasAutomatic: boolean("was_automatic").default(true).notNull(),
+  triggeredByEntryId: uuid("triggered_by_entry_id"),
+  triggerType: text("trigger_type").$type<ScorecardTriggerType>(),
+  sortOrder: integer("sort_order").default(0).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+});
+
+export const scorecardPreferences = pgTable("scorecard_preferences", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").notNull(),
+  onboardingCompleted: boolean("onboarding_completed").default(false).notNull(),
+  firstScorecardDate: date("first_scorecard_date"),
+  wakeTime: time("wake_time").default("06:30:00").notNull(),
+  sleepTime: time("sleep_time").default("22:30:00").notNull(),
+  timeSlotInterval: integer("time_slot_interval").default(15).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+});
+
+export const scorecardDaysRelations = relations(scorecardDays, ({ many }) => ({
+  entries: many(scorecardEntries),
+}));
+
+export const scorecardEntriesRelations = relations(
+  scorecardEntries,
+  ({ one }) => ({
+    scorecard: one(scorecardDays, {
+      fields: [scorecardEntries.scorecardId],
+      references: [scorecardDays.id],
+    }),
+    linkedIdentity: one(userIdentities, {
+      fields: [scorecardEntries.linkedIdentityId],
+      references: [userIdentities.id],
+    }),
+  }),
+);
 
 // ─────────────────────────────────────────
 // BOOK ACTION ITEMS
@@ -552,6 +681,11 @@ export type Habit = typeof habits.$inferSelect;
 export type HabitLog = typeof habitLogs.$inferSelect;
 export type HabitTemplate = typeof habitTemplates.$inferSelect;
 export type HabitDiagnosis = typeof habitDiagnoses.$inferSelect;
+export type ScorecardDay = typeof scorecardDays.$inferSelect;
+export type NewScorecardDay = typeof scorecardDays.$inferInsert;
+export type ScorecardEntryRow = typeof scorecardEntries.$inferSelect;
+export type NewScorecardEntry = typeof scorecardEntries.$inferInsert;
+export type ScorecardPreference = typeof scorecardPreferences.$inferSelect;
 export type BookActionItem = typeof bookActionItems.$inferSelect;
 export type JournalEntry = typeof journalEntries.$inferSelect;
 export type Expense = typeof expenses.$inferSelect;

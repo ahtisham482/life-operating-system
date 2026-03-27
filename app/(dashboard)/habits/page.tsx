@@ -6,6 +6,8 @@ import { HabitTracker } from "./habit-tracker";
 import { HabitInsights } from "./habit-insights";
 import { IdentityBoard } from "./identity-board";
 import { HabitsTabs } from "./habits-tabs";
+import { ScorecardTab } from "./scorecard-tab";
+import { getScorecardTabData } from "./scorecard-data";
 import type {
   Habit,
   HabitGroup,
@@ -44,7 +46,8 @@ export default async function HabitsPage({
   searchParams: Promise<{ tab?: string }>;
 }) {
   const { tab } = await searchParams;
-  const activeTab = tab === "identity" ? "identity" : "tracker";
+  const activeTab =
+    tab === "identity" ? "identity" : tab === "scorecard" ? "scorecard" : "tracker";
 
   const supabase = await createClient();
   const today = getTodayKarachi();
@@ -530,6 +533,7 @@ export default async function HabitsPage({
   }
 
   const timeNudge = getTimeOfDayNudge();
+  const scorecardData = activeTab === "scorecard" ? await getScorecardTabData() : null;
 
   return (
     <div className="p-4 sm:p-8 max-w-7xl mx-auto space-y-8 sm:space-y-10">
@@ -616,6 +620,16 @@ export default async function HabitsPage({
             uncelebrated={uncelebrated}
             weekStats={weekStats}
           />
+        </div>
+      )}
+
+      {/* Scorecard tab */}
+      {activeTab === "scorecard" && scorecardData && (
+        <div
+          className="animate-slide-up"
+          style={{ animationDelay: "0.08s", animationFillMode: "both" }}
+        >
+          <ScorecardTab initialData={scorecardData} />
         </div>
       )}
     </div>
