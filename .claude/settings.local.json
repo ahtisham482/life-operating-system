@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(find /c/Users/DELLL/Downloads/life-operating-system -type f \\\\\\(-name *.svg -o -name *.png -o -name *.jpg \\\\\\))"
+      "Bash(find /c/Users/DELLL/Downloads/life-operating-system -type f \\\\\\(-name *.svg -o -name *.png -o -name *.jpg \\\\\\))",
+      "mcp__e7db2684-c213-4b13-8c91-04d888183072__apply_migration",
+      "mcp__e7db2684-c213-4b13-8c91-04d888183072__execute_sql"
     ]
   }
 }
