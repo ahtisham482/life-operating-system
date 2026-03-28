@@ -17,6 +17,7 @@ import { isHabitScheduledForDay } from "@/lib/habits";
 import { ScorecardTab } from "./scorecard-tab";
 import { ArchitectTab } from "./architect-tab";
 import { AttractionTab } from "./attraction-tab";
+import { FrictionTab } from "./friction-tab";
 
 function getTimeOfDayNudge(): string {
   const now = new Date();
@@ -56,7 +57,9 @@ export default async function HabitsPage({
           ? "architect"
           : tab === "attract"
             ? "attract"
-            : "tracker";
+            : tab === "friction"
+              ? "friction"
+              : "tracker";
 
   const supabase = await createClient();
   const today = getTodayKarachi();
@@ -661,6 +664,16 @@ export default async function HabitsPage({
           style={{ animationDelay: "0.08s", animationFillMode: "both" }}
         >
           <AttractionTab identities={identities} />
+        </div>
+      )}
+
+      {/* Friction tab */}
+      {activeTab === "friction" && (
+        <div
+          className="max-w-4xl animate-slide-up"
+          style={{ animationDelay: "0.08s", animationFillMode: "both" }}
+        >
+          <FrictionTab identities={identities} />
         </div>
       )}
     </div>
