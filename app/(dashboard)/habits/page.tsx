@@ -19,6 +19,7 @@ import { ArchitectTab } from "./architect-tab";
 import { AttractionTab } from "./attraction-tab";
 import { FrictionTab } from "./friction-tab";
 import { RewardsTab } from "./rewards-tab";
+import { BreakerTab } from "./breaker-tab";
 
 function getTimeOfDayNudge(): string {
   const now = new Date();
@@ -62,7 +63,9 @@ export default async function HabitsPage({
               ? "friction"
               : tab === "rewards"
                 ? "rewards"
-                : "tracker";
+                : tab === "breaker"
+                  ? "breaker"
+                  : "tracker";
 
   const supabase = await createClient();
   const today = getTodayKarachi();
@@ -687,6 +690,16 @@ export default async function HabitsPage({
           style={{ animationDelay: "0.08s", animationFillMode: "both" }}
         >
           <RewardsTab />
+        </div>
+      )}
+
+      {/* Breaker tab */}
+      {activeTab === "breaker" && (
+        <div
+          className="max-w-4xl animate-slide-up"
+          style={{ animationDelay: "0.08s", animationFillMode: "both" }}
+        >
+          <BreakerTab />
         </div>
       )}
     </div>
