@@ -60,8 +60,8 @@ export function EveningPrepLogger() {
         .map((s) =>
           logEnvironmentPrep({
             setupId: s.id,
-            completedItems: Array.from(checked[s.id] || []),
-            totalItems: s.eveningPrepItems.length,
+            itemsCompleted: checked[s.id]?.size ?? 0,
+            itemsTotal: s.eveningPrepItems.length,
           })
         );
       await Promise.all(promises);

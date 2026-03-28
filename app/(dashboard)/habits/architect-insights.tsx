@@ -100,11 +100,11 @@ export function ArchitectInsights() {
             {timing.map((t) => {
               const dirIcon = t.direction === "early" ? "🕐" : t.direction === "on_time" ? "✅" : "⏰";
               const devText =
-                t.deviationMinutes === 0
+                t.avgDeviationMinutes === 0
                   ? "on time"
-                  : t.deviationMinutes > 0
-                    ? `+${t.deviationMinutes} min late`
-                    : `${t.deviationMinutes} min early`;
+                  : t.avgDeviationMinutes > 0
+                    ? `+${t.avgDeviationMinutes} min late`
+                    : `${t.avgDeviationMinutes} min early`;
               const devColor =
                 t.direction === "on_time" ? "#34D399" : t.direction === "late" ? "#F87171" : "#FEC89A";
 
@@ -179,7 +179,7 @@ export function ArchitectInsights() {
                   />
                   {c.weakestLinkName && (
                     <p className="text-[11px] font-mono text-[#F87171]/70">
-                      Weakest link #{(c.weakestLinkIndex ?? 0) + 1}: {c.weakestLinkName}
+                      Weakest link #{(c.weakestLinkPosition ?? 0)}: {c.weakestLinkName}
                     </p>
                   )}
                   {c.avgBreakPoint !== null && (
@@ -219,17 +219,19 @@ export function ArchitectInsights() {
                 className="bg-[#FFF8F0]/[0.03] border border-[#FFF8F0]/[0.06] rounded-2xl p-4 space-y-3"
               >
                 <p className="text-[13px] font-serif text-[#FFF8F0]/90">{s.habitName}</p>
-                <PercentBar value={s.withAnchorRate} color="#34D399" label="With anchor" />
-                <PercentBar value={s.withoutAnchorRate} color="#FFF8F0" label="Without anchor" />
+                <PercentBar value={s.completionWithAnchor} color="#34D399" label="With anchor" />
+                <PercentBar value={s.completionWithoutAnchor} color="#FFF8F0" label="Without anchor" />
+                {(() => { const delta = s.completionWithAnchor - s.completionWithoutAnchor; return (
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-mono text-[#FFF8F0]/35">{s.effectiveness}</span>
                   <span
                     className="text-[12px] font-mono font-medium"
-                    style={{ color: s.delta > 0 ? "#34D399" : "#F87171" }}
+                    style={{ color: delta > 0 ? "#34D399" : "#F87171" }}
                   >
-                    {s.delta > 0 ? "+" : ""}{Math.round(s.delta)}% with stack
+                    {delta > 0 ? "+" : ""}{Math.round(delta)}% with stack
                   </span>
                 </div>
+                ); })()}
               </div>
             ))}
           </div>
@@ -243,20 +245,20 @@ export function ArchitectInsights() {
           <EmptyState message="Log evening prep to see impact" />
         ) : (
           <div className="space-y-3">
-            {envImpact.map((e) => (
+            {envImpact.map((e, i) => (
               <div
-                key={e.setupId}
+                key={i}
                 className="bg-[#FFF8F0]/[0.03] border border-[#FFF8F0]/[0.06] rounded-2xl p-4 space-y-3"
               >
                 <div className="flex items-center gap-2">
-                  <span className="text-sm">{e.spaceIcon || "📍"}</span>
-                  <p className="text-[13px] font-serif text-[#FFF8F0]/90 flex-1">{e.spaceName}</p>
+                  <span className="text-sm">📍</span>
+                  <p className="text-[13px] font-serif text-[#FFF8F0]/90 flex-1">{e.setupName}</p>
                   <span className="text-[11px] font-mono text-[#FFF8F0]/40">
                     Prep rate: {Math.round(e.prepRate)}%
                   </span>
                 </div>
-                <PercentBar value={e.withPrepRate} color="#34D399" label="Days with prep" />
-                <PercentBar value={e.withoutPrepRate} color="#FFF8F0" label="Days without" />
+                <PercentBar value={e.completionWithPrep} color="#34D399" label="Days with prep" />
+                <PercentBar value={e.completionWithoutPrep} color="#FFF8F0" label="Days without" />
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-mono text-[#FFF8F0]/35 italic">{e.message}</span>
                   <span
