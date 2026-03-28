@@ -298,7 +298,6 @@ export async function runGuardianCheck(): Promise<{
     );
 
   if (error) throw new Error(error.message);
-  revalidatePath("/habits");
 
   return { checks, overallScore, suggestions };
 }
