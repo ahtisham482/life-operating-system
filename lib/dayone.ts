@@ -131,7 +131,7 @@ export const GUARDIAN_MISTAKES = [
 
 export interface GuardianCheckResult {
   mistakeNumber: number; mistakeName: string;
-  status: "pass" | "warning" | "fail";
+  status: "pass" | "warning" | "fail" | "info";
   message: string; suggestion: string | null;
 }
 

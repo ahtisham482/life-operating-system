@@ -21,6 +21,7 @@ import { FrictionTab } from "./friction-tab";
 import { RewardsTab } from "./rewards-tab";
 import { BreakerTab } from "./breaker-tab";
 import { MasteryTab } from "./mastery-tab";
+import { GuideTab } from "./guide-tab";
 
 function getTimeOfDayNudge(): string {
   const now = new Date();
@@ -68,7 +69,9 @@ export default async function HabitsPage({
                   ? "breaker"
                   : tab === "mastery"
                     ? "mastery"
-                    : "tracker";
+                    : tab === "guide"
+                      ? "guide"
+                      : "tracker";
 
   const supabase = await createClient();
   const today = getTodayKarachi();
@@ -713,6 +716,16 @@ export default async function HabitsPage({
           style={{ animationDelay: "0.08s", animationFillMode: "both" }}
         >
           <MasteryTab />
+        </div>
+      )}
+
+      {/* Guide tab */}
+      {activeTab === "guide" && (
+        <div
+          className="max-w-3xl animate-slide-up"
+          style={{ animationDelay: "0.08s", animationFillMode: "both" }}
+        >
+          <GuideTab />
         </div>
       )}
     </div>
