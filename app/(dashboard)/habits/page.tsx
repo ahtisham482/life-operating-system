@@ -618,13 +618,6 @@ export default async function HabitsPage({
         </div>
       )}
 
-      {/* Daily Dashboard — shows at-a-glance info above tracker */}
-      {activeView === "tracker" && allHabits.length > 0 && (
-        <div className="animate-slide-up" style={{ animationDelay: "0.06s", animationFillMode: "both" }}>
-          <DailyDashboard todayCompleted={todayCompleted} totalScheduled={totalScheduled} date={today} />
-        </div>
-      )}
-
       {/* Tracker view */}
       {activeView === "tracker" && (
         <div
