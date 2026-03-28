@@ -15,6 +15,7 @@ import type {
 } from "@/lib/db/schema";
 import { isHabitScheduledForDay } from "@/lib/habits";
 import { ScorecardTab } from "./scorecard-tab";
+import { ArchitectTab } from "./architect-tab";
 
 function getTimeOfDayNudge(): string {
   const now = new Date();
@@ -50,7 +51,9 @@ export default async function HabitsPage({
       ? "identity"
       : tab === "scorecard"
         ? "scorecard"
-        : "tracker";
+        : tab === "architect"
+          ? "architect"
+          : "tracker";
 
   const supabase = await createClient();
   const today = getTodayKarachi();
@@ -635,6 +638,16 @@ export default async function HabitsPage({
           style={{ animationDelay: "0.08s", animationFillMode: "both" }}
         >
           <ScorecardTab date={today} totalScorecards={scorecardCount ?? 0} />
+        </div>
+      )}
+
+      {/* Architect tab */}
+      {activeTab === "architect" && (
+        <div
+          className="max-w-4xl animate-slide-up"
+          style={{ animationDelay: "0.08s", animationFillMode: "both" }}
+        >
+          <ArchitectTab identities={identities} />
         </div>
       )}
     </div>
