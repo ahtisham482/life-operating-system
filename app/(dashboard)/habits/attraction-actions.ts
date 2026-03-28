@@ -72,7 +72,7 @@ export async function createBundle(data: {
 
   // Get next sort order
   const { data: existing } = await supabase
-    .from("attraction_bundles")
+    .from("temptation_bundles")
     .select("sort_order")
     .eq("user_id", user.id)
     .order("sort_order", { ascending: false })
@@ -97,7 +97,7 @@ export async function createBundle(data: {
   });
 
   const { data: row, error } = await supabase
-    .from("attraction_bundles")
+    .from("temptation_bundles")
     .insert(insertData)
     .select("*")
     .single();
@@ -120,7 +120,7 @@ export async function updateBundle(
     updates.wantTimeLimit !== undefined
   ) {
     const { data: current, error: fetchErr } = await supabase
-      .from("attraction_bundles")
+      .from("temptation_bundles")
       .select("need_description, want_description, want_time_limit")
       .eq("id", id)
       .single();
@@ -150,7 +150,7 @@ export async function updateBundle(
   dbUpdates.updated_at = new Date().toISOString();
 
   const { error } = await supabase
-    .from("attraction_bundles")
+    .from("temptation_bundles")
     .update(dbUpdates)
     .eq("id", id);
   if (error) throw new Error(error.message);
@@ -162,7 +162,7 @@ export async function deleteBundle(id: string): Promise<void> {
   const { supabase } = await getAuthedClient();
 
   const { error } = await supabase
-    .from("attraction_bundles")
+    .from("temptation_bundles")
     .delete()
     .eq("id", id);
   if (error) throw new Error(error.message);
@@ -174,7 +174,7 @@ export async function getBundles(): Promise<Bundle[]> {
   const { supabase, user } = await getAuthedClient();
 
   const { data, error } = await supabase
-    .from("attraction_bundles")
+    .from("temptation_bundles")
     .select("*")
     .eq("user_id", user.id)
     .eq("is_active", true)
@@ -192,12 +192,14 @@ export async function logBundleOutcome(
 
   // Fetch current counters
   const { data: current, error: fetchErr } = await supabase
-    .from("attraction_bundles")
+    .from("temptation_bundles")
     .select("times_completed, times_need_only, times_cheated, times_skipped")
     .eq("id", bundleId)
     .single();
   if (fetchErr) throw new Error(fetchErr.message);
+  if (!current) throw new Error("Bundle not found");
 
+  const row = current as Record<string, unknown>;
   const counterMap: Record<string, string> = {
     full_bundle: "times_completed",
     need_only: "times_need_only",
@@ -207,9 +209,9 @@ export async function logBundleOutcome(
 
   const field = counterMap[outcome];
   const { error } = await supabase
-    .from("attraction_bundles")
+    .from("temptation_bundles")
     .update({
-      [field]: (current[field] as number) + 1,
+      [field]: ((row[field] as number) || 0) + 1,
       updated_at: new Date().toISOString(),
     })
     .eq("id", bundleId);

@@ -3,7 +3,7 @@
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 
 interface HabitsTabsProps {
-  activeTab: "tracker" | "identity" | "scorecard" | "architect";
+  activeTab: "tracker" | "identity" | "scorecard" | "architect" | "attract";
 }
 
 export function HabitsTabs({ activeTab }: HabitsTabsProps) {
@@ -27,6 +27,7 @@ export function HabitsTabs({ activeTab }: HabitsTabsProps) {
     { key: "identity", label: "Identity" },
     { key: "scorecard", label: "Scorecard" },
     { key: "architect", label: "Architect" },
+    { key: "attract", label: "Attract" },
   ] as const;
 
   return (
