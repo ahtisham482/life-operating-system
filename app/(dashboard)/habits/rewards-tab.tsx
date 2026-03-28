@@ -7,6 +7,7 @@ import { ContractSection } from "./contract-section";
 import { SavingsSection } from "./savings-section";
 import { ProjectionsSection } from "./projections-section";
 import { MilestoneCardsSection } from "./milestone-cards-section";
+import { PillSelector } from "./ui-kit";
 
 type Section = "contracts" | "savings" | "projections" | "milestones";
 
@@ -50,18 +51,12 @@ export function RewardsTab() {
   return (
     <div className="space-y-6">
       {/* Section pills */}
-      <div className="flex gap-1 p-1 bg-[#FFF8F0]/[0.03] border border-[#FFF8F0]/[0.06] rounded-2xl w-fit">
-        {sections.map((s) => (
-          <button key={s.key} onClick={() => setActiveSection(s.key)}
-            className={`px-4 py-1.5 text-[10px] font-mono uppercase tracking-[0.2em] rounded-xl transition-all ${
-              activeSection === s.key
-                ? "bg-[#FF6B6B]/20 text-[#FF6B6B] border border-[#FF6B6B]/30"
-                : "text-[#FFF8F0]/30 hover:text-[#FFF8F0]/60 border border-transparent"
-            }`}>
-            {s.label}
-          </button>
-        ))}
-      </div>
+      <PillSelector
+        options={sections}
+        selected={activeSection}
+        onSelect={setActiveSection}
+        color="#2DD4BF"
+      />
 
       {/* Active section */}
       {activeSection === "contracts" && (

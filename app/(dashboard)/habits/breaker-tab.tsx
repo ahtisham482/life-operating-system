@@ -8,6 +8,7 @@ import { UrgeTracker } from "./urge-tracker";
 import { DefenseDashboard } from "./defense-dashboard";
 import { BreakerInsights } from "./breaker-insights";
 import { EmptyState } from "./empty-state";
+import { PillSelector } from "./ui-kit";
 
 type Section = "battle" | "defense" | "insights";
 
@@ -121,21 +122,12 @@ export function BreakerTab() {
       </div>
 
       {/* Section pills */}
-      <div className="flex gap-1 p-1 bg-[#FFF8F0]/[0.03] border border-[#FFF8F0]/[0.06] rounded-2xl w-fit">
-        {sectionPills.map((pill) => (
-          <button
-            key={pill.key}
-            onClick={() => setActiveSection(pill.key)}
-            className={`px-4 py-1.5 text-[10px] font-mono uppercase tracking-[0.2em] rounded-xl transition-all ${
-              activeSection === pill.key
-                ? "bg-[#FF6B6B]/20 text-[#FF6B6B] border border-[#FF6B6B]/30"
-                : "text-[#FFF8F0]/30 hover:text-[#FFF8F0]/60"
-            }`}
-          >
-            {pill.label}
-          </button>
-        ))}
-      </div>
+      <PillSelector
+        options={sectionPills}
+        selected={activeSection}
+        onSelect={setActiveSection}
+        color="#2DD4BF"
+      />
 
       {/* Content */}
       {selectedHabit && (

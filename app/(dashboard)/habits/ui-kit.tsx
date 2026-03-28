@@ -155,7 +155,8 @@ export function ProgressBar({
 interface PillSelectorProps {
   options: { key: string; label: string }[];
   selected: string;
-  onSelect: (key: string) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  onSelect: (key: any) => void;
   color?: string;
   size?: "sm" | "md";
 }

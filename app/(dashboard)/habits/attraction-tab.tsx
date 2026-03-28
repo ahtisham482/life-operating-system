@@ -7,6 +7,7 @@ import { BundleSection } from "./bundle-section";
 import { ReframeSection } from "./reframe-section";
 import { TribeSection } from "./tribe-section";
 import { EmptyState } from "./empty-state";
+import { PillSelector } from "./ui-kit";
 
 interface AttractionTabProps {
   identities: { id: string; identityStatement: string }[];
@@ -67,21 +68,12 @@ export function AttractionTab({ identities }: AttractionTabProps) {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex gap-1 p-1 bg-[#FFF8F0]/[0.03] border border-[#FFF8F0]/[0.06] rounded-2xl">
-          {sections.map((s) => (
-            <button
-              key={s.key}
-              onClick={() => setActiveSection(s.key)}
-              className={`px-4 py-1.5 text-[10px] font-mono uppercase tracking-[0.2em] rounded-xl transition-all ${
-                activeSection === s.key
-                  ? "bg-[#FF6B6B]/20 text-[#FF6B6B] border border-[#FF6B6B]/30"
-                  : "text-[#FFF8F0]/30 hover:text-[#FFF8F0]/60 border border-transparent"
-              }`}
-            >
-              {s.label}
-            </button>
-          ))}
-        </div>
+        <PillSelector
+          options={sections}
+          selected={activeSection}
+          onSelect={setActiveSection}
+          color="#2DD4BF"
+        />
       </div>
 
       {/* Attraction message */}
