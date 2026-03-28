@@ -6,7 +6,7 @@ import { HabitTracker } from "./habit-tracker";
 import { HabitInsights } from "./habit-insights";
 import { IdentityBoard } from "./identity-board";
 import { HabitsTabs } from "./habits-tabs";
-import { ZoneTabs, resolveNavigation } from "./zone-tabs";
+import { ZoneTabs, resolveNavigation, getUnlockedZones } from "./zone-tabs";
 import type {
   Habit,
   HabitGroup,
@@ -53,7 +53,7 @@ export default async function HabitsPage({
   searchParams: Promise<{ tab?: string; zone?: string; view?: string }>;
 }) {
   const params = await searchParams;
-  const { zone: activeZone, view: activeView } = resolveNavigation(params);
+  let { zone: activeZone, view: activeView } = resolveNavigation(params);
 
   const supabase = await createClient();
   const today = getTodayKarachi();
@@ -377,6 +377,19 @@ export default async function HabitsPage({
   const daysOfData = uniqueDates.size;
 
   // ─────────────────────────────────────────
+  // Progressive Disclosure: enforce zone locks server-side
+  // ─────────────────────────────────────────
+  const unlocked = getUnlockedZones(daysOfData, allHabits.length);
+  if (activeZone === "build" && !unlocked.build) {
+    activeZone = "today";
+    activeView = "tracker";
+  }
+  if (activeZone === "grow" && !unlocked.grow) {
+    activeZone = "today";
+    activeView = "tracker";
+  }
+
+  // ─────────────────────────────────────────
   // Keystone Habit Detection (only when 30+ days of data)
   // ─────────────────────────────────────────
   const keystoneHabitIds: string[] = [];
@@ -574,7 +587,36 @@ export default async function HabitsPage({
       </div>
 
       {/* Zone navigation */}
-      <ZoneTabs activeZone={activeZone} activeView={activeView} />
+      <ZoneTabs activeZone={activeZone} activeView={activeView} daysOfData={daysOfData} habitsCount={allHabits.length} />
+
+      {/* New user welcome — shows only when 0 habits exist */}
+      {allHabits.length === 0 && activeView === "tracker" && (
+        <div
+          className="max-w-xl mx-auto text-center py-12 space-y-6 animate-slide-up"
+          style={{ animationDelay: "0.08s", animationFillMode: "both" }}
+        >
+          <span className="text-5xl">🌱</span>
+          <h2 className="text-xl font-serif text-[#FFF8F0]">
+            Welcome to your habit system
+          </h2>
+          <p className="text-sm text-[#FFF8F0]/50 leading-relaxed max-w-md mx-auto">
+            This isn&apos;t just a tracker — it&apos;s a complete system for building the person
+            you want to become. Start by creating your first habit below, or visit the
+            <span className="text-[#A78BFA]"> Learn &amp; Check </span>
+            guide for a step-by-step walkthrough.
+          </p>
+          <div className="flex items-center gap-2 justify-center text-[10px] font-mono text-[#FFF8F0]/25">
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#FF6B6B]/40" /> Today — track daily</span>
+            <span>·</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#2DD4BF]/40" /> Build — design systems</span>
+            <span>·</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#A78BFA]/40" /> Grow — level up</span>
+          </div>
+          <p className="text-[11px] text-[#FFF8F0]/20 italic">
+            &ldquo;You do not rise to the level of your goals. You fall to the level of your systems.&rdquo; — James Clear
+          </p>
+        </div>
+      )}
 
       {/* Tracker view */}
       {activeView === "tracker" && (
