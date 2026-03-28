@@ -23,6 +23,7 @@ import { RewardsTab } from "./rewards-tab";
 import { BreakerTab } from "./breaker-tab";
 import { MasteryTab } from "./mastery-tab";
 import { GuideTab } from "./guide-tab";
+import { DailyDashboard } from "./daily-dashboard";
 
 function getTimeOfDayNudge(): string {
   const now = new Date();
@@ -615,6 +616,13 @@ export default async function HabitsPage({
           <p className="text-[11px] text-[#FFF8F0]/20 italic">
             &ldquo;You do not rise to the level of your goals. You fall to the level of your systems.&rdquo; — James Clear
           </p>
+        </div>
+      )}
+
+      {/* Daily Dashboard — shows at-a-glance info above tracker */}
+      {activeView === "tracker" && allHabits.length > 0 && (
+        <div className="animate-slide-up" style={{ animationDelay: "0.06s", animationFillMode: "both" }}>
+          <DailyDashboard todayCompleted={todayCompleted} totalScheduled={totalScheduled} date={today} />
         </div>
       )}
 
