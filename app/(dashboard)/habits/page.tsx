@@ -6,6 +6,7 @@ import { HabitTracker } from "./habit-tracker";
 import { HabitInsights } from "./habit-insights";
 import { IdentityBoard } from "./identity-board";
 import { HabitsTabs } from "./habits-tabs";
+import { ZoneTabs, resolveNavigation } from "./zone-tabs";
 import type {
   Habit,
   HabitGroup,
@@ -49,29 +50,10 @@ function getCurrentTimeOfDay(): TimeOfDay {
 export default async function HabitsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string }>;
+  searchParams: Promise<{ tab?: string; zone?: string; view?: string }>;
 }) {
-  const { tab } = await searchParams;
-  const activeTab =
-    tab === "identity"
-      ? "identity"
-      : tab === "scorecard"
-        ? "scorecard"
-        : tab === "architect"
-          ? "architect"
-          : tab === "attract"
-            ? "attract"
-            : tab === "friction"
-              ? "friction"
-              : tab === "rewards"
-                ? "rewards"
-                : tab === "breaker"
-                  ? "breaker"
-                  : tab === "mastery"
-                    ? "mastery"
-                    : tab === "guide"
-                      ? "guide"
-                      : "tracker";
+  const params = await searchParams;
+  const { zone: activeZone, view: activeView } = resolveNavigation(params);
 
   const supabase = await createClient();
   const today = getTodayKarachi();
@@ -591,11 +573,11 @@ export default async function HabitsPage({
         </div>
       </div>
 
-      {/* Tab switcher */}
-      <HabitsTabs activeTab={activeTab} />
+      {/* Zone navigation */}
+      <ZoneTabs activeZone={activeZone} activeView={activeView} />
 
-      {/* Tracker tab */}
-      {activeTab === "tracker" && (
+      {/* Tracker view */}
+      {activeView === "tracker" && (
         <div
           className="grid grid-cols-1 lg:grid-cols-5 gap-8 animate-slide-up"
           style={{ animationDelay: "0.08s", animationFillMode: "both" }}
@@ -635,7 +617,7 @@ export default async function HabitsPage({
       )}
 
       {/* Identity tab */}
-      {activeTab === "identity" && (
+      {activeView === "identity" && (
         <div
           className="animate-slide-up"
           style={{ animationDelay: "0.08s", animationFillMode: "both" }}
@@ -650,7 +632,7 @@ export default async function HabitsPage({
       )}
 
       {/* Scorecard tab */}
-      {activeTab === "scorecard" && (
+      {activeView === "scorecard" && (
         <div
           className="max-w-2xl animate-slide-up"
           style={{ animationDelay: "0.08s", animationFillMode: "both" }}
@@ -660,7 +642,7 @@ export default async function HabitsPage({
       )}
 
       {/* Architect tab */}
-      {activeTab === "architect" && (
+      {activeView === "architect" && (
         <div
           className="max-w-4xl animate-slide-up"
           style={{ animationDelay: "0.08s", animationFillMode: "both" }}
@@ -670,7 +652,7 @@ export default async function HabitsPage({
       )}
 
       {/* Attract tab */}
-      {activeTab === "attract" && (
+      {activeView === "attract" && (
         <div
           className="max-w-3xl animate-slide-up"
           style={{ animationDelay: "0.08s", animationFillMode: "both" }}
@@ -680,7 +662,7 @@ export default async function HabitsPage({
       )}
 
       {/* Friction tab */}
-      {activeTab === "friction" && (
+      {activeView === "friction" && (
         <div
           className="max-w-4xl animate-slide-up"
           style={{ animationDelay: "0.08s", animationFillMode: "both" }}
@@ -690,7 +672,7 @@ export default async function HabitsPage({
       )}
 
       {/* Rewards tab */}
-      {activeTab === "rewards" && (
+      {activeView === "rewards" && (
         <div
           className="max-w-4xl animate-slide-up"
           style={{ animationDelay: "0.08s", animationFillMode: "both" }}
@@ -700,7 +682,7 @@ export default async function HabitsPage({
       )}
 
       {/* Breaker tab */}
-      {activeTab === "breaker" && (
+      {activeView === "breaker" && (
         <div
           className="max-w-4xl animate-slide-up"
           style={{ animationDelay: "0.08s", animationFillMode: "both" }}
@@ -710,7 +692,7 @@ export default async function HabitsPage({
       )}
 
       {/* Mastery tab */}
-      {activeTab === "mastery" && (
+      {activeView === "mastery" && (
         <div
           className="max-w-4xl animate-slide-up"
           style={{ animationDelay: "0.08s", animationFillMode: "both" }}
@@ -720,7 +702,7 @@ export default async function HabitsPage({
       )}
 
       {/* Guide tab */}
-      {activeTab === "guide" && (
+      {activeView === "guide" && (
         <div
           className="max-w-3xl animate-slide-up"
           style={{ animationDelay: "0.08s", animationFillMode: "both" }}
