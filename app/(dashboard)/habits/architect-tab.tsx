@@ -7,12 +7,15 @@ import { BlueprintWizard } from "./blueprint-wizard";
 import { BlueprintCard } from "./blueprint-card";
 import { ChainBuilder } from "./chain-builder";
 import { EnvironmentDesigner } from "./environment-designer";
+import { ExecutionLogger } from "./execution-logger";
+import { ArchitectInsights } from "./architect-insights";
+import { EveningPrepLogger } from "./evening-prep-logger";
 
 interface ArchitectTabProps {
   identities: { id: string; identityStatement: string }[];
 }
 
-type Section = "blueprints" | "chains" | "environments";
+type Section = "blueprints" | "chains" | "environments" | "execute" | "insights" | "prep";
 
 export function ArchitectTab({ identities }: ArchitectTabProps) {
   const [blueprints, setBlueprints] = useState<Blueprint[]>([]);
@@ -42,6 +45,9 @@ export function ArchitectTab({ identities }: ArchitectTabProps) {
     { key: "blueprints", label: "Blueprints" },
     { key: "chains", label: "Chains" },
     { key: "environments", label: "Environments" },
+    { key: "execute", label: "Execute" },
+    { key: "insights", label: "Insights" },
+    { key: "prep", label: "Prep" },
   ];
 
   if (loading) {
@@ -139,6 +145,15 @@ export function ArchitectTab({ identities }: ArchitectTabProps) {
       {activeSection === "environments" && (
         <EnvironmentDesigner setups={setups} blueprints={blueprints} onRefresh={loadData} />
       )}
+
+      {/* Execute section */}
+      {activeSection === "execute" && <ExecutionLogger />}
+
+      {/* Insights section */}
+      {activeSection === "insights" && <ArchitectInsights />}
+
+      {/* Prep section */}
+      {activeSection === "prep" && <EveningPrepLogger />}
 
       {/* Wizard modal */}
       {showWizard && (
