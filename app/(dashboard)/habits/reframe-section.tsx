@@ -13,6 +13,7 @@ import {
   deleteReframe,
   logReframeResponse,
 } from "./attraction-actions";
+import { EmptyState } from "./empty-state";
 
 interface ReframeSectionProps {
   reframes: Reframe[];
@@ -80,22 +81,15 @@ export function ReframeSection({ reframes, onRefresh }: ReframeSectionProps) {
   // Empty state
   if (reframes.length === 0 && !showCreate) {
     return (
-      <div className="text-center py-12">
-        <p className="text-3xl mb-3">✨</p>
-        <h3 className="text-sm font-serif text-[#FFF8F0]/80 mb-1">
-          Mindset Reframes
-        </h3>
-        <p className="text-[12px] text-[#FFF8F0]/40 font-mono max-w-xs mx-auto leading-relaxed">
-          Transform &ldquo;I HAVE to&rdquo; into &ldquo;I GET to&rdquo;
-        </p>
-        <p className="text-[11px] text-[#FFF8F0]/20 font-mono mt-2 italic max-w-sm mx-auto">
-          &ldquo;The last of human freedoms &mdash; the ability to choose one&apos;s
-          attitude in any given set of circumstances.&rdquo; &mdash; Viktor Frankl
-        </p>
-        <button onClick={() => setShowCreate(true)} className={`mt-4 ${BTN}`}>
-          Create Reframe
-        </button>
-      </div>
+      <EmptyState
+        icon="🧠"
+        title="Shift from 'have to' → 'get to'"
+        description="Every hard habit can be reframed as a privilege. When you change how you FEEL about a habit, you change whether you'll do it."
+        principle="The same facts can be framed as burden or opportunity. The frame determines the behavior."
+        actionLabel="Create first reframe"
+        onAction={() => setShowCreate(true)}
+        compact
+      />
     );
   }
 

@@ -8,6 +8,7 @@ import {
   deleteDecisiveMoment,
   logMomentOutcome,
 } from "./friction-actions";
+import { EmptyState } from "./empty-state";
 
 interface MomentSectionProps {
   moments: DecisiveMoment[];
@@ -73,26 +74,15 @@ export function MomentSection({ moments, onRefresh }: MomentSectionProps) {
 
   if (moments.length === 0 && !showCreate) {
     return (
-      <div className="space-y-6">
-        <div className="text-center py-8 space-y-4">
-          <p className="text-[32px]">🔀</p>
-          <p className="text-sm text-[#FFF8F0]/50">
-            Map the fork in the road before you reach it.
-          </p>
-        </div>
-        <div className="space-y-2">
-          <p className={LABEL}>Quick Templates</p>
-          {MOMENT_SUGGESTIONS.map((s, i) => (
-            <button key={i} onClick={() => fillSuggestion(s)} className="w-full text-left px-4 py-3 bg-[#FFF8F0]/[0.02] border border-[#FFF8F0]/[0.06] rounded-xl hover:bg-[#FFF8F0]/[0.05] transition-colors">
-              <p className="text-[12px] text-[#FFF8F0]/70">{s.name}</p>
-              <p className="text-[10px] font-mono text-[#FFF8F0]/30 mt-0.5">{s.trigger}</p>
-            </button>
-          ))}
-        </div>
-        <button onClick={() => setShowCreate(true)} className={BTN}>
-          + Custom Moment
-        </button>
-      </div>
+      <EmptyState
+        icon="🔀"
+        title="Map your decisive moments"
+        description="Every day has 3-5 fork-in-the-road moments that determine the next 2-3 hours. Pre-decide what you'll do at each fork — before the moment arrives."
+        principle="Win the decisive moment, and the next 2-3 hours follow automatically."
+        actionLabel="Map first moment"
+        onAction={() => setShowCreate(true)}
+        compact
+      />
     );
   }
 

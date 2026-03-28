@@ -7,6 +7,7 @@ import { BreakerSetup } from "./breaker-setup";
 import { UrgeTracker } from "./urge-tracker";
 import { DefenseDashboard } from "./defense-dashboard";
 import { BreakerInsights } from "./breaker-insights";
+import { EmptyState } from "./empty-state";
 
 type Section = "battle" | "defense" | "insights";
 
@@ -60,22 +61,14 @@ export function BreakerTab() {
   // Onboarding
   if (badHabits.length === 0 && !showSetup) {
     return (
-      <div className="bg-[#FFF8F0]/[0.03] border border-[#FFF8F0]/[0.06] rounded-2xl p-8 text-center space-y-4 max-w-lg mx-auto">
-        <p className="text-[32px]">{"🚫"}</p>
-        <h3 className="text-[20px] font-serif text-[#FFF8F0]">
-          Ready to break a bad habit?
-        </h3>
-        <p className="text-[14px] text-[#FFF8F0]/50 leading-relaxed">
-          The first step is understanding it. We will map your triggers, calculate the real cost,
-          and build a 4-layer defense system.
-        </p>
-        <button
-          onClick={() => setShowSetup(true)}
-          className="px-5 py-2.5 bg-[#FF6B6B]/20 text-[#FF6B6B] border border-[#FF6B6B]/30 rounded-xl text-[14px] font-medium hover:bg-[#FF6B6B]/30 transition-all"
-        >
-          Break a Bad Habit
-        </button>
-      </div>
+      <EmptyState
+        icon="🛡️"
+        title="Break free from bad habits"
+        description="Diagnose your triggers, build a 4-layer defense plan, track every urge, and watch the old neural pathway weaken over time. No shame — just science."
+        principle="You don't eliminate a bad habit. You replace it."
+        actionLabel="Start breaking a habit"
+        onAction={() => setShowSetup(true)}
+      />
     );
   }
 

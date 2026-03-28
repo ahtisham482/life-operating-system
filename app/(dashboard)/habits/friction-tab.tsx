@@ -6,6 +6,7 @@ import { getGateways, getFrictionMaps, getDecisiveMoments } from "./friction-act
 import { GatewaySection } from "./gateway-section";
 import { FrictionMapSection } from "./friction-map-section";
 import { MomentSection } from "./moment-section";
+import { EmptyState } from "./empty-state";
 
 interface FrictionTabProps {
   identities: { id: string; identityStatement: string }[];
@@ -81,11 +82,20 @@ export function FrictionTab({ identities }: FrictionTabProps) {
       </div>
 
       {/* Tagline */}
-      <div className="text-center">
-        <p className="text-[11px] font-mono text-[#FFF8F0]/25 italic">
-          Reduce friction for good habits. Increase it for bad ones.
-        </p>
-      </div>
+      {gateways.length === 0 && frictionMaps.length === 0 && moments.length === 0 ? (
+        <EmptyState
+          icon="⚡"
+          title="Engineer the path of least resistance"
+          description="Start impossibly small with 2-minute gateways, map and eliminate friction from good habits, and identify the decisive moments that determine your day."
+          principle="Human behavior follows the path of least resistance — always. Make the right thing easy."
+        />
+      ) : (
+        <div className="text-center">
+          <p className="text-[11px] font-mono text-[#FFF8F0]/25 italic">
+            Reduce friction for good habits. Increase it for bad ones.
+          </p>
+        </div>
+      )}
 
       {/* Active section */}
       {activeSection === "gateways" && (

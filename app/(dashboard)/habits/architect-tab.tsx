@@ -10,6 +10,7 @@ import { EnvironmentDesigner } from "./environment-designer";
 import { ExecutionLogger } from "./execution-logger";
 import { ArchitectInsights } from "./architect-insights";
 import { EveningPrepLogger } from "./evening-prep-logger";
+import { EmptyState } from "./empty-state";
 
 interface ArchitectTabProps {
   identities: { id: string; identityStatement: string }[];
@@ -92,35 +93,14 @@ export function ArchitectTab({ identities }: ArchitectTabProps) {
 
       {/* Onboarding */}
       {hasNoBlueprints && activeSection === "blueprints" && (
-        <div className="text-center py-16 space-y-4">
-          <p className="text-4xl">🏗️</p>
-          <h3 className="text-base font-serif text-[#FFF8F0]/80">
-            Welcome to the Habit Architect
-          </h3>
-          <p className="text-[12px] text-[#FFF8F0]/40 font-mono max-w-sm mx-auto leading-relaxed">
-            Build habits that stick using three science-backed pillars:
-          </p>
-          <div className="flex flex-col items-center gap-2 max-w-xs mx-auto">
-            <div className="flex items-center gap-2 text-[11px] text-[#FFF8F0]/50 font-mono">
-              <span>🎯</span>
-              <span>Implementation Intentions &mdash; when, where, what</span>
-            </div>
-            <div className="flex items-center gap-2 text-[11px] text-[#FFF8F0]/50 font-mono">
-              <span>⛓️</span>
-              <span>Habit Stacking &mdash; chain to existing habits</span>
-            </div>
-            <div className="flex items-center gap-2 text-[11px] text-[#FFF8F0]/50 font-mono">
-              <span>🏠</span>
-              <span>Environment Design &mdash; shape your space</span>
-            </div>
-          </div>
-          <button
-            onClick={() => setShowWizard(true)}
-            className="mt-4 px-6 py-3 bg-[#FF6B6B]/20 text-[#FF6B6B] border border-[#FF6B6B]/30 rounded-xl text-[12px] font-mono uppercase tracking-wider hover:bg-[#FF6B6B]/30 transition-colors"
-          >
-            Create Your First Blueprint
-          </button>
-        </div>
+        <EmptyState
+          icon="🏗️"
+          title="Design your habit system"
+          description="Create a complete blueprint for each habit — when you'll do it, what triggers it, and how your environment supports it. This is where vague intentions become specific plans."
+          principle="People who specify WHEN and WHERE are 2-3x more likely to follow through."
+          actionLabel="Create first blueprint"
+          onAction={() => setShowWizard(true)}
+        />
       )}
 
       {/* Blueprints section */}

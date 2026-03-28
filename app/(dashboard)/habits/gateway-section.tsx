@@ -15,6 +15,7 @@ import {
   levelUp,
   levelDown,
 } from "./friction-actions";
+import { EmptyState } from "./empty-state";
 
 interface GatewaySectionProps {
   gateways: Gateway[];
@@ -108,15 +109,15 @@ export function GatewaySection({ gateways, onRefresh }: GatewaySectionProps) {
 
   if (gateways.length === 0 && !showCreate) {
     return (
-      <div className="text-center py-16 space-y-4">
-        <p className="text-[32px]">⚡</p>
-        <p className="text-sm text-[#FFF8F0]/50">
-          Start impossibly small. Scale up when it&apos;s automatic.
-        </p>
-        <button onClick={() => setShowCreate(true)} className={BTN}>
-          + New Gateway
-        </button>
-      </div>
+      <EmptyState
+        icon="🚪"
+        title="Start impossibly small"
+        description="Every big habit starts with a 2-minute gateway. Scale up only when it feels automatic. This prevents the #1 reason people quit: starting too big."
+        principle="A habit must be established before it can be improved."
+        actionLabel="Create first gateway"
+        onAction={() => setShowCreate(true)}
+        compact
+      />
     );
   }
 

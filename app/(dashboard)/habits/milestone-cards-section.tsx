@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useTransition } from "react";
 import type { MilestoneCard } from "@/lib/contracts";
 import { MILESTONE_TIERS } from "@/lib/contracts";
 import { getMilestoneCards } from "./contract-actions";
+import { EmptyState } from "./empty-state";
 
 export function MilestoneCardsSection() {
   const [cards, setCards] = useState<MilestoneCard[]>([]);
@@ -70,12 +71,13 @@ export function MilestoneCardsSection() {
 
       {/* Empty state */}
       {cards.length === 0 && (
-        <div className="text-center py-12 space-y-4">
-          <p className="text-[32px]">🏆</p>
-          <p className="text-[14px] text-[#FFF8F0]/60 max-w-sm mx-auto">
-            Complete 7+ day streaks to unlock achievement cards
-          </p>
-        </div>
+        <EmptyState
+          icon="🏆"
+          title="Earn shareable achievement cards"
+          description="Complete 7+ day streaks on any habit to unlock milestone cards you can save or share. Six tiers from Bronze to Crown."
+          principle="What is immediately celebrated is repeated."
+          compact
+        />
       )}
 
       {/* Achievement Cards */}

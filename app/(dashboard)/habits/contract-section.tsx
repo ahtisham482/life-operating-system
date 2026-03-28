@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import type { HabitContract } from "@/lib/contracts";
 import { getContractProgress, getContractStatusColor } from "@/lib/contracts";
 import { createContract, deleteContract, logContractDay } from "./contract-actions";
+import { EmptyState } from "./empty-state";
 
 interface ContractSectionProps {
   contracts: HabitContract[];
@@ -75,18 +76,15 @@ export function ContractSection({ contracts, onRefresh }: ContractSectionProps) 
 
   if (contracts.length === 0 && !showForm) {
     return (
-      <div className="text-center py-16 space-y-4">
-        <p className="text-[32px]">📜</p>
-        <p className="text-[14px] text-[#FFF8F0]/60 max-w-sm mx-auto">
-          A habit contract makes your commitment REAL. Sign one.
-        </p>
-        <button
-          onClick={() => setShowForm(true)}
-          className="px-5 py-2 bg-[#FF6B6B]/20 text-[#FF6B6B] border border-[#FF6B6B]/30 rounded-xl text-[12px] font-mono uppercase tracking-wider"
-        >
-          Create Contract
-        </button>
-      </div>
+      <EmptyState
+        icon="📜"
+        title="Make your commitment official"
+        description="A signed habit contract with real stakes makes your commitment feel binding. Add an accountability partner and a penalty for extra motivation."
+        principle="A habit contract makes the costs of violating your promises public and painful."
+        actionLabel="Create first contract"
+        onAction={() => setShowForm(true)}
+        compact
+      />
     );
   }
 

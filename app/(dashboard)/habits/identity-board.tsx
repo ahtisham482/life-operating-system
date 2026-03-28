@@ -9,6 +9,7 @@ import { LinkHabitsModal } from "./link-habits-modal";
 import { ReflectionModal } from "./reflection-modal";
 import { MilestoneToast } from "./milestone-toast";
 import type { MilestoneDef } from "@/lib/identity";
+import { EmptyState } from "./empty-state";
 
 interface IdentityBoardHabit {
   id: string;
@@ -95,25 +96,14 @@ export function IdentityBoard({
 
       {/* Empty state */}
       {identities.length === 0 && (
-        <div className="glass-card rounded-3xl p-8 text-center space-y-4">
-          <p className="text-3xl">🌱</p>
-          <div className="space-y-2">
-            <p className="text-sm font-serif italic text-[#FFF8F0]/60">
-              Who are you becoming?
-            </p>
-            <p className="text-[10px] font-mono text-[#FFF8F0]/25 max-w-[240px] mx-auto leading-relaxed">
-              Every habit you complete is a vote for an identity. Start by
-              defining who you want to be.
-            </p>
-          </div>
-          <button
-            onClick={() => setShowCreate(true)}
-            className="inline-flex items-center gap-2 px-4 py-2.5 text-[10px] font-mono uppercase tracking-widest bg-[#FF6B6B]/20 text-[#FF6B6B] border border-[#FF6B6B]/30 rounded-xl hover:bg-[#FF6B6B]/30 transition-colors"
-          >
-            <Plus size={11} />
-            Create first identity
-          </button>
-        </div>
+        <EmptyState
+          icon="🪪"
+          title="Define who you want to become"
+          description="Every habit is a vote for a type of person. Start by declaring your identity — 'I am a reader' — and let every completed habit cast a vote."
+          principle="The goal is not to read a book. The goal is to become a reader."
+          actionLabel="Create first identity"
+          onAction={() => setShowCreate(true)}
+        />
       )}
 
       {/* Identity cards */}

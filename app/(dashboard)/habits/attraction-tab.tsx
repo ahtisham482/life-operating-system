@@ -6,6 +6,7 @@ import { getBundles, getReframes, getTribes, getPartners } from "./attraction-ac
 import { BundleSection } from "./bundle-section";
 import { ReframeSection } from "./reframe-section";
 import { TribeSection } from "./tribe-section";
+import { EmptyState } from "./empty-state";
 
 interface AttractionTabProps {
   identities: { id: string; identityStatement: string }[];
@@ -84,11 +85,20 @@ export function AttractionTab({ identities }: AttractionTabProps) {
       </div>
 
       {/* Attraction message */}
-      <div className="text-center">
-        <p className="text-[11px] font-mono text-[#FFF8F0]/25 italic">
-          Make good habits irresistible, bad habits invisible.
-        </p>
-      </div>
+      {bundles.length === 0 && reframes.length === 0 && tribes.length === 0 && partners.length === 0 ? (
+        <EmptyState
+          icon="🧲"
+          title="Make your habits irresistible"
+          description="Pair hard habits with enjoyable rewards, reframe 'I have to' into 'I get to', and surround yourself with people who make your behavior feel normal."
+          principle="It's the anticipation of reward — not the reward itself — that drives behavior."
+        />
+      ) : (
+        <div className="text-center">
+          <p className="text-[11px] font-mono text-[#FFF8F0]/25 italic">
+            Make good habits irresistible, bad habits invisible.
+          </p>
+        </div>
+      )}
 
       {/* Active section */}
       {activeSection === "bundles" && (

@@ -8,6 +8,7 @@ import { GoldilocksSection } from "./goldilocks-section";
 import { PhaseDashboard } from "./phase-dashboard";
 import { ReviewSection } from "./review-section";
 import { ChallengeSection } from "./challenge-section";
+import { EmptyState } from "./empty-state";
 
 type Section = "goldilocks" | "phases" | "reviews" | "challenges";
 
@@ -51,6 +52,16 @@ export function MasteryTab() {
 
   return (
     <div className="space-y-4 max-w-3xl">
+      {/* Empty state */}
+      {habits.length === 0 && (
+        <EmptyState
+          icon="🎯"
+          title="Master your habits over time"
+          description="Track measurable progress, stay in the flow zone with auto-difficulty adjustment, and get deliberate practice challenges that prevent autopilot boredom."
+          principle="The greatest threat to success is not failure — it's boredom."
+        />
+      )}
+
       {/* Overall stats */}
       {habits.length > 0 && (
         <div className="flex items-center gap-4">

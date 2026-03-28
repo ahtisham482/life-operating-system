@@ -4,6 +4,7 @@ import { useState, useEffect, useTransition, useCallback } from "react";
 import type { SavingsJar, SavingsTransaction } from "@/lib/contracts";
 import { getJarProgress, formatCurrency } from "@/lib/contracts";
 import { createJar, deleteJar, addTransaction, getTransactions } from "./contract-actions";
+import { EmptyState } from "./empty-state";
 
 interface SavingsSectionProps {
   jars: SavingsJar[];
@@ -53,16 +54,14 @@ export function SavingsSection({ jars, onRefresh }: SavingsSectionProps) {
 
   if (jars.length === 0 && !showForm) {
     return (
-      <div className="text-center py-16 space-y-4">
-        <p className="text-[32px]">💰</p>
-        <p className="text-[14px] text-[#FFF8F0]/60 max-w-sm mx-auto">
-          Every habit can become money saved. Start your jar.
-        </p>
-        <button onClick={() => setShowForm(true)}
-          className="px-5 py-2 bg-[#FF6B6B]/20 text-[#FF6B6B] border border-[#FF6B6B]/30 rounded-xl text-[12px] font-mono uppercase tracking-wider">
-          Create Jar
-        </button>
-      </div>
+      <EmptyState
+        icon="💰"
+        title="Turn habits into savings"
+        description="Every habit can save or earn money. Track it visually in a jar and watch it fill up toward something you actually want."
+        actionLabel="Create savings jar"
+        onAction={() => setShowForm(true)}
+        compact
+      />
     );
   }
 

@@ -14,6 +14,7 @@ import {
   deleteBundle,
   logBundleOutcome,
 } from "./attraction-actions";
+import { EmptyState } from "./empty-state";
 
 interface BundleSectionProps {
   bundles: Bundle[];
@@ -93,20 +94,15 @@ export function BundleSection({ bundles, onRefresh }: BundleSectionProps) {
   // Empty state
   if (bundles.length === 0 && !showCreate) {
     return (
-      <div className="space-y-4">
-        <div className="text-center py-12">
-          <p className="text-3xl mb-3">🎁</p>
-          <h3 className="text-sm font-serif text-[#FFF8F0]/80 mb-1">
-            Temptation Bundling
-          </h3>
-          <p className="text-[12px] text-[#FFF8F0]/40 font-mono max-w-xs mx-auto leading-relaxed">
-            Pair what you NEED to do with what you WANT to do
-          </p>
-          <button onClick={() => setShowCreate(true)} className={`mt-4 ${BTN}`}>
-            Create Bundle
-          </button>
-        </div>
-      </div>
+      <EmptyState
+        icon="🎁"
+        title="Pair what you NEED with what you WANT"
+        description="After you complete a hard habit, unlock an enjoyable reward. The anticipation of the reward makes the habit attractive."
+        principle="Katy Milkman's study: people who bundled exercise with audiobooks went to the gym 51% more."
+        actionLabel="Create first bundle"
+        onAction={() => setShowCreate(true)}
+        compact
+      />
     );
   }
 
