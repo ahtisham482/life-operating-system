@@ -97,8 +97,8 @@ export function AttractionTab({ identities, initialData }: AttractionTabProps) {
       {bundles.length === 0 && reframes.length === 0 && tribes.length === 0 && partners.length === 0 ? (
         <EmptyState
           icon="🧲"
-          title="Make your habits irresistible"
-          description="Pair hard habits with enjoyable rewards, reframe 'I have to' into 'I get to', and surround yourself with people who make your behavior feel normal."
+          title="Make good habits irresistible"
+          description="Pair hard habits with rewards you love, reframe your mindset, and build a support system."
           principle="It's the anticipation of reward — not the reward itself — that drives behavior."
         />
       ) : (

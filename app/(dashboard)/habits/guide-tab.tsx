@@ -68,7 +68,7 @@ export function GuideTab({ initialData }: { initialData?: { onboarding: any } | 
   return (
     <div className="space-y-6">
       <p className="text-[11px] font-mono text-[#FFF8F0]/30 mb-4">
-        Learn habit science, check your system&apos;s health, and see how small improvements compound over time.
+        Understand how habits work, see how small changes compound, and check your system health.
       </p>
 
       {/* Section pills */}

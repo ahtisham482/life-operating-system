@@ -69,7 +69,7 @@ export function MasteryTab({ initialData }: { initialData?: { masteryHabits: any
         <EmptyState
           icon="🎯"
           title="Master your habits over time"
-          description="Track measurable progress, stay in the flow zone with auto-difficulty adjustment, and get deliberate practice challenges that prevent autopilot boredom."
+          description="Track difficulty, stay in the challenge zone, and get challenges that prevent autopilot."
           principle="The greatest threat to success is not failure — it's boredom."
         />
       )}

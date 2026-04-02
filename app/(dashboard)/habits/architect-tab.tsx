@@ -103,8 +103,8 @@ export function ArchitectTab({ identities, initialData }: ArchitectTabProps) {
       {hasNoBlueprints && activeSection === "blueprints" && (
         <EmptyState
           icon="🏗️"
-          title="Design your habit system"
-          description="Create a complete blueprint for each habit — when you'll do it, what triggers it, and how your environment supports it. This is where vague intentions become specific plans."
+          title="Design your habit blueprint"
+          description="Turn vague intentions into specific plans — define WHEN, WHERE, and HOW you'll do each habit."
           principle="People who specify WHEN and WHERE are 2-3x more likely to follow through."
           actionLabel="Create first blueprint"
           onAction={() => setShowWizard(true)}

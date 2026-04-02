@@ -79,8 +79,8 @@ export function BreakerTab({ initialData }: { initialData?: { badHabits: any } |
     return (
       <EmptyState
         icon="🛡️"
-        title="Break free from bad habits"
-        description="Diagnose your triggers, build a 4-layer defense plan, track every urge, and watch the old neural pathway weaken over time. No shame — just science."
+        title="Break free from unwanted habits"
+        description="Diagnose triggers, build a defense plan, track urges, and watch the old patterns weaken."
         principle="You don't eliminate a bad habit. You replace it."
         actionLabel="Start breaking a habit"
         onAction={() => setShowSetup(true)}
