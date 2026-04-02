@@ -244,7 +244,7 @@ export function HabitsShell(props: HabitsShellProps) {
       {activeView === "scorecard" && (
         <Suspense fallback={<TabSkeleton />}>
           <div className="max-w-2xl">
-            <ScorecardTab date={props.today} totalScorecards={props.scorecardCount} />
+            <ScorecardTab date={props.today} totalScorecards={props.scorecardCount} initialData={{ scorecard: props.prefetchedData.scorecard, entries: props.prefetchedData.scorecardEntries, history: props.prefetchedData.scorecardHistory }} />
           </div>
         </Suspense>
       )}

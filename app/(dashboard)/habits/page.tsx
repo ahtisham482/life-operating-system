@@ -20,6 +20,7 @@ import { getContracts, getJars } from "./contract-actions";
 import { getBadHabits } from "./breaker-actions";
 import { getMasteryHabits } from "./mastery-actions";
 import { getOnboardingProgress } from "./guide-actions";
+import { startOrGetScorecard, getScorecardEntries, getScorecardHistory } from "./scorecard-actions";
 function getTimeOfDayNudge(): string {
   const now = new Date();
   const hour = new Date(
@@ -593,6 +594,7 @@ export default async function HabitsPage({
     prefetchedGateways, prefetchedFrictionMaps, prefetchedMoments,
     prefetchedContracts, prefetchedJars,
     prefetchedBadHabits, prefetchedMasteryHabits, prefetchedOnboarding,
+    prefetchedScorecardResult, prefetchedScorecardHistory,
   ] = await Promise.all([
     getBlueprints().catch(() => null),
     getChains().catch(() => null),
@@ -609,7 +611,14 @@ export default async function HabitsPage({
     getBadHabits().catch(() => null),
     getMasteryHabits().catch(() => null),
     getOnboardingProgress().catch(() => null),
+    startOrGetScorecard(today).catch(() => null),
+    getScorecardHistory(7).catch(() => null),
   ]);
+
+  // Prefetch scorecard entries if scorecard exists
+  const prefetchedScorecardEntries = prefetchedScorecardResult?.scorecard
+    ? await getScorecardEntries(prefetchedScorecardResult.scorecard.id).catch(() => null)
+    : null;
 
   return (
     <HabitsShell
@@ -658,6 +667,9 @@ export default async function HabitsPage({
         badHabits: prefetchedBadHabits,
         masteryHabits: prefetchedMasteryHabits,
         onboarding: prefetchedOnboarding,
+        scorecard: prefetchedScorecardResult?.scorecard ?? null,
+        scorecardEntries: prefetchedScorecardEntries,
+        scorecardHistory: prefetchedScorecardHistory,
       }}
     />
   );
