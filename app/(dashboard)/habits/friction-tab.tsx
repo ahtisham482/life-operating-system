@@ -11,11 +11,12 @@ import { PillSelector } from "./ui-kit";
 
 interface FrictionTabProps {
   identities: { id: string; identityStatement: string }[];
+  initialData?: { gateways: Gateway[]; frictionMaps: FrictionMap[]; moments: DecisiveMoment[] } | null;
 }
 
 type Section = "gateways" | "friction_maps" | "moments";
 
-export function FrictionTab({ identities }: FrictionTabProps) {
+export function FrictionTab({ identities, initialData }: FrictionTabProps) {
   const [gateways, setGateways] = useState<Gateway[]>([]);
   const [frictionMaps, setFrictionMaps] = useState<FrictionMap[]>([]);
   const [moments, setMoments] = useState<DecisiveMoment[]>([]);
@@ -36,8 +37,15 @@ export function FrictionTab({ identities }: FrictionTabProps) {
   }, []);
 
   useEffect(() => {
+    if (initialData?.gateways != null) {
+      setGateways(initialData.gateways);
+      setFrictionMaps(initialData.frictionMaps ?? []);
+      setMoments(initialData.moments ?? []);
+      setLoading(false);
+      return;
+    }
     loadData();
-  }, [loadData]);
+  }, [loadData]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleRefresh() {
     startTransition(() => {

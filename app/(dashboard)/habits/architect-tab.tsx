@@ -15,11 +15,12 @@ import { PillSelector } from "./ui-kit";
 
 interface ArchitectTabProps {
   identities: { id: string; identityStatement: string }[];
+  initialData?: { blueprints: Blueprint[]; chains: HabitChain[]; environments: EnvironmentSetup[] } | null;
 }
 
 type Section = "blueprints" | "chains" | "environments" | "execute" | "insights" | "prep";
 
-export function ArchitectTab({ identities }: ArchitectTabProps) {
+export function ArchitectTab({ identities, initialData }: ArchitectTabProps) {
   const [blueprints, setBlueprints] = useState<Blueprint[]>([]);
   const [chains, setChains] = useState<HabitChain[]>([]);
   const [setups, setSetups] = useState<EnvironmentSetup[]>([]);
@@ -40,8 +41,15 @@ export function ArchitectTab({ identities }: ArchitectTabProps) {
   }, []);
 
   useEffect(() => {
+    if (initialData?.blueprints != null) {
+      setBlueprints(initialData.blueprints);
+      setChains(initialData.chains ?? []);
+      setSetups(initialData.environments ?? []);
+      setLoading(false);
+      return;
+    }
     loadData();
-  }, [loadData]);
+  }, [loadData]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const sections: { key: Section; label: string }[] = [
     { key: "blueprints", label: "Blueprints" },

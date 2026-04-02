@@ -11,11 +11,12 @@ import { PillSelector } from "./ui-kit";
 
 interface AttractionTabProps {
   identities: { id: string; identityStatement: string }[];
+  initialData?: { bundles: Bundle[]; reframes: Reframe[]; tribes: Tribe[]; partners: Partner[] } | null;
 }
 
 type Section = "bundles" | "reframes" | "tribe";
 
-export function AttractionTab({ identities }: AttractionTabProps) {
+export function AttractionTab({ identities, initialData }: AttractionTabProps) {
   const [bundles, setBundles] = useState<Bundle[]>([]);
   const [reframes, setReframes] = useState<Reframe[]>([]);
   const [tribes, setTribes] = useState<Tribe[]>([]);
@@ -39,8 +40,16 @@ export function AttractionTab({ identities }: AttractionTabProps) {
   }, []);
 
   useEffect(() => {
+    if (initialData?.bundles != null) {
+      setBundles(initialData.bundles);
+      setReframes(initialData.reframes ?? []);
+      setTribes(initialData.tribes ?? []);
+      setPartners(initialData.partners ?? []);
+      setLoading(false);
+      return;
+    }
     loadData();
-  }, [loadData]);
+  }, [loadData]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleRefresh() {
     startTransition(() => {
