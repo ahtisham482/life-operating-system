@@ -1,11 +1,6 @@
-import dynamic from "next/dynamic";
 import { Sidebar } from "@/components/sidebar";
 import { InboxCapture } from "@/components/inbox-capture";
-
-const CommandPalette = dynamic(
-  () => import("@/components/command-palette").then((m) => m.CommandPalette),
-  { ssr: false }
-);
+import { LazyCommandPalette } from "@/components/lazy-command-palette";
 
 export default function DashboardLayout({
   children,
@@ -26,7 +21,7 @@ export default function DashboardLayout({
         </div>
       </main>
       <InboxCapture />
-      <CommandPalette />
+      <LazyCommandPalette />
     </div>
   );
 }
