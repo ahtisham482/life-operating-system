@@ -1,5 +1,6 @@
 export const dynamic = "force-dynamic";
 
+import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { fromDb } from "@/lib/utils";
 import type { KnowledgeEntry } from "@/lib/mirror/types";
@@ -16,10 +17,51 @@ function getStage(signals: number) {
   return { label: "Awakening", level: 1, desc: "Starting to learn your patterns" };
 }
 
-export default async function MirrorPage() {
+/* ── Skeleton fallback ─────────────────────────────────── */
+function SectionSkeleton({ height = "h-32" }: { height?: string }) {
+  return (
+    <div className="animate-pulse space-y-4">
+      <div className="h-6 w-48 bg-[#FFF8F0]/[0.05] rounded-lg" />
+      <div className={`${height} bg-[#FFF8F0]/[0.03] rounded-xl`} />
+    </div>
+  );
+}
+
+/* ── Async server component: Daily Insight ─────────────── */
+async function DailyInsightSection() {
+  const dailyInsight = await generateDailyInsight();
+
+  return (
+    <section
+      className="glass-card rounded-2xl p-8 border-t-2 border-[#FF6B6B]/40 animate-slide-up"
+      style={{ animationDelay: "0.04s", animationFillMode: "both" }}
+    >
+      <p className="text-[9px] font-mono tracking-[0.35em] text-[#FF6B6B]/60 uppercase mb-4">
+        Daily Insight
+      </p>
+      {dailyInsight ? (
+        <>
+          <p className="text-lg font-serif text-[#FFF8F0]/80 leading-relaxed">
+            {dailyInsight}
+          </p>
+          <p className="text-[10px] font-mono text-[#FFF8F0]/30 tracking-wider mt-4">
+            Based on 30 days of data
+          </p>
+        </>
+      ) : (
+        <p className="text-sm font-serif text-[#FFF8F0]/40 italic">
+          Mirror is still learning. Keep using LOS to unlock insights.
+        </p>
+      )}
+    </section>
+  );
+}
+
+/* ── Async server component: Mirror Report + Knowledge ── */
+async function MirrorDataSection() {
   const supabase = await createClient();
 
-  const [report, { data: rawEntries }, { count: interactionCount }, dailyInsight] =
+  const [report, { data: rawEntries }, { count: interactionCount }] =
     await Promise.all([
       generateMirrorReport(),
       supabase
@@ -29,7 +71,6 @@ export default async function MirrorPage() {
       supabase
         .from("interactions")
         .select("*", { count: "exact", head: true }),
-      generateDailyInsight(),
     ]);
 
   const entries = (rawEntries ?? []).map((r) =>
@@ -39,45 +80,7 @@ export default async function MirrorPage() {
   const stage = getStage(totalSignals);
 
   return (
-    <div className="p-4 sm:p-8 max-w-5xl mx-auto space-y-8 sm:space-y-10">
-      {/* Header */}
-      <div className="space-y-3 animate-slide-up" style={{ animationDelay: "0s", animationFillMode: "both" }}>
-        <h1 className="text-3xl font-serif tracking-tight text-gradient-primary">
-          Mirror
-        </h1>
-        <p className="text-sm font-serif text-[#FFF8F0]/50">
-          Your personal intelligence that learns from you.
-        </p>
-        <span className="inline-block text-[10px] font-mono tracking-widest px-3 py-1.5 rounded-full border border-[#FF6B6B]/20 bg-[#FF6B6B]/[0.06] text-[#FF6B6B] backdrop-blur-sm">
-          Stage {stage.level}: {stage.label} &middot; {totalSignals} observations
-        </span>
-        <div className="h-px bg-gradient-to-r from-transparent via-[#FF6B6B]/20 to-transparent mt-4" />
-      </div>
-
-      {/* Daily Insight Hero Card */}
-      <section
-        className="glass-card rounded-2xl p-8 border-t-2 border-[#FF6B6B]/40 animate-slide-up"
-        style={{ animationDelay: "0.04s", animationFillMode: "both" }}
-      >
-        <p className="text-[9px] font-mono tracking-[0.35em] text-[#FF6B6B]/60 uppercase mb-4">
-          Daily Insight
-        </p>
-        {dailyInsight ? (
-          <>
-            <p className="text-lg font-serif text-[#FFF8F0]/80 leading-relaxed">
-              {dailyInsight}
-            </p>
-            <p className="text-[10px] font-mono text-[#FFF8F0]/30 tracking-wider mt-4">
-              Based on 30 days of data
-            </p>
-          </>
-        ) : (
-          <p className="text-sm font-serif text-[#FFF8F0]/40 italic">
-            Mirror is still learning. Keep using LOS to unlock insights.
-          </p>
-        )}
-      </section>
-
+    <>
       {/* Mirror Report */}
       <div className="animate-slide-up" style={{ animationDelay: "0.08s", animationFillMode: "both" }}>
         <MirrorReportCard report={report} entryCount={entries.length} />
@@ -129,11 +132,6 @@ export default async function MirrorPage() {
         </section>
       )}
 
-      {/* Add Knowledge */}
-      <div className="animate-slide-up" style={{ animationDelay: "0.16s", animationFillMode: "both" }}>
-        <AddKnowledgeForm />
-      </div>
-
       {/* Knowledge Graph */}
       <div className="animate-slide-up" style={{ animationDelay: "0.20s", animationFillMode: "both" }}>
         <KnowledgeGraph entries={entries} />
@@ -150,6 +148,39 @@ export default async function MirrorPage() {
         <span className="text-[10px] font-mono tracking-widest px-4 py-2 rounded-full border border-[#FF6B6B]/20 bg-[#FF6B6B]/[0.06] text-[#FF6B6B] backdrop-blur-sm">
           Stage {stage.level}: {stage.label}
         </span>
+      </div>
+    </>
+  );
+}
+
+/* ── Main page: shell renders instantly, data streams in ── */
+export default function MirrorPage() {
+  return (
+    <div className="p-4 sm:p-8 max-w-5xl mx-auto space-y-8 sm:space-y-10">
+      {/* Header — renders instantly */}
+      <div className="space-y-3 animate-slide-up" style={{ animationDelay: "0s", animationFillMode: "both" }}>
+        <h1 className="text-3xl font-serif tracking-tight text-gradient-primary">
+          Mirror
+        </h1>
+        <p className="text-sm font-serif text-[#FFF8F0]/50">
+          Your personal intelligence that learns from you.
+        </p>
+        <div className="h-px bg-gradient-to-r from-transparent via-[#FF6B6B]/20 to-transparent mt-4" />
+      </div>
+
+      {/* Daily Insight — streams in */}
+      <Suspense fallback={<SectionSkeleton height="h-40" />}>
+        <DailyInsightSection />
+      </Suspense>
+
+      {/* Mirror Report + Knowledge + Stats — streams in */}
+      <Suspense fallback={<SectionSkeleton height="h-48" />}>
+        <MirrorDataSection />
+      </Suspense>
+
+      {/* Add Knowledge — renders instantly (client component, no data fetch) */}
+      <div className="animate-slide-up" style={{ animationDelay: "0.16s", animationFillMode: "both" }}>
+        <AddKnowledgeForm />
       </div>
     </div>
   );
