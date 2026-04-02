@@ -17,10 +17,20 @@ export default async function JournalPage({
 }) {
   const params = await searchParams;
   const supabase = await createClient();
-  const { data: rows } = await supabase
-    .from("journal_entries")
-    .select("*")
-    .order("date", { ascending: false });
+  const today = getTodayKarachi();
+
+  // Fetch journal entries and today's check-in reflection in parallel
+  const [{ data: rows }, { data: checkinRow }] = await Promise.all([
+    supabase
+      .from("journal_entries")
+      .select("*")
+      .order("date", { ascending: false }),
+    supabase
+      .from("daily_checkins")
+      .select("reflection")
+      .eq("date", today)
+      .maybeSingle(),
+  ]);
 
   const allEntries = (rows || []).map((r) => fromDb<JournalEntry>(r));
 
@@ -30,13 +40,6 @@ export default async function JournalPage({
     return true;
   });
 
-  // Fetch today's check-in reflection
-  const today = getTodayKarachi();
-  const { data: checkinRow } = await supabase
-    .from("daily_checkins")
-    .select("reflection")
-    .eq("date", today)
-    .maybeSingle();
   const checkinReflection = checkinRow?.reflection || null;
 
   // Auto-generated title for display
