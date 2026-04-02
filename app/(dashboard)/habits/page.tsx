@@ -12,6 +12,14 @@ import type {
 } from "@/lib/db/schema";
 import { isHabitScheduledForDay } from "@/lib/habits";
 import { HabitsShell } from "./habits-shell";
+// Server-side prefetch imports for all sub-tabs
+import { getBlueprints, getChains, getEnvironmentSetups } from "./architect-actions";
+import { getBundles, getReframes, getTribes, getPartners } from "./attraction-actions";
+import { getGateways, getFrictionMaps, getDecisiveMoments } from "./friction-actions";
+import { getContracts, getJars } from "./contract-actions";
+import { getBadHabits } from "./breaker-actions";
+import { getMasteryHabits } from "./mastery-actions";
+import { getOnboardingProgress } from "./guide-actions";
 function getTimeOfDayNudge(): string {
   const now = new Date();
   const hour = new Date(
@@ -574,6 +582,35 @@ export default async function HabitsPage({
 
   const timeNudge = getTimeOfDayNudge();
 
+  // ─────────────────────────────────────────
+  // Prefetch ALL sub-tab data in parallel (server-side)
+  // This eliminates the loading spinner when switching to any tab
+  // Each call is wrapped in .catch() so a single failure doesn't break the page
+  // ─────────────────────────────────────────
+  const [
+    prefetchedBlueprints, prefetchedChains, prefetchedEnvironments,
+    prefetchedBundles, prefetchedReframes, prefetchedTribes, prefetchedPartners,
+    prefetchedGateways, prefetchedFrictionMaps, prefetchedMoments,
+    prefetchedContracts, prefetchedJars,
+    prefetchedBadHabits, prefetchedMasteryHabits, prefetchedOnboarding,
+  ] = await Promise.all([
+    getBlueprints().catch(() => null),
+    getChains().catch(() => null),
+    getEnvironmentSetups().catch(() => null),
+    getBundles().catch(() => null),
+    getReframes().catch(() => null),
+    getTribes().catch(() => null),
+    getPartners().catch(() => null),
+    getGateways().catch(() => null),
+    getFrictionMaps().catch(() => null),
+    getDecisiveMoments().catch(() => null),
+    getContracts().catch(() => null),
+    getJars().catch(() => null),
+    getBadHabits().catch(() => null),
+    getMasteryHabits().catch(() => null),
+    getOnboardingProgress().catch(() => null),
+  ]);
+
   return (
     <HabitsShell
       initialZone={activeZone}
@@ -605,6 +642,23 @@ export default async function HabitsPage({
       uncelebrated={uncelebrated}
       weekStats={weekStats}
       scorecardCount={scorecardCount ?? 0}
+      prefetchedData={{
+        blueprints: prefetchedBlueprints,
+        chains: prefetchedChains,
+        environments: prefetchedEnvironments,
+        bundles: prefetchedBundles,
+        reframes: prefetchedReframes,
+        tribes: prefetchedTribes,
+        partners: prefetchedPartners,
+        gateways: prefetchedGateways,
+        frictionMaps: prefetchedFrictionMaps,
+        moments: prefetchedMoments,
+        contracts: prefetchedContracts,
+        jars: prefetchedJars,
+        badHabits: prefetchedBadHabits,
+        masteryHabits: prefetchedMasteryHabits,
+        onboarding: prefetchedOnboarding,
+      }}
     />
   );
 }

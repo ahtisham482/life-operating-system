@@ -61,6 +61,9 @@ export interface HabitsShellProps {
   uncelebrated: { id: string; milestoneTitle: string; milestoneMessage: string }[];
   weekStats: Record<string, { totalVotes: number; positiveVotes: number; percentage: number }>;
   scorecardCount: number;
+  // Prefetched sub-tab data (all fetched server-side in parallel)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  prefetchedData: Record<string, any>;
 }
 
 export function HabitsShell(props: HabitsShellProps) {
@@ -249,7 +252,7 @@ export function HabitsShell(props: HabitsShellProps) {
       {activeView === "architect" && (
         <Suspense fallback={<TabSkeleton />}>
           <div className="max-w-4xl">
-            <ArchitectTab identities={props.identities} />
+            <ArchitectTab identities={props.identities} initialData={{ blueprints: props.prefetchedData.blueprints, chains: props.prefetchedData.chains, environments: props.prefetchedData.environments }} />
           </div>
         </Suspense>
       )}
@@ -257,7 +260,7 @@ export function HabitsShell(props: HabitsShellProps) {
       {activeView === "attract" && (
         <Suspense fallback={<TabSkeleton />}>
           <div className="max-w-3xl">
-            <AttractionTab identities={props.identities} />
+            <AttractionTab identities={props.identities} initialData={{ bundles: props.prefetchedData.bundles, reframes: props.prefetchedData.reframes, tribes: props.prefetchedData.tribes, partners: props.prefetchedData.partners }} />
           </div>
         </Suspense>
       )}
@@ -265,7 +268,7 @@ export function HabitsShell(props: HabitsShellProps) {
       {activeView === "friction" && (
         <Suspense fallback={<TabSkeleton />}>
           <div className="max-w-4xl">
-            <FrictionTab identities={props.identities} />
+            <FrictionTab identities={props.identities} initialData={{ gateways: props.prefetchedData.gateways, frictionMaps: props.prefetchedData.frictionMaps, moments: props.prefetchedData.moments }} />
           </div>
         </Suspense>
       )}
@@ -273,7 +276,7 @@ export function HabitsShell(props: HabitsShellProps) {
       {activeView === "rewards" && (
         <Suspense fallback={<TabSkeleton />}>
           <div className="max-w-4xl">
-            <RewardsTab />
+            <RewardsTab initialData={{ contracts: props.prefetchedData.contracts, jars: props.prefetchedData.jars }} />
           </div>
         </Suspense>
       )}
@@ -281,7 +284,7 @@ export function HabitsShell(props: HabitsShellProps) {
       {activeView === "breaker" && (
         <Suspense fallback={<TabSkeleton />}>
           <div className="max-w-4xl">
-            <BreakerTab />
+            <BreakerTab initialData={{ badHabits: props.prefetchedData.badHabits }} />
           </div>
         </Suspense>
       )}
@@ -289,7 +292,7 @@ export function HabitsShell(props: HabitsShellProps) {
       {activeView === "mastery" && (
         <Suspense fallback={<TabSkeleton />}>
           <div className="max-w-4xl">
-            <MasteryTab />
+            <MasteryTab initialData={{ masteryHabits: props.prefetchedData.masteryHabits }} />
           </div>
         </Suspense>
       )}
@@ -297,7 +300,7 @@ export function HabitsShell(props: HabitsShellProps) {
       {activeView === "guide" && (
         <Suspense fallback={<TabSkeleton />}>
           <div className="max-w-3xl">
-            <GuideTab />
+            <GuideTab initialData={{ onboarding: props.prefetchedData.onboarding }} />
           </div>
         </Suspense>
       )}
