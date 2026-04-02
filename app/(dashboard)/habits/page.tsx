@@ -82,7 +82,6 @@ export default async function HabitsPage({
     groupResult,
     habitResult,
     archivedHabitResult,
-    logResult,
     historyLogResult,
     templateResult,
     diagnosisResult,
@@ -101,8 +100,7 @@ export default async function HabitsPage({
       .select("*")
       .not("archived_at", "is", null)
       .order("updated_at", { ascending: false }),
-    supabase.from("habit_logs").select("*").eq("date", today),
-    // 90 days of logs for heatmap + trends + keystone
+    // 90 days of logs for heatmap + trends + keystone (includes today)
     supabase
       .from("habit_logs")
       .select("*")
@@ -129,7 +127,7 @@ export default async function HabitsPage({
 
   // Log any query errors for debugging
   for (const [name, result] of Object.entries({
-    groups: groupResult, habits: habitResult, logs: logResult,
+    groups: groupResult, habits: habitResult,
     historyLogs: historyLogResult,
   })) {
     if (result.error) console.error(`Habits page: ${name} query failed:`, result.error.message);
@@ -138,8 +136,9 @@ export default async function HabitsPage({
   const groups = (groupResult.data || []).map((r) => fromDb<HabitGroup>(r));
   const allHabits = (habitResult.data || []).map((r) => fromDb<Habit>(r));
   const archivedHabits = (archivedHabitResult.data || []).map((r) => fromDb<Habit>(r));
-  const todayLogs = (logResult.data || []).map((r) => fromDb<HabitLog>(r));
-  const historyLogs = (historyLogResult.data || []).map((r) => fromDb<HabitLog>(r));
+  const allLogs = (historyLogResult.data || []).map((r) => fromDb<HabitLog>(r));
+  const todayLogs = allLogs.filter((l) => l.date === today);
+  const historyLogs = allLogs;
   const templates = ((templateResult as { data: Record<string, unknown>[] | null }).data || []).map((r) => fromDb<HabitTemplate>(r));
   const diagnosisRows = (diagnosisResult as { data: Record<string, unknown>[] | null }).data;
 
@@ -440,7 +439,12 @@ export default async function HabitsPage({
     // Get all dates where at least one habit was scheduled
     const allDates = Array.from(uniqueDates);
 
-    for (const habit of allHabits) {
+    // Only analyze top 10 most-completed habits for keystone detection (performance)
+    const habitsForKeystone = allHabits.length > 10
+      ? [...allHabits].sort((a, b) => (trends[b.id]?.d30 ?? 0) - (trends[a.id]?.d30 ?? 0)).slice(0, 10)
+      : allHabits;
+
+    for (const habit of habitsForKeystone) {
       const otherHabits = allHabits.filter((h) => h.id !== habit.id);
       if (otherHabits.length === 0) continue;
 
