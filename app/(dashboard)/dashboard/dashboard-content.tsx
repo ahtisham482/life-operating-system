@@ -19,6 +19,8 @@ export async function DashboardContent() {
     { data: journalRows },
     { data: expenseRows },
     { data: engineLogRows },
+    { data: doneTodayRows },
+    { data: completedLogRows },
   ] = await Promise.all([
     supabase.from("tasks").select("*").neq("status", "Done"),
     supabase.from("seasons").select("*").eq("is_active", true).maybeSingle(),
@@ -38,6 +40,17 @@ export async function DashboardContent() {
       .select("*")
       .order("run_at", { ascending: false })
       .limit(5),
+    supabase
+      .from("tasks")
+      .select("id")
+      .eq("status", "Done")
+      .gte("updated_at", today + "T00:00:00")
+      .lte("updated_at", today + "T23:59:59"),
+    supabase
+      .from("habit_logs")
+      .select("id")
+      .eq("date", today)
+      .eq("status", "completed"),
   ]);
 
   // Season + lead domain
@@ -84,12 +97,6 @@ export async function DashboardContent() {
   const q1Count = todayFocus.length;
 
   // Tasks done today (for pulse)
-  const { data: doneTodayRows } = await supabase
-    .from("tasks")
-    .select("id")
-    .eq("status", "Done")
-    .gte("updated_at", today + "T00:00:00")
-    .lte("updated_at", today + "T23:59:59");
   const tasksDoneToday = doneTodayRows?.length ?? 0;
 
   // Habits — count scheduled habits for today + completed logs
@@ -107,11 +114,6 @@ export async function DashboardContent() {
   const habitsTotal = scheduledHabits.length;
 
   // Count completed logs for today
-  const { data: completedLogRows } = await supabase
-    .from("habit_logs")
-    .select("id")
-    .eq("date", today)
-    .eq("status", "completed");
   const habitsCompleted = completedLogRows?.length ?? 0;
 
   // Journal & Expenses
