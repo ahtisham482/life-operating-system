@@ -16,9 +16,10 @@ import type { ScorecardDay, ScorecardEntry } from "@/lib/scorecard";
 interface ScorecardTabProps {
   date: string;
   totalScorecards: number;
+  initialData?: { scorecard: any; entries: any; history: any } | null;
 }
 
-export function ScorecardTab({ date, totalScorecards }: ScorecardTabProps) {
+export function ScorecardTab({ date, totalScorecards, initialData }: ScorecardTabProps) {
   const [scorecard, setScorecard] = useState<ScorecardDay | null>(null);
   const [entries, setEntries] = useState<ScorecardEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -27,12 +28,16 @@ export function ScorecardTab({ date, totalScorecards }: ScorecardTabProps) {
 
   const loadScorecard = useCallback(async () => {
     try {
-      const result = await startOrGetScorecard(date);
-      setScorecard(result.scorecard);
-      const entries = await getScorecardEntries(result.scorecard.id);
-      setEntries(entries);
+      const result = await startOrGetScorecard(date).catch(() => null);
+      if (result) {
+        setScorecard(result.scorecard);
+        const ent = await getScorecardEntries(result.scorecard.id).catch(() => [] as ScorecardEntry[]);
+        setEntries(ent);
+      } else {
+        setScorecard(null);
+      }
     } catch {
-      // No scorecard yet
+      // Tables may not exist yet
       setScorecard(null);
     }
     setLoading(false);
@@ -43,15 +48,21 @@ export function ScorecardTab({ date, totalScorecards }: ScorecardTabProps) {
     if (totalScorecards === 0) {
       setShowOnboarding(true);
       setLoading(false);
+    } else if (initialData?.scorecard != null) {
+      setScorecard(initialData.scorecard);
+      setEntries(initialData.entries ?? []);
+      setHistory(initialData.history ?? []);
+      setLoading(false);
     } else {
       loadScorecard();
     }
-  }, [totalScorecards, loadScorecard]);
+  }, [totalScorecards, loadScorecard]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Load history for streak display
   useEffect(() => {
-    getScorecardHistory(7).then(setHistory);
-  }, []);
+    if (initialData?.history != null) return;
+    getScorecardHistory(7).then(setHistory).catch(() => []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function refreshEntries() {
     if (!scorecard) return;

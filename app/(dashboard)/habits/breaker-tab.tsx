@@ -22,10 +22,14 @@ export function BreakerTab({ initialData }: { initialData?: { badHabits: any } |
 
   const loadHabits = useCallback(() => {
     startTransition(async () => {
-      const habits = await getBadHabits();
-      setBadHabits(habits);
-      if (habits.length > 0 && !selectedId) {
-        setSelectedId(habits[0].id);
+      try {
+        const habits = await getBadHabits().catch(() => [] as BadHabit[]);
+        setBadHabits(habits);
+        if (habits.length > 0 && !selectedId) {
+          setSelectedId(habits[0].id);
+        }
+      } catch {
+        // Tables may not exist yet
       }
       setLoading(false);
     });

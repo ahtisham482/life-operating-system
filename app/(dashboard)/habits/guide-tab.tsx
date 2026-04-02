@@ -26,8 +26,13 @@ export function GuideTab({ initialData }: { initialData?: { onboarding: any } | 
       return;
     }
     startTransition(async () => {
-      const progress = await getOnboardingProgress();
-      if (!progress || !progress.completed) {
+      try {
+        const progress = await getOnboardingProgress().catch(() => null);
+        if (!progress || !progress.completed) {
+          setShowWizard(true);
+        }
+      } catch {
+        // Tables may not exist yet — show wizard as fallback
         setShowWizard(true);
       }
       setLoading(false);

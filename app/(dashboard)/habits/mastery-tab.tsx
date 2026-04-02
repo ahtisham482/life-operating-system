@@ -28,8 +28,12 @@ export function MasteryTab({ initialData }: { initialData?: { masteryHabits: any
 
   const loadHabits = useCallback(() => {
     start(async () => {
-      const data = await getMasteryHabits();
-      setHabits(data);
+      try {
+        const data = await getMasteryHabits().catch(() => [] as HabitMastery[]);
+        setHabits(data);
+      } catch {
+        // Tables may not exist yet
+      }
       setLoading(false);
     });
   }, []);

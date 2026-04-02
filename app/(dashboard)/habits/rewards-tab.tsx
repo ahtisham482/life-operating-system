@@ -19,9 +19,16 @@ export function RewardsTab({ initialData }: { initialData?: { contracts: any; ja
   const [, startTransition] = useTransition();
 
   const loadData = useCallback(async () => {
-    const [c, j] = await Promise.all([getContracts(), getJars()]);
-    setContracts(c);
-    setJars(j);
+    try {
+      const [c, j] = await Promise.all([
+        getContracts().catch(() => [] as HabitContract[]),
+        getJars().catch(() => [] as SavingsJar[]),
+      ]);
+      setContracts(c);
+      setJars(j);
+    } catch {
+      // Tables may not exist yet
+    }
     setLoading(false);
   }, []);
 

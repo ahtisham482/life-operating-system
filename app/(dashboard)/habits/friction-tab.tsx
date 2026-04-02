@@ -25,14 +25,18 @@ export function FrictionTab({ identities, initialData }: FrictionTabProps) {
   const [, startTransition] = useTransition();
 
   const loadData = useCallback(async () => {
-    const [g, f, m] = await Promise.all([
-      getGateways(),
-      getFrictionMaps(),
-      getDecisiveMoments(),
-    ]);
-    setGateways(g);
-    setFrictionMaps(f);
-    setMoments(m);
+    try {
+      const [g, f, m] = await Promise.all([
+        getGateways().catch(() => []),
+        getFrictionMaps().catch(() => []),
+        getDecisiveMoments().catch(() => []),
+      ]);
+      setGateways(g);
+      setFrictionMaps(f);
+      setMoments(m);
+    } catch {
+      // Tables may not exist yet — show empty state
+    }
     setLoading(false);
   }, []);
 

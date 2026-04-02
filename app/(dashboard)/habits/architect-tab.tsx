@@ -29,14 +29,18 @@ export function ArchitectTab({ identities, initialData }: ArchitectTabProps) {
   const [loading, setLoading] = useState(true);
 
   const loadData = useCallback(async () => {
-    const [bp, ch, env] = await Promise.all([
-      getBlueprints(),
-      getChains(),
-      getEnvironmentSetups(),
-    ]);
-    setBlueprints(bp);
-    setChains(ch);
-    setSetups(env);
+    try {
+      const [bp, ch, env] = await Promise.all([
+        getBlueprints().catch(() => [] as Blueprint[]),
+        getChains().catch(() => [] as HabitChain[]),
+        getEnvironmentSetups().catch(() => [] as EnvironmentSetup[]),
+      ]);
+      setBlueprints(bp);
+      setChains(ch);
+      setSetups(env);
+    } catch {
+      // Tables may not exist yet
+    }
     setLoading(false);
   }, []);
 

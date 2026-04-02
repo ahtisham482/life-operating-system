@@ -26,16 +26,20 @@ export function AttractionTab({ identities, initialData }: AttractionTabProps) {
   const [, startTransition] = useTransition();
 
   const loadData = useCallback(async () => {
-    const [b, r, t, p] = await Promise.all([
-      getBundles(),
-      getReframes(),
-      getTribes(),
-      getPartners(),
-    ]);
-    setBundles(b);
-    setReframes(r);
-    setTribes(t);
-    setPartners(p);
+    try {
+      const [b, r, t, p] = await Promise.all([
+        getBundles().catch(() => [] as Bundle[]),
+        getReframes().catch(() => [] as Reframe[]),
+        getTribes().catch(() => [] as Tribe[]),
+        getPartners().catch(() => [] as Partner[]),
+      ]);
+      setBundles(b);
+      setReframes(r);
+      setTribes(t);
+      setPartners(p);
+    } catch {
+      // Tables may not exist yet
+    }
     setLoading(false);
   }, []);
 
