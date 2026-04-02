@@ -2,10 +2,6 @@ export const dynamic = "force-dynamic";
 
 import { createClient } from "@/lib/supabase/server";
 import { fromDb, getTodayKarachi } from "@/lib/utils";
-import { HabitTracker } from "./habit-tracker";
-import { HabitInsights } from "./habit-insights";
-import { IdentityBoard } from "./identity-board";
-import { ZoneTabs } from "./zone-tabs";
 import { resolveNavigation, getUnlockedZones } from "./zone-utils";
 import type {
   Habit,
@@ -15,14 +11,7 @@ import type {
   TimeOfDay,
 } from "@/lib/db/schema";
 import { isHabitScheduledForDay } from "@/lib/habits";
-import { ScorecardTab } from "./scorecard-tab";
-import { ArchitectTab } from "./architect-tab";
-import { AttractionTab } from "./attraction-tab";
-import { FrictionTab } from "./friction-tab";
-import { RewardsTab } from "./rewards-tab";
-import { BreakerTab } from "./breaker-tab";
-import { MasteryTab } from "./mastery-tab";
-import { GuideTab } from "./guide-tab";
+import { HabitsShell } from "./habits-shell";
 function getTimeOfDayNudge(): string {
   const now = new Date();
   const hour = new Date(
@@ -586,201 +575,36 @@ export default async function HabitsPage({
   const timeNudge = getTimeOfDayNudge();
 
   return (
-    <div className="p-4 sm:p-8 max-w-7xl mx-auto space-y-8 sm:space-y-10">
-      {/* Header */}
-      <div
-        className="space-y-2 animate-slide-up"
-        style={{ animationDelay: "0s", animationFillMode: "both" }}
-      >
-        <p className="text-lg font-serif italic text-[#FFF8F0]/60">
-          your garden is growing 🌱
-        </p>
-        <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
-          <h1 className="text-5xl font-serif font-light text-[#FFF8F0]">
-            {todayCompleted} of {totalScheduled}
-          </h1>
-        </div>
-        <p className="text-sm text-[#FEC89A]">{timeNudge}</p>
-        <p className="text-[11px] font-mono text-[#FFF8F0]/30 tracking-wider">
-          {dateLabel}
-        </p>
-        {/* Progress bar */}
-        <div className="w-full max-w-md h-1.5 bg-[#FFF8F0]/[0.05] rounded-full overflow-hidden mt-3">
-          <div
-            className="h-full bg-gradient-to-r from-[#34D399] to-[#2DD4BF] rounded-full transition-all duration-500"
-            style={{
-              width: `${totalScheduled > 0 ? (todayCompleted / totalScheduled) * 100 : 0}%`,
-            }}
-          />
-        </div>
-      </div>
-
-      {/* Zone navigation */}
-      <ZoneTabs activeZone={activeZone} activeView={activeView} daysOfData={daysOfData} habitsCount={allHabits.length} />
-
-      {/* New user welcome — shows only when 0 habits exist */}
-      {allHabits.length === 0 && activeView === "tracker" && (
-        <div
-          className="max-w-xl mx-auto text-center py-12 space-y-6 animate-slide-up"
-          style={{ animationDelay: "0.08s", animationFillMode: "both" }}
-        >
-          <span className="text-5xl">🌱</span>
-          <h2 className="text-xl font-serif text-[#FFF8F0]">
-            Welcome to your habit system
-          </h2>
-          <p className="text-sm text-[#FFF8F0]/50 leading-relaxed max-w-md mx-auto">
-            This isn&apos;t just a tracker — it&apos;s a complete system for building the person
-            you want to become. Start by creating your first habit below, or visit the
-            <span className="text-[#A78BFA]"> Learn &amp; Check </span>
-            guide for a step-by-step walkthrough.
-          </p>
-          <div className="flex items-center gap-2 justify-center text-[10px] font-mono text-[#FFF8F0]/25">
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#FF6B6B]/40" /> Today — track daily</span>
-            <span>·</span>
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#2DD4BF]/40" /> Build — design systems</span>
-            <span>·</span>
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#A78BFA]/40" /> Grow — level up</span>
-          </div>
-          <p className="text-[11px] text-[#FFF8F0]/20 italic">
-            &ldquo;You do not rise to the level of your goals. You fall to the level of your systems.&rdquo; — James Clear
-          </p>
-        </div>
-      )}
-
-      {/* Tracker view */}
-      {activeView === "tracker" && (
-        <div
-          className="grid grid-cols-1 lg:grid-cols-5 gap-8 animate-slide-up"
-          style={{ animationDelay: "0.08s", animationFillMode: "both" }}
-        >
-          {/* Left column: Habit tracker */}
-          <div className="lg:col-span-3">
-            <HabitTracker
-              groups={sortedGroups}
-              habits={scheduledHabits}
-              notTodayHabits={notTodayHabits}
-              archivedHabits={archivedHabits}
-              todayLogs={todayLogMap}
-              date={today}
-              templates={templates}
-              diagnosisFlags={diagnosisFlags}
-              keystoneHabitIds={keystoneHabitIds}
-              recoveryMessage={recoveryMessage}
-              perfectDayCount={perfectDayCount}
-              daysOfData={daysOfData}
-            />
-          </div>
-
-          {/* Right column: Insights */}
-          <div className="lg:col-span-2">
-            <HabitInsights
-              habits={allHabits}
-              heatmapDays={heatmapDays}
-              logMap={historyLogMap}
-              trends={trends}
-              mostMissed={mostMissed}
-              keystoneInsights={keystoneInsights}
-              perfectDayCount={perfectDayCount}
-              daysOfData={daysOfData}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Identity tab */}
-      {activeView === "identity" && (
-        <div
-          className="animate-slide-up"
-          style={{ animationDelay: "0.08s", animationFillMode: "both" }}
-        >
-          <IdentityBoard
-            identities={identities}
-            habits={habitsForIdentity}
-            uncelebrated={uncelebrated}
-            weekStats={weekStats}
-          />
-        </div>
-      )}
-
-      {/* Scorecard tab */}
-      {activeView === "scorecard" && (
-        <div
-          className="max-w-2xl animate-slide-up"
-          style={{ animationDelay: "0.08s", animationFillMode: "both" }}
-        >
-          <ScorecardTab date={today} totalScorecards={scorecardCount ?? 0} />
-        </div>
-      )}
-
-      {/* Architect tab */}
-      {activeView === "architect" && (
-        <div
-          className="max-w-4xl animate-slide-up"
-          style={{ animationDelay: "0.08s", animationFillMode: "both" }}
-        >
-          <ArchitectTab identities={identities} />
-        </div>
-      )}
-
-      {/* Attract tab */}
-      {activeView === "attract" && (
-        <div
-          className="max-w-3xl animate-slide-up"
-          style={{ animationDelay: "0.08s", animationFillMode: "both" }}
-        >
-          <AttractionTab identities={identities} />
-        </div>
-      )}
-
-      {/* Friction tab */}
-      {activeView === "friction" && (
-        <div
-          className="max-w-4xl animate-slide-up"
-          style={{ animationDelay: "0.08s", animationFillMode: "both" }}
-        >
-          <FrictionTab identities={identities} />
-        </div>
-      )}
-
-      {/* Rewards tab */}
-      {activeView === "rewards" && (
-        <div
-          className="max-w-4xl animate-slide-up"
-          style={{ animationDelay: "0.08s", animationFillMode: "both" }}
-        >
-          <RewardsTab />
-        </div>
-      )}
-
-      {/* Breaker tab */}
-      {activeView === "breaker" && (
-        <div
-          className="max-w-4xl animate-slide-up"
-          style={{ animationDelay: "0.08s", animationFillMode: "both" }}
-        >
-          <BreakerTab />
-        </div>
-      )}
-
-      {/* Mastery tab */}
-      {activeView === "mastery" && (
-        <div
-          className="max-w-4xl animate-slide-up"
-          style={{ animationDelay: "0.08s", animationFillMode: "both" }}
-        >
-          <MasteryTab />
-        </div>
-      )}
-
-      {/* Guide tab */}
-      {activeView === "guide" && (
-        <div
-          className="max-w-3xl animate-slide-up"
-          style={{ animationDelay: "0.08s", animationFillMode: "both" }}
-        >
-          <GuideTab />
-        </div>
-      )}
-    </div>
+    <HabitsShell
+      initialZone={activeZone}
+      initialView={activeView}
+      todayCompleted={todayCompleted}
+      totalScheduled={totalScheduled}
+      timeNudge={timeNudge}
+      dateLabel={dateLabel}
+      today={today}
+      daysOfData={daysOfData}
+      sortedGroups={sortedGroups}
+      scheduledHabits={scheduledHabits}
+      notTodayHabits={notTodayHabits}
+      archivedHabits={archivedHabits}
+      todayLogMap={todayLogMap}
+      templates={templates}
+      diagnosisFlags={diagnosisFlags}
+      keystoneHabitIds={keystoneHabitIds}
+      recoveryMessage={recoveryMessage}
+      perfectDayCount={perfectDayCount}
+      allHabits={allHabits}
+      heatmapDays={heatmapDays}
+      historyLogMap={historyLogMap}
+      trends={trends}
+      mostMissed={mostMissed}
+      keystoneInsights={keystoneInsights}
+      identities={identities}
+      habitsForIdentity={habitsForIdentity}
+      uncelebrated={uncelebrated}
+      weekStats={weekStats}
+      scorecardCount={scorecardCount ?? 0}
+    />
   );
 }
