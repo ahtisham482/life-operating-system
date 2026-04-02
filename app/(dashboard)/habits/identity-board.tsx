@@ -81,8 +81,8 @@ export function IdentityBoard({
           <h2 className="text-[11px] font-mono uppercase tracking-[0.2em] text-[#FFF8F0]/40">
             Your identities
           </h2>
-          <p className="text-[10px] font-mono text-[#FFF8F0]/20 mt-0.5">
-            Every habit is a vote for who you&apos;re becoming
+          <p className="text-[11px] font-mono text-[#FFF8F0]/30 mt-0.5">
+            Link habits to who you want to become. Every completed habit is a vote for that identity.
           </p>
         </div>
         <button

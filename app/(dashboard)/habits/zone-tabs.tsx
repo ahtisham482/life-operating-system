@@ -88,6 +88,9 @@ export function ZoneTabs({ activeZone, activeView, daysOfData, habitsCount }: Zo
         )}
       </div>
 
+      {/* Zone description */}
+      <p className="text-[11px] font-mono text-[#FFF8F0]/25">{zone.description}</p>
+
       {/* Level 2: Sub-navigation */}
       <div className="flex items-center gap-1 overflow-x-auto pb-0.5 scrollbar-hide">
         {views.map((v, i) => (
