@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, memo } from "react";
 import { Plus } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { IdentityCard } from "./identity-card";
@@ -45,7 +45,7 @@ interface IdentityBoardProps {
   >;
 }
 
-export function IdentityBoard({
+export const IdentityBoard = memo(function IdentityBoard({
   identities,
   habits,
   uncelebrated,
@@ -188,4 +188,4 @@ export function IdentityBoard({
       />
     </div>
   );
-}
+});

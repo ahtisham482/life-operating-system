@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, memo } from "react";
 import type { Habit } from "@/lib/db/schema";
 
 type HabitTrend = {
@@ -40,7 +40,7 @@ function getRateBg(rate: number): string {
   return "bg-[#FF6B6B]/10";
 }
 
-export function HabitInsights({
+export const HabitInsights = memo(function HabitInsights({
   habits,
   heatmapDays,
   logMap,
@@ -532,4 +532,4 @@ export function HabitInsights({
       )}
     </div>
   );
-}
+});
