@@ -5,7 +5,8 @@ import { fromDb, getTodayKarachi } from "@/lib/utils";
 import { HabitTracker } from "./habit-tracker";
 import { HabitInsights } from "./habit-insights";
 import { IdentityBoard } from "./identity-board";
-import { ZoneTabs, resolveNavigation, getUnlockedZones } from "./zone-tabs";
+import { ZoneTabs } from "./zone-tabs";
+import { resolveNavigation, getUnlockedZones } from "./zone-utils";
 import type {
   Habit,
   HabitGroup,
