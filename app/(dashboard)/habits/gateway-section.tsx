@@ -143,6 +143,9 @@ export function GatewaySection({ gateways, onRefresh }: GatewaySectionProps) {
           {phases.length === 5 && (
             <div className="space-y-3">
               <p className={LABEL}>5-Phase Progression</p>
+              <p className="text-[10px] text-[#FFF8F0]/25 mb-2">
+                Start with a 2-minute version (Phase 1) and gradually increase. Each phase should feel only slightly harder.
+              </p>
               {phases.map((p, i) => (
                 <div key={i} className="flex gap-2 items-center">
                   <span

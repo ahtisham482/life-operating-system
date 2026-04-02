@@ -78,6 +78,10 @@ export function MasteryTab() {
         </div>
       )}
 
+      <p className="text-[11px] font-mono text-[#FFF8F0]/30 mb-4">
+        Track difficulty, advance through phases, reflect on progress, and take on challenges to prevent autopilot.
+      </p>
+
       {/* Section pills */}
       <PillSelector
         options={sectionPills}

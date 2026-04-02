@@ -106,6 +106,10 @@ export function ScorecardTab({ date, totalScorecards }: ScorecardTabProps) {
 
   return (
     <div className="space-y-6">
+      <p className="text-[11px] font-mono text-[#FFF8F0]/30 mb-4">
+        Rate each behavior as + (good), − (bad), or = (neutral). Build awareness of your daily patterns.
+      </p>
+
       {/* Morning intention */}
       {scorecard.morningIntention && (
         <div className="px-4 py-3 bg-[#FEC89A]/[0.05] border border-[#FEC89A]/[0.15] rounded-xl">

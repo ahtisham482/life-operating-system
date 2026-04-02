@@ -129,6 +129,10 @@ export function BreakerTab() {
         color="#2DD4BF"
       />
 
+      <p className="text-[11px] font-mono text-[#FFF8F0]/30 mb-4">
+        Track urges, build defense layers, and analyze patterns to break unwanted habits.
+      </p>
+
       {/* Content */}
       {selectedHabit && (
         <div>

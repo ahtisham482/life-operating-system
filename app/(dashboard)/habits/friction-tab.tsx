@@ -73,6 +73,10 @@ export function FrictionTab({ identities }: FrictionTabProps) {
         />
       </div>
 
+      <p className="text-[11px] font-mono text-[#FFF8F0]/30 mb-4">
+        Reduce friction for good habits (make them easy) and increase friction for bad habits (make them hard).
+      </p>
+
       {/* Tagline */}
       {gateways.length === 0 && frictionMaps.length === 0 && moments.length === 0 ? (
         <EmptyState

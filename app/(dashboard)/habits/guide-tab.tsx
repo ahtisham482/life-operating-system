@@ -47,13 +47,17 @@ export function GuideTab() {
   }
 
   const sections: { key: Section; label: string }[] = [
-    { key: "compound", label: "Compound" },
-    { key: "reference", label: "Reference" },
-    { key: "guardian", label: "Guardian" },
+    { key: "compound", label: "Growth Visualizer" },
+    { key: "reference", label: "Quick Reference" },
+    { key: "guardian", label: "Habit Health Check" },
   ];
 
   return (
     <div className="space-y-6">
+      <p className="text-[11px] font-mono text-[#FFF8F0]/30 mb-4">
+        Learn habit science, check your system&apos;s health, and see how small improvements compound over time.
+      </p>
+
       {/* Section pills */}
       <div className="flex items-center gap-2">
         <PillSelector

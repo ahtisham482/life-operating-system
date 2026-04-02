@@ -124,6 +124,20 @@ export function PhaseDashboard({ habits, onRefresh }: Props) {
                       >
                         {PHASE_NAMES[p]}
                       </span>
+                      <span
+                        className="text-[8px] mt-0.5 text-center max-w-[70px] leading-tight"
+                        style={{
+                          color: isFuture
+                            ? "rgba(255,248,240,0.2)"
+                            : `${color}99`,
+                        }}
+                      >
+                        {p === 1 && "Show up (2 min)"}
+                        {p === 2 && "Build consistency"}
+                        {p === 3 && "Find your flow"}
+                        {p === 4 && "Push your limits"}
+                        {p === 5 && "Full mastery"}
+                      </span>
                     </div>
 
                     {/* Connecting line */}

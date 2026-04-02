@@ -107,6 +107,9 @@ export function ReviewSection() {
           <p className={label}>New Review</p>
 
           {/* Type selector */}
+          <p className="text-[10px] text-[#FFF8F0]/25 mb-2">
+            Start with monthly reviews. Add weekly once you have 30+ days of data. Quarterly reviews are for long-term strategy.
+          </p>
           <div className="flex gap-1 p-1 bg-[#FFF8F0]/[0.03] border border-[#FFF8F0]/[0.06] rounded-2xl w-fit">
             {(["weekly", "monthly", "quarterly"] as ReviewType[]).map((t) => (
               <button

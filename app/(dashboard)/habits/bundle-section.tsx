@@ -172,6 +172,9 @@ export function BundleSection({ bundles, onRefresh }: BundleSectionProps) {
                 </button>
               ))}
             </div>
+            <p className="text-[9px] text-[#FFF8F0]/20 mt-1">
+              Strict = must do need first · Moderate = flexible order · Flexible = either alone is fine
+            </p>
           </div>
 
           {/* Suggestion chips */}

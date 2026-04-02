@@ -114,6 +114,10 @@ export function GoldilocksSection({ habits, onRefresh }: Props) {
 
   return (
     <div className="space-y-4">
+      <p className="text-[11px] font-mono text-[#FFF8F0]/30 mb-3">
+        Log how hard each habit feels. The system adjusts difficulty to keep you in the &ldquo;flow zone&rdquo; &mdash; not too easy, not too hard.
+      </p>
+
       {/* Create form */}
       {showCreate && (
         <div className={`${glass} p-5 space-y-3`}>

@@ -81,6 +81,10 @@ export function ChallengeSection({ habits, onRefresh }: Props) {
 
   return (
     <div className="space-y-6">
+      <p className="text-[11px] font-mono text-[#FFF8F0]/30 mb-3">
+        Once habits feel automatic, challenges prevent boredom. Accept a challenge, complete it, then rate how it went.
+      </p>
+
       {habits.map((h) => {
         const challenges = challengeMap[h.id] || [];
         const activeChallenge = challenges.find((c) => c.accepted && !c.completed);

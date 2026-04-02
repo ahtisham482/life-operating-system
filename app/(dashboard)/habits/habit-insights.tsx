@@ -83,7 +83,7 @@ export function HabitInsights({
 
       {/* Heatmap Card */}
       <div className="glass-card rounded-3xl p-6 hover:border-[#FFF8F0]/[0.08] transition-all">
-        <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center justify-between mb-3">
           <h2 className="text-[11px] font-mono uppercase tracking-[0.25em] text-[#34D399]/80">
             Completion Heatmap
           </h2>
@@ -109,6 +109,34 @@ export function HabitInsights({
             >
               30d
             </button>
+          </div>
+        </div>
+
+        <p className="text-[10px] text-[#FFF8F0]/20 mb-3">Each square = one day. Green = done, dark = missed.</p>
+
+        {/* Legend */}
+        <div className="flex items-center gap-4 mb-5">
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-3 rounded-sm bg-[#34D399]" />
+            <span className="text-[9px] font-mono text-[#FFF8F0]/30">Done</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-3 rounded-sm bg-[#60A5FA]/30" />
+            <span className="text-[9px] font-mono text-[#FFF8F0]/30">
+              Skipped
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-3 rounded-sm bg-[#FFF8F0]/[0.06]" />
+            <span className="text-[9px] font-mono text-[#FFF8F0]/30">
+              Missed
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-3 rounded-sm border border-[#FFF8F0]/[0.06]" />
+            <span className="text-[9px] font-mono text-[#FFF8F0]/30">
+              No data
+            </span>
           </div>
         </div>
 
@@ -189,31 +217,6 @@ export function HabitInsights({
           </div>
         </div>
 
-        {/* Legend */}
-        <div className="flex items-center gap-4 mt-5 pt-4 border-t border-[#FFF8F0]/[0.04]">
-          <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded-sm bg-[#34D399]" />
-            <span className="text-[9px] font-mono text-[#FFF8F0]/30">Done</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded-sm bg-[#60A5FA]/30" />
-            <span className="text-[9px] font-mono text-[#FFF8F0]/30">
-              Skipped
-            </span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded-sm bg-[#FFF8F0]/[0.06]" />
-            <span className="text-[9px] font-mono text-[#FFF8F0]/30">
-              Missed
-            </span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded-sm border border-[#FFF8F0]/[0.06]" />
-            <span className="text-[9px] font-mono text-[#FFF8F0]/30">
-              No data
-            </span>
-          </div>
-        </div>
       </div>
 
       {/* Completion Rate Trends — gated at 7+ days */}
