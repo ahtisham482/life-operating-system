@@ -22,8 +22,6 @@ import { RewardsTab } from "./rewards-tab";
 import { BreakerTab } from "./breaker-tab";
 import { MasteryTab } from "./mastery-tab";
 import { GuideTab } from "./guide-tab";
-import { DailyDashboard } from "./daily-dashboard";
-
 function getTimeOfDayNudge(): string {
   const now = new Date();
   const hour = new Date(
@@ -55,7 +53,13 @@ export default async function HabitsPage({
   const params = await searchParams;
   let { zone: activeZone, view: activeView } = resolveNavigation(params);
 
-  const supabase = await createClient();
+  let supabase;
+  try {
+    supabase = await createClient();
+  } catch (err) {
+    console.error("Failed to create Supabase client:", err);
+    throw new Error("Failed to connect to database. Please try again.");
+  }
   const today = getTodayKarachi();
   const dateLabel = new Intl.DateTimeFormat("en-US", {
     timeZone: "Asia/Karachi",
@@ -72,14 +76,15 @@ export default async function HabitsPage({
     .slice(0, 10);
 
   // Fetch groups, habits, logs, templates, and diagnoses in parallel
+  // Some tables may not exist yet — each query is individually safe
   const [
-    { data: groupRows },
-    { data: habitRows },
-    { data: archivedHabitRows },
-    { data: logRows },
-    { data: historyLogRows },
-    { data: templateRows },
-    { data: diagnosisRows },
+    groupResult,
+    habitResult,
+    archivedHabitResult,
+    logResult,
+    historyLogResult,
+    templateResult,
+    diagnosisResult,
   ] = await Promise.all([
     supabase
       .from("habit_groups")
@@ -103,12 +108,13 @@ export default async function HabitsPage({
       .gte("date", ninetyDaysAgo)
       .lte("date", today)
       .order("date", { ascending: false }),
-    // Templates for template library
+    // Templates for template library (table may not exist)
     supabase
       .from("habit_templates")
       .select("*")
-      .order("sort_order", { ascending: true }),
-    // Active (undismissed) diagnoses from the last 7 days
+      .order("sort_order", { ascending: true })
+      .then((res) => res, () => ({ data: null, error: null })),
+    // Active (undismissed) diagnoses from the last 7 days (table may not exist)
     supabase
       .from("habit_diagnoses")
       .select("*")
@@ -116,36 +122,54 @@ export default async function HabitsPage({
       .gte(
         "created_at",
         new Date(todayDate.getTime() - 7 * 86400000).toISOString(),
-      ),
+      )
+      .then((res) => res, () => ({ data: null, error: null })),
   ]);
 
-  const groups = (groupRows || []).map((r) => fromDb<HabitGroup>(r));
-  const allHabits = (habitRows || []).map((r) => fromDb<Habit>(r));
-  const archivedHabits = (archivedHabitRows || []).map((r) => fromDb<Habit>(r));
-  const todayLogs = (logRows || []).map((r) => fromDb<HabitLog>(r));
-  const historyLogs = (historyLogRows || []).map((r) => fromDb<HabitLog>(r));
-  const templates = (templateRows || []).map((r) => fromDb<HabitTemplate>(r));
+  // Log any query errors for debugging
+  for (const [name, result] of Object.entries({
+    groups: groupResult, habits: habitResult, logs: logResult,
+    historyLogs: historyLogResult,
+  })) {
+    if (result.error) console.error(`Habits page: ${name} query failed:`, result.error.message);
+  }
+
+  const groups = (groupResult.data || []).map((r) => fromDb<HabitGroup>(r));
+  const allHabits = (habitResult.data || []).map((r) => fromDb<Habit>(r));
+  const archivedHabits = (archivedHabitResult.data || []).map((r) => fromDb<Habit>(r));
+  const todayLogs = (logResult.data || []).map((r) => fromDb<HabitLog>(r));
+  const historyLogs = (historyLogResult.data || []).map((r) => fromDb<HabitLog>(r));
+  const templates = ((templateResult as { data: Record<string, unknown>[] | null }).data || []).map((r) => fromDb<HabitTemplate>(r));
+  const diagnosisRows = (diagnosisResult as { data: Record<string, unknown>[] | null }).data;
 
   // ─────────────────────────────────────────
   // Identity Engine data (fetched for both tabs, lightweight)
+  // Tables may not exist yet — gracefully handle missing tables
   // ─────────────────────────────────────────
-  const [{ data: identityRows }, { data: uncelebratedRows }, { count: scorecardCount }] =
+  const [identityResult, uncelebratedResult, scorecardResult] =
     await Promise.all([
       supabase
         .from("user_identities")
         .select("*")
         .eq("status", "active")
-        .order("sort_order", { ascending: true }),
+        .order("sort_order", { ascending: true })
+        .then((res) => res, () => ({ data: null, error: null })),
       supabase
         .from("identity_milestones")
         .select("id, milestone_title, milestone_message")
         .eq("celebrated", false)
         .order("achieved_at", { ascending: true })
-        .limit(5),
+        .limit(5)
+        .then((res) => res, () => ({ data: null, error: null })),
       supabase
         .from("scorecard_days")
-        .select("*", { count: "exact", head: true }),
+        .select("*", { count: "exact", head: true })
+        .then((res) => res, () => ({ data: null, error: null, count: 0 })),
     ]);
+
+  const identityRows = (identityResult as { data: Record<string, unknown>[] | null }).data;
+  const uncelebratedRows = (uncelebratedResult as { data: Record<string, unknown>[] | null }).data;
+  const scorecardCount = (scorecardResult as { count: number | null }).count;
 
   const identities = (identityRows ?? []).map((r) => ({
     id: r.id as string,
@@ -207,8 +231,8 @@ export default async function HabitsPage({
   const activeDiagnosisHabitIds = new Set<string>();
   const activeDiagnosisMap: Record<string, string> = {}; // habitId → diagnosisId
   for (const d of diagnosisRows || []) {
-    activeDiagnosisHabitIds.add(d.habit_id);
-    activeDiagnosisMap[d.habit_id] = d.id;
+    activeDiagnosisHabitIds.add(d.habit_id as string);
+    activeDiagnosisMap[d.habit_id as string] = d.id as string;
   }
 
   // Split habits into scheduled-today vs not-today
