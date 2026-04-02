@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, memo } from "react";
 import { cn } from "@/lib/utils";
 import {
   Target, Grid2X2, CheckSquare, RotateCcw,
@@ -51,27 +51,72 @@ const NAV_SECTIONS = [
   },
 ];
 
-function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
+/** Isolated nav link — only re-renders when its own active state changes */
+function NavLink({
+  href,
+  icon: Icon,
+  label,
+  onClick,
+}: {
+  href: string;
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  onClick?: () => void;
+}) {
   const pathname = usePathname();
+  const active = pathname === href || pathname.startsWith(href + "/");
 
   return (
-    <>
-      {/* Logo */}
-      <div className="px-6 py-6 border-b border-[#FFF8F0]/[0.05]">
-        <div className="flex items-center gap-3.5">
-          <div className="size-10 rounded-xl bg-gradient-to-b from-[#FF6B6B]/20 to-transparent border border-[#FF6B6B]/25 flex items-center justify-center">
-            <span className="text-lg font-serif text-[#FF6B6B] font-medium">L</span>
-          </div>
-          <div>
-            <p className="text-[#FF6B6B] font-serif text-sm tracking-[0.25em] uppercase font-medium">
-              LOS
-            </p>
-            <p className="text-[#FFF8F0]/25 font-mono text-[8px] tracking-[0.35em] uppercase">
-              Operating System
-            </p>
-          </div>
+    <Link
+      href={href}
+      prefetch={true}
+      onClick={onClick}
+      className={cn(
+        "group flex items-center gap-3 px-3 py-2.5 rounded-xl text-[11px] font-mono uppercase tracking-wider transition-all duration-200",
+        active
+          ? "bg-[#FF6B6B]/[0.08] text-[#FF6B6B] border border-[#FF6B6B]/[0.15] glow-primary-sm"
+          : "text-[#FFF8F0]/35 hover:text-[#FFF8F0]/80 hover:bg-[#FFF8F0]/[0.03] border border-transparent"
+      )}
+    >
+      <Icon
+        className={cn(
+          "h-3.5 w-3.5 shrink-0 transition-colors",
+          active ? "text-[#FF6B6B]" : "text-[#FFF8F0]/25 group-hover:text-[#FFF8F0]/60"
+        )}
+      />
+      <span className="truncate">{label}</span>
+      {active && (
+        <div className="ml-auto size-1.5 rounded-full bg-[#FF6B6B] animate-pulse" />
+      )}
+    </Link>
+  );
+}
+
+/** Static logo — never re-renders */
+const SidebarLogo = memo(function SidebarLogo() {
+  return (
+    <div className="px-6 py-6 border-b border-[#FFF8F0]/[0.05]">
+      <div className="flex items-center gap-3.5">
+        <div className="size-10 rounded-xl bg-gradient-to-b from-[#FF6B6B]/20 to-transparent border border-[#FF6B6B]/25 flex items-center justify-center">
+          <span className="text-lg font-serif text-[#FF6B6B] font-medium">L</span>
+        </div>
+        <div>
+          <p className="text-[#FF6B6B] font-serif text-sm tracking-[0.25em] uppercase font-medium">
+            LOS
+          </p>
+          <p className="text-[#FFF8F0]/25 font-mono text-[8px] tracking-[0.35em] uppercase">
+            Operating System
+          </p>
         </div>
       </div>
+    </div>
+  );
+});
+
+function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
+  return (
+    <>
+      <SidebarLogo />
 
       {/* Nav Sections */}
       <nav className="flex-1 py-4 px-3 overflow-y-auto space-y-5">
@@ -81,34 +126,15 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
               {section.label}
             </p>
             <div className="space-y-0.5">
-              {section.items.map(({ href, icon: Icon, label }) => {
-                const active = pathname === href || pathname.startsWith(href + "/");
-                return (
-                  <Link
-                    key={href}
-                    href={href}
-                    prefetch={true}
-                    onClick={onNavigate}
-                    className={cn(
-                      "group flex items-center gap-3 px-3 py-2.5 rounded-xl text-[11px] font-mono uppercase tracking-wider transition-all duration-200",
-                      active
-                        ? "bg-[#FF6B6B]/[0.08] text-[#FF6B6B] border border-[#FF6B6B]/[0.15] glow-primary-sm"
-                        : "text-[#FFF8F0]/35 hover:text-[#FFF8F0]/80 hover:bg-[#FFF8F0]/[0.03] border border-transparent"
-                    )}
-                  >
-                    <Icon
-                      className={cn(
-                        "h-3.5 w-3.5 shrink-0 transition-colors",
-                        active ? "text-[#FF6B6B]" : "text-[#FFF8F0]/25 group-hover:text-[#FFF8F0]/60"
-                      )}
-                    />
-                    <span className="truncate">{label}</span>
-                    {active && (
-                      <div className="ml-auto size-1.5 rounded-full bg-[#FF6B6B] animate-pulse" />
-                    )}
-                  </Link>
-                );
-              })}
+              {section.items.map(({ href, icon, label }) => (
+                <NavLink
+                  key={href}
+                  href={href}
+                  icon={icon}
+                  label={label}
+                  onClick={onNavigate}
+                />
+              ))}
             </div>
           </div>
         ))}
@@ -116,33 +142,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 
       {/* Bottom */}
       <div className="px-3 py-4 border-t border-[#FFF8F0]/[0.05] space-y-0.5">
-        {(() => {
-          const settingsActive = pathname === "/settings" || pathname.startsWith("/settings/");
-          return (
-            <Link
-              href="/settings"
-              prefetch={true}
-              onClick={onNavigate}
-              className={cn(
-                "group flex items-center gap-3 px-3 py-2.5 rounded-xl text-[11px] font-mono uppercase tracking-wider transition-all duration-200",
-                settingsActive
-                  ? "bg-[#FF6B6B]/[0.08] text-[#FF6B6B] border border-[#FF6B6B]/[0.15] glow-primary-sm"
-                  : "text-[#FFF8F0]/35 hover:text-[#FFF8F0]/80 hover:bg-[#FFF8F0]/[0.03] border border-transparent"
-              )}
-            >
-              <Settings
-                className={cn(
-                  "h-3.5 w-3.5 shrink-0 transition-colors",
-                  settingsActive ? "text-[#FF6B6B]" : "text-[#FFF8F0]/25 group-hover:text-[#FFF8F0]/60"
-                )}
-              />
-              <span>Settings</span>
-              {settingsActive && (
-                <div className="ml-auto size-1.5 rounded-full bg-[#FF6B6B] animate-pulse" />
-              )}
-            </Link>
-          );
-        })()}
+        <NavLink href="/settings" icon={Settings} label="Settings" onClick={onNavigate} />
         <form action="/auth/signout" method="post">
           <button
             type="submit"
