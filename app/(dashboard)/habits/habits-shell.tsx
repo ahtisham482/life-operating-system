@@ -4,6 +4,8 @@ import { useState, useCallback, lazy, Suspense } from "react";
 import { HabitTracker } from "./habit-tracker";
 import { HabitInsights } from "./habit-insights";
 import { IdentityBoard } from "./identity-board";
+import { SmartPrompt } from "./smart-prompt";
+import { SystemSetupTracker } from "./setup-tracker";
 import { ZONES, getUnlockedZones, type ZoneKey } from "./zone-utils";
 import type { Habit, HabitGroup, HabitLog, HabitTemplate } from "@/lib/db/schema";
 
@@ -72,6 +74,15 @@ export function HabitsShell(props: HabitsShellProps) {
 
   const unlocked = getUnlockedZones(props.daysOfData, props.allHabits.length);
 
+  // Computed booleans for SmartPrompt and SystemSetupTracker
+  const hasBlueprintsData = (props.prefetchedData.blueprints?.length ?? 0) > 0;
+  const hasScorecardData = props.scorecardCount > 0;
+  const hasIdentityData = props.identities.length > 0;
+  const hasFrictionData = (props.prefetchedData.gateways?.length ?? 0) > 0 || (props.prefetchedData.frictionMaps?.length ?? 0) > 0;
+  const hasAttractionData = (props.prefetchedData.bundles?.length ?? 0) > 0;
+  const hasMasteryHabits = (props.prefetchedData.masteryHabits?.length ?? 0) > 0;
+  const hasOnboardingComplete = props.prefetchedData.onboarding?.completed ?? false;
+
   const navigate = useCallback((zone: string, view?: string) => {
     if (zone === "build" && !unlocked.build) return;
     if (zone === "grow" && !unlocked.grow) return;
@@ -92,6 +103,24 @@ export function HabitsShell(props: HabitsShellProps) {
     const query = params.toString();
     window.history.replaceState(null, "", `/habits${query ? `?${query}` : ""}`);
   }, [unlocked.build, unlocked.grow]);
+
+  // Map a view key to its parent zone and navigate there
+  const navigateFromView = useCallback((view: string) => {
+    const viewToZone: Record<string, string> = {
+      tracker: "today",
+      scorecard: "today",
+      identity: "today",
+      architect: "build",
+      attract: "build",
+      friction: "build",
+      rewards: "build",
+      breaker: "build",
+      mastery: "grow",
+      guide: "grow",
+    };
+    const zone = viewToZone[view] ?? "today";
+    navigate(zone, view);
+  }, [navigate]);
 
   const zone = ZONES[activeZone];
 
@@ -120,6 +149,20 @@ export function HabitsShell(props: HabitsShellProps) {
           />
         </div>
       </div>
+
+      {/* Smart prompt — contextual next action */}
+      <SmartPrompt
+        habitsCount={props.allHabits.length}
+        daysOfData={props.daysOfData}
+        hasBlueprintsData={hasBlueprintsData}
+        hasScorecardData={hasScorecardData}
+        hasIdentityData={hasIdentityData}
+        hasFrictionData={hasFrictionData}
+        hasAttractionData={hasAttractionData}
+        hasMasteryHabits={hasMasteryHabits}
+        hasOnboardingComplete={hasOnboardingComplete}
+        onNavigate={navigateFromView}
+      />
 
       {/* Zone navigation — client-side, no server round-trip */}
       <div className="space-y-3">
@@ -183,6 +226,22 @@ export function HabitsShell(props: HabitsShellProps) {
           ))}
         </div>
       </div>
+
+      {/* Setup progress tracker — only on tracker view */}
+      {activeView === "tracker" && (
+        <SystemSetupTracker
+          habitsCount={props.allHabits.length}
+          daysOfData={props.daysOfData}
+          hasBlueprintsData={hasBlueprintsData}
+          hasScorecardData={hasScorecardData}
+          hasIdentityData={hasIdentityData}
+          hasFrictionData={hasFrictionData}
+          hasAttractionData={hasAttractionData}
+          hasMasteryHabits={hasMasteryHabits}
+          hasOnboardingComplete={hasOnboardingComplete}
+          onNavigate={navigateFromView}
+        />
+      )}
 
       {/* New user welcome */}
       {props.allHabits.length === 0 && activeView === "tracker" && (
