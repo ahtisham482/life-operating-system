@@ -93,8 +93,8 @@ export function FrictionTab({ identities, initialData }: FrictionTabProps) {
       {gateways.length === 0 && frictionMaps.length === 0 && moments.length === 0 ? (
         <EmptyState
           icon="⚡"
-          title="Engineer the path of least resistance"
-          description="Start impossibly small with 2-minute gateways, map and eliminate friction from good habits, and identify the decisive moments that determine your day."
+          title="Design the path of least resistance"
+          description="Start impossibly small, remove obstacles from good habits, and identify the moments that determine your day."
           principle="Human behavior follows the path of least resistance — always. Make the right thing easy."
         />
       ) : (

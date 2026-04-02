@@ -7,6 +7,7 @@ import { ContractSection } from "./contract-section";
 import { SavingsSection } from "./savings-section";
 import { ProjectionsSection } from "./projections-section";
 import { MilestoneCardsSection } from "./milestone-cards-section";
+import { EmptyState } from "./empty-state";
 import { PillSelector } from "./ui-kit";
 
 type Section = "contracts" | "savings" | "projections" | "milestones";
@@ -76,6 +77,15 @@ export function RewardsTab({ initialData }: { initialData?: { contracts: any; ja
       <p className="text-[11px] font-mono text-[#FFF8F0]/30 mb-4">
         Set up accountability contracts, savings goals tied to habits, and track projected outcomes.
       </p>
+
+      {/* Top-level empty state */}
+      {contracts.length === 0 && jars.length === 0 && (
+        <EmptyState
+          icon="🎁"
+          title="Build accountability into your habits"
+          description="Create commitment contracts, tie savings to your wins, and visualize compound progress."
+        />
+      )}
 
       {/* Active section */}
       {activeSection === "contracts" && (

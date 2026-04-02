@@ -99,7 +99,7 @@ export const IdentityBoard = memo(function IdentityBoard({
         <EmptyState
           icon="🪪"
           title="Define who you want to become"
-          description="Every habit is a vote for a type of person. Start by declaring your identity — 'I am a reader' — and let every completed habit cast a vote."
+          description="Every completed habit is a vote for a type of person. Claim your identity, then let each action reinforce it."
           principle="The goal is not to read a book. The goal is to become a reader."
           actionLabel="Create first identity"
           onAction={() => setShowCreate(true)}
