@@ -10,25 +10,23 @@ export default async function SettingsPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Fetch notification preferences
-  const { data: prefs } = await supabase
-    .from("notification_preferences")
-    .select("*")
-    .eq("user_id", user?.id ?? "")
-    .single();
-
-  // Fetch push subscription count
-  const { count } = await supabase
-    .from("push_subscriptions")
-    .select("*", { count: "exact", head: true })
-    .eq("user_id", user?.id ?? "");
-
-  // Fetch user settings (timezone etc.)
-  const { data: userSettings } = await supabase
-    .from("user_settings")
-    .select("*")
-    .eq("user_id", user?.id ?? "")
-    .single();
+  // Fetch notification preferences, push subscriptions, and user settings in parallel
+  const [{ data: prefs }, { count }, { data: userSettings }] = await Promise.all([
+    supabase
+      .from("notification_preferences")
+      .select("*")
+      .eq("user_id", user?.id ?? "")
+      .single(),
+    supabase
+      .from("push_subscriptions")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", user?.id ?? ""),
+    supabase
+      .from("user_settings")
+      .select("*")
+      .eq("user_id", user?.id ?? "")
+      .single(),
+  ]);
 
   const defaultPrefs = {
     task_due_enabled: true,

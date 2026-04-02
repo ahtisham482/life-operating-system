@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { createClient } from "@/lib/supabase/server";
 import { Inbox, Check, X, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
