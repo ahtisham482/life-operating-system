@@ -20,7 +20,7 @@ const sectionPills: { key: Section; label: string }[] = [
   { key: "challenges", label: "Challenges" },
 ];
 
-export function MasteryTab() {
+export function MasteryTab({ initialData }: { initialData?: { masteryHabits: any } | null } = {}) {
   const [habits, setHabits] = useState<HabitMastery[]>([]);
   const [activeSection, setActiveSection] = useState<Section>("goldilocks");
   const [loading, setLoading] = useState(true);
@@ -34,7 +34,14 @@ export function MasteryTab() {
     });
   }, []);
 
-  useEffect(() => { loadHabits(); }, [loadHabits]);
+  useEffect(() => {
+    if (initialData?.masteryHabits != null) {
+      setHabits(initialData.masteryHabits as HabitMastery[]);
+      setLoading(false);
+      return;
+    }
+    loadHabits();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (loading) {
     return (

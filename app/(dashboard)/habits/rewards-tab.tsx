@@ -11,7 +11,7 @@ import { PillSelector } from "./ui-kit";
 
 type Section = "contracts" | "savings" | "projections" | "milestones";
 
-export function RewardsTab() {
+export function RewardsTab({ initialData }: { initialData?: { contracts: any; jars: any } | null } = {}) {
   const [contracts, setContracts] = useState<HabitContract[]>([]);
   const [jars, setJars] = useState<SavingsJar[]>([]);
   const [activeSection, setActiveSection] = useState<Section>("contracts");
@@ -25,7 +25,15 @@ export function RewardsTab() {
     setLoading(false);
   }, []);
 
-  useEffect(() => { loadData(); }, [loadData]);
+  useEffect(() => {
+    if (initialData?.contracts != null) {
+      setContracts(initialData.contracts);
+      setJars(initialData.jars ?? []);
+      setLoading(false);
+      return;
+    }
+    loadData();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleRefresh() {
     startTransition(() => { loadData(); });

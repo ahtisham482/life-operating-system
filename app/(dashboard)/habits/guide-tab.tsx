@@ -10,13 +10,21 @@ import { PillSelector } from "./ui-kit";
 
 type Section = "compound" | "reference" | "guardian";
 
-export function GuideTab() {
+export function GuideTab({ initialData }: { initialData?: { onboarding: any } | null } = {}) {
   const [showWizard, setShowWizard] = useState(false);
   const [section, setSection] = useState<Section>("compound");
   const [loading, setLoading] = useState(true);
   const [pending, startTransition] = useTransition();
 
   useEffect(() => {
+    if (initialData?.onboarding != null) {
+      const progress = initialData.onboarding;
+      if (!progress || !progress.completed) {
+        setShowWizard(true);
+      }
+      setLoading(false);
+      return;
+    }
     startTransition(async () => {
       const progress = await getOnboardingProgress();
       if (!progress || !progress.completed) {

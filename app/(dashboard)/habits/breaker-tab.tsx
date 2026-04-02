@@ -12,7 +12,7 @@ import { PillSelector } from "./ui-kit";
 
 type Section = "battle" | "defense" | "insights";
 
-export function BreakerTab() {
+export function BreakerTab({ initialData }: { initialData?: { badHabits: any } | null } = {}) {
   const [badHabits, setBadHabits] = useState<BadHabit[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showSetup, setShowSetup] = useState(false);
@@ -31,7 +31,18 @@ export function BreakerTab() {
     });
   }, [selectedId]);
 
-  useEffect(() => { loadHabits(); }, [loadHabits]);
+  useEffect(() => {
+    if (initialData?.badHabits != null) {
+      const habits = initialData.badHabits as BadHabit[];
+      setBadHabits(habits);
+      if (habits.length > 0 && !selectedId) {
+        setSelectedId(habits[0].id);
+      }
+      setLoading(false);
+      return;
+    }
+    loadHabits();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const selectedHabit = badHabits.find((h) => h.id === selectedId) || null;
 
