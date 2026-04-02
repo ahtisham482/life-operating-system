@@ -83,6 +83,10 @@ export function ArchitectTab({ identities }: ArchitectTabProps) {
         </button>
       </div>
 
+      <p className="text-[11px] font-mono text-[#FFF8F0]/30 mb-4">
+        Design the complete system for each habit — what triggers it, where you do it, and how to start in 2 minutes.
+      </p>
+
       {/* Onboarding */}
       {hasNoBlueprints && activeSection === "blueprints" && (
         <EmptyState

@@ -76,6 +76,10 @@ export function AttractionTab({ identities }: AttractionTabProps) {
         />
       </div>
 
+      <p className="text-[11px] font-mono text-[#FFF8F0]/30 mb-4">
+        Make good habits irresistible. Pair them with things you enjoy, reframe how you think about them, and get social support.
+      </p>
+
       {/* Attraction message */}
       {bundles.length === 0 && reframes.length === 0 && tribes.length === 0 && partners.length === 0 ? (
         <EmptyState

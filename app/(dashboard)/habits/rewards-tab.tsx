@@ -58,6 +58,10 @@ export function RewardsTab() {
         color="#2DD4BF"
       />
 
+      <p className="text-[11px] font-mono text-[#FFF8F0]/30 mb-4">
+        Set up accountability contracts, savings goals tied to habits, and track projected outcomes.
+      </p>
+
       {/* Active section */}
       {activeSection === "contracts" && (
         <ContractSection contracts={contracts} onRefresh={handleRefresh} />
